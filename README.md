@@ -31,7 +31,11 @@ After activating your virtual environment, install the required packages:
 pip install -r requirements.txt
 ```
 
-### 3. Start development server
+### 3. Populate environment variables
+
+Copy the `.env.example` file into `.env` and add all key values.
+
+### 4. Start development server
 
 ```bash
 fastapi dev app/main.py --reload
@@ -40,6 +44,12 @@ fastapi dev app/main.py --reload
 ## Contributing Guidelines
 
 Make sure the following guidelines are followed:
+
 - Make commits in a new branch, and then add a pull request to the test branch.
-- Make sure you run `pip freeze > requirements.txt` in the root of the project before pushing, to ensure a seamless experience for others.
+- Make sure you run `pip freeze > requirements.txt` in the root of the project before pushing, to ensure a seamless
+  development experience for others.
 - Ensure best practices like using docstrings and typing using Pydantic and typing package of Python.
+
+## License
+
+This project is licensed with MIT License. For more details, click [here](LICENSE).

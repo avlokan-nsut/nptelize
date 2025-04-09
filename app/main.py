@@ -1,8 +1,10 @@
 from fastapi import FastAPI
 
+from app.config import check_config
+from app.router import router
+
 app = FastAPI()
+check_config()
 
 
-@app.get("/")
-def index():
-    return {"message": "Hello World"}
+app.include_router(router)

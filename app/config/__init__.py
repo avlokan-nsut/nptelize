@@ -4,5 +4,10 @@ from dotenv import dotenv_values
 
 config = {
     **dotenv_values(".env"),
-    **os.environ
+    **os.environ # For docker deployment
 }
+
+
+def check_config():
+    if not config["DB_URI"]:
+        raise ValueError("DB_URI is required!")
