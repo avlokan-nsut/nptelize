@@ -31,7 +31,6 @@ strict_optional = true
 module = "app.router.*"
 disallow_untyped_defs = false
 disallow_incomplete_defs = false
-disallow_untyped_params = true
 disallow_untyped_decorators = false
 check_untyped_defs = true  # Still check typehinting inside the function body
 
