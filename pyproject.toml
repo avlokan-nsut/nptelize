@@ -1,0 +1,42 @@
+[project]
+name = "nptel-api"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "alembic>=1.15.2",
+    "cuid>=0.4",
+    "fastapi[standard]>=0.115.12",
+    "mypy>=1.15.0",
+    "pre-commit>=4.2.0",
+    "psycopg2>=2.9.10",
+    "python-dotenv>=1.1.0",
+    "sqlalchemy[mypy]>=2.0.40",
+]
+
+[tool.mypy]
+ignore_missing_imports = true
+exclude = [".venv", ".git"]
+warn_unused_ignores = true
+plugins = "pydantic.mypy, sqlalchemy.ext.mypy.plugin"
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+strict_optional = true
+
+[[tool.mypy.overrides]]
+module = "app.router.*"
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+disallow_untyped_params = true
+disallow_untyped_decorators = false
+check_untyped_defs = true  # Still check typehinting inside the function body
+
+[[tool.mypy.overrides]]
+module = "alembic.*"
+ignore_errors = true
+follow_imports = "skip"
+

@@ -8,6 +8,6 @@ config = {
 }
 
 
-def check_config():
+def check_config() -> None:
     if not config["DB_URI"]:
         raise ValueError("DB_URI is required!")

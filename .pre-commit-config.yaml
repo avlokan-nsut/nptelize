@@ -1,0 +1,9 @@
+repos:
+-   repo: https://github.com/pre-commit/mirrors-mypy
+    rev: 'v1.15.0'  # Use the latest stable MyPy version
+    hooks:
+    -   id: mypy
+        additional_dependencies: 
+        - "pydantic>=2.11.3"
+        - "sqlalchemy[mypy]>=2.0.40"
+
