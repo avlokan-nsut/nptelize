@@ -1,4 +1,4 @@
-from typing import Annotated, Any, Generator
+from typing import Annotated, Generator
 
 from fastapi import Depends
 from sqlalchemy import create_engine
@@ -11,7 +11,7 @@ SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 Base = declarative_base()
 
 
-def get_db() -> Generator[Session, Any, None]:
+def get_db() -> Generator[Session, None, None]:
     db = SessionLocal()
     try:
         yield db

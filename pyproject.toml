@@ -1,0 +1,52 @@
+[project]
+name = "nptel-api"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "alembic>=1.15.2",
+    "cuid>=0.4",
+    "fastapi[standard]>=0.115.12",
+    "fitz>=0.0.1.dev2",
+    "mypy>=1.15.0",
+    "passlib[crypto]>=1.7.4",
+    "pdfplumber>=0.11.6",
+    "pre-commit>=4.2.0",
+    "psycopg2>=2.9.10",
+    "pyjwt>=2.10.1",
+    "pyproject-toml>=0.1.0",
+    "python-dotenv>=1.1.0",
+    "pyzbar>=0.1.9",
+    "requests>=2.32.3",
+    "selenium>=4.31.0",
+    "sqlalchemy[mypy]>=2.0.40",
+    "types-requests>=2.32.0.20250328",
+    "webdriver-manager>=4.0.2",
+]
+
+[tool.mypy]
+ignore_missing_imports = true
+exclude = [".venv", ".git"]
+warn_unused_ignores = true
+plugins = "pydantic.mypy, sqlalchemy.ext.mypy.plugin"
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+strict_optional = true
+# disallow_any_explicit = true
+
+[[tool.mypy.overrides]]
+module = "app.router.*"
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+disallow_untyped_decorators = false
+check_untyped_defs = true  # Still check typehinting inside the function body
+
+[[tool.mypy.overrides]]
+module = "alembic.*"
+ignore_errors = true
+follow_imports = "skip"
+

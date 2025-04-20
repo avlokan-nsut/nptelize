@@ -8,6 +8,14 @@ config = {
 }
 
 
-def check_config():
-    if not config["DB_URI"]:
-        raise ValueError("DB_URI is required!")
+def check_config() -> None:
+    required_env_vars = [
+        'DB_URI',
+        'JWT_SECRET_KEY',
+        'ALGORITH',
+        'ACCESS_TOKEN_EXPIRE_MINUTES'
+    ]
+    
+    for var in required_env_vars:
+        if var not in config:
+            raise ValueError(f"{var} is required")

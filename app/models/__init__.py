@@ -1,9 +1,12 @@
+from __future__ import annotations
+
 import enum
 from datetime import datetime
+from typing import List, Optional
 
 from cuid import cuid
 from sqlalchemy import Column, String, Enum, ForeignKey, Text, Boolean, DateTime
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, Mapped
 
 from app.config.db import Base
 
@@ -27,10 +30,10 @@ class User(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     # Relationships
-    subjects = relationship("Subject", back_populates="teacher", cascade="all, delete")
-    requests_sent = relationship("Request", foreign_keys='Request.teacher_id', back_populates="teacher")
-    requests_received = relationship("Request", foreign_keys='Request.student_id', back_populates="student")
-    certificates = relationship("Certificate", back_populates="student")
+    subjects: Mapped[List["Subject"]] = relationship("Subject", back_populates="teacher", cascade="all, delete")
+    requests_sent: Mapped[List["Request"]] = relationship("Request", foreign_keys='Request.teacher_id', back_populates="teacher")
+    requests_received: Mapped[List["Request"]] = relationship("Request", foreign_keys='Request.student_id', back_populates="student")
+    certificates: Mapped[List["Certificate"]] = relationship("Certificate", back_populates="student")
 
 
 class Subject(Base):
@@ -40,19 +43,18 @@ class Subject(Base):
     name = Column(String, nullable=False)
     teacher_id = Column(String, ForeignKey("users.id"), nullable=False)
 
-    teacher = relationship("User", back_populates="subjects")
-    requests = relationship("Request", back_populates="subject", cascade="all, delete")
-    enrolled_students = relationship("StudentSubject", back_populates="subject", cascade="all, delete")
+    teacher: Mapped["User"] = relationship("User", back_populates="subjects")
+    requests: Mapped[List["Request"]] = relationship("Request", back_populates="subject", cascade="all, delete")
+    enrolled_students: Mapped[List["StudentSubject"]] = relationship("StudentSubject", back_populates="subject", cascade="all, delete")
 
 
 class StudentSubject(Base):
     __tablename__ = "student_subjects"
 
-    id = Column(String, primary_key=True, default=cuid)
-    student_id = Column(String, ForeignKey("users.id"), nullable=False)
-    subject_id = Column(String, ForeignKey("subjects.id"), nullable=False)
+    student_id = Column(String, ForeignKey("users.id"), nullable=False, primary_key=True)
+    subject_id = Column(String, ForeignKey("subjects.id"), nullable=False, primary_key=True)
 
-    subject = relationship("Subject", back_populates="enrolled_students")
+    subject: Mapped["Subject"] = relationship("Subject", back_populates="enrolled_students")
 
 
 class RequestStatus(enum.Enum):
@@ -72,10 +74,10 @@ class Request(Base):
     status = Column(Enum(RequestStatus), default=RequestStatus.pending)
     created_at = Column(DateTime, default=datetime.utcnow)
 
-    subject = relationship("Subject", back_populates="requests")
-    teacher = relationship("User", foreign_keys=[teacher_id], back_populates="requests_sent")
-    student = relationship("User", foreign_keys=[student_id], back_populates="requests_received")
-    certificate = relationship("Certificate", uselist=False, back_populates="request", cascade="all, delete")
+    subject: Mapped["Subject"] = relationship("Subject", back_populates="requests")
+    teacher: Mapped["User"] = relationship("User", foreign_keys=[teacher_id], back_populates="requests_sent")
+    student: Mapped["User"] = relationship("User", foreign_keys=[student_id], back_populates="requests_received")
+    certificate: Mapped[Optional["Certificate"]] = relationship("Certificate", uselist=False, back_populates="request", cascade="all, delete")
 
 
 class Certificate(Base):
@@ -88,5 +90,5 @@ class Certificate(Base):
     uploaded_at = Column(DateTime, default=datetime.utcnow)
     verified = Column(Boolean, default=False)
 
-    request = relationship("Request", back_populates="certificate")
-    student = relationship("User", back_populates="certificates")
+    request: Mapped["Request"] = relationship("Request", back_populates="certificate")
+    student: Mapped["User"] = relationship("User", back_populates="certificates")
