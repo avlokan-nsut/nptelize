@@ -20,7 +20,7 @@ class UserRole(enum.Enum):
 class User(Base):
     __tablename__ = "users"
 
-    user_id = Column(String, primary_key=True, default=cuid)
+    id = Column(String, primary_key=True, default=cuid)
     name = Column(String, nullable=False)
     email = Column(String, unique=True, nullable=False)
     password_hash = Column(Text, nullable=False)
@@ -39,9 +39,9 @@ class User(Base):
 class Subject(Base):
     __tablename__ = "subjects"
 
-    subject_id = Column(String, primary_key=True, default=cuid)
+    id = Column(String, primary_key=True, default=cuid)
     name = Column(String, nullable=False)
-    teacher_id = Column(String, ForeignKey("users.user_id"), nullable=False)
+    teacher_id = Column(String, ForeignKey("users.id"), nullable=False)
 
     teacher: Mapped["User"] = relationship("User", back_populates="subjects")
     requests: Mapped[List["Request"]] = relationship("Request", back_populates="subject", cascade="all, delete")
@@ -51,8 +51,8 @@ class Subject(Base):
 class StudentSubject(Base):
     __tablename__ = "student_subjects"
 
-    student_id = Column(String, ForeignKey("users.user_id"), nullable=False, primary_key=True)
-    subject_id = Column(String, ForeignKey("subjects.subject_id"), nullable=False, primary_key=True)
+    student_id = Column(String, ForeignKey("users.id"), nullable=False, primary_key=True)
+    subject_id = Column(String, ForeignKey("subjects.id"), nullable=False, primary_key=True)
 
     subject: Mapped["Subject"] = relationship("Subject", back_populates="enrolled_students")
 
@@ -67,10 +67,10 @@ class RequestStatus(enum.Enum):
 class Request(Base):
     __tablename__ = "requests"
 
-    request_id = Column(String, primary_key=True, default=cuid)
-    subject_id = Column(String, ForeignKey("subjects.subject_id"), nullable=False)
-    teacher_id = Column(String, ForeignKey("users.user_id"), nullable=False)
-    student_id = Column(String, ForeignKey("users.user_id"), nullable=False)
+    id = Column(String, primary_key=True, default=cuid)
+    subject_id = Column(String, ForeignKey("subjects.id"), nullable=False)
+    teacher_id = Column(String, ForeignKey("users.id"), nullable=False)
+    student_id = Column(String, ForeignKey("users.id"), nullable=False)
     status = Column(Enum(RequestStatus), default=RequestStatus.pending)
     created_at = Column(DateTime, default=datetime.utcnow)
 
@@ -83,9 +83,9 @@ class Request(Base):
 class Certificate(Base):
     __tablename__ = "certificates"
 
-    certificate_id = Column(String, primary_key=True, default=cuid)
-    request_id = Column(String, ForeignKey("requests.request_id"), nullable=False, unique=True)
-    student_id = Column(String, ForeignKey("users.user_id"), nullable=False)
+    id = Column(String, primary_key=True, default=cuid)
+    request_id = Column(String, ForeignKey("requests.id"), nullable=False, unique=True)
+    student_id = Column(String, ForeignKey("users.id"), nullable=False)
     file_url = Column(Text, nullable=False)
     uploaded_at = Column(DateTime, default=datetime.utcnow)
     verified = Column(Boolean, default=False)
