@@ -1,5 +1,6 @@
-import fitz
 from typing import Tuple
+
+import fitz
 
 
 def extract_text_from_first_page(pdf_path: str) -> str:
@@ -9,7 +10,7 @@ def extract_text_from_first_page(pdf_path: str) -> str:
     return text
 
 
-def extractor(pdf_path: str) -> Tuple[str, str, str ,str] | Tuple[None, None, None, None]:
+def extractor(pdf_path: str) -> Tuple[str, str, str, str] | Tuple[None, None, None, None]:
     text = extract_text_from_first_page(pdf_path)
     lines = text.splitlines()
 

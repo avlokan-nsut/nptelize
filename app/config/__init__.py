@@ -12,7 +12,7 @@ def check_config() -> None:
     required_env_vars = [
         'DB_URI',
         'JWT_SECRET_KEY',
-        'ALGORITH',
+        'ALGORITHM',
         'ACCESS_TOKEN_EXPIRE_MINUTES'
     ]
     

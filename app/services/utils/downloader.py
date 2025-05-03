@@ -1,13 +1,13 @@
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from webdriver_manager.chrome import ChromeDriverManager
-from selenium.webdriver.chrome.service import Service
-import requests     # type: ignore
 import os
-
 from typing import Tuple
+
+import requests  # type: ignore
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
+from webdriver_manager.chrome import ChromeDriverManager
 
 
 def download_verification_pdf(qr_code_link: str, file_name: str) -> Tuple[str, int]:
@@ -39,7 +39,7 @@ def download_verification_pdf(qr_code_link: str, file_name: str) -> Tuple[str, i
             return "Error finding the 'Course Certificate' button", 500
 
         pdf_response = requests.get(pdf_url)
-    
+
         if pdf_response.status_code == 200:
             local_folder = "downloads"
             file_name = file_name.replace("uploads\\", "")

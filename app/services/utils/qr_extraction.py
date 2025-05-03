@@ -1,6 +1,6 @@
-from pyzbar.pyzbar import decode
-from PIL import Image
 import pdfplumber
+from PIL import Image
+from pyzbar.pyzbar import decode
 
 
 def extract_qr_code(pdf_path: str, page_number: int, output_image_path: str) -> None:

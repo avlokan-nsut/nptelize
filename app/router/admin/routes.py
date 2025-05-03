@@ -1,25 +1,26 @@
 from typing import cast
 
-from fastapi import APIRouter, Depends, Response, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Response
 from sqlalchemy.orm import Session
 
 from app.config.db import get_db
 from app.models import User, UserRole
-from app.oauth2 import create_access_token, get_current_user
-from app.router.teacher.schemas import TeacherLoginRequest
-from app.schemas import TokenData
+from app.oauth2 import create_access_token
+from app.router.admin.schemas import AdminLoginRequest
 from app.services.utils.hashing import verify_password_hash
 
-router = APIRouter(prefix="/teacher")
+router = APIRouter(prefix="/admin")
 
 
 @router.post("/login")
-def login_teacher(credentials: TeacherLoginRequest, response: Response, db: Session = Depends(get_db)):
+async def login(
+        credentials: AdminLoginRequest, response: Response, db: Session = Depends(get_db),
+):
     user = db.query(User).filter(User.email == credentials.email).first()
     if (
             not user
             or not verify_password_hash(credentials.password, cast(str, user.password_hash))
-            or user.role != UserRole.teacher
+            or user.role != UserRole.admin
     ):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
 
@@ -31,6 +32,7 @@ def login_teacher(credentials: TeacherLoginRequest, response: Response, db: Sess
             'name': user.name,
         }
     )
+
     response.set_cookie(
         key="access_token",
         value=access_token,
@@ -40,14 +42,3 @@ def login_teacher(credentials: TeacherLoginRequest, response: Response, db: Sess
     )
 
     return {'message': "Login successful", 'user_id': user.id}
-
-
-@router.get("/alloted-subjects")
-def get_alloted_subjects(db: Session = Depends(get_db), current_user: TokenData = Depends(get_current_user)):
-    pass
-
-
-@router.get("/request/{subject_code}")
-def get_student_requests(subject_code: str, db: Session = Depends(get_db),
-                         current_user: dict = Depends(get_current_user)):
-    pass

@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import List, Optional
 
 from cuid import cuid
-from sqlalchemy import Column, String, Enum, ForeignKey, Text, Boolean, DateTime
+from sqlalchemy import Column, String, Enum, ForeignKey, Text, Boolean, DateTime, func
 from sqlalchemy.orm import relationship, Mapped
 
 from app.config.db import Base
