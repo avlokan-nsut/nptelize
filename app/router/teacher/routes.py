@@ -1,53 +1,117 @@
-from typing import cast
-
-from fastapi import APIRouter, Depends, Response, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from typing import List
 
 from app.config.db import get_db
-from app.models import User, UserRole
-from app.oauth2 import create_access_token, get_current_user
-from app.router.teacher.schemas import TeacherLoginRequest
+from app.oauth2 import get_current_teacher
 from app.schemas import TokenData
-from app.services.utils.hashing import verify_password_hash
+from app.router.teacher.schemas import AddStudentToSubjectSchema
+from app.models import User, UserRole, Subject, StudentSubject, Request
+
 
 router = APIRouter(prefix="/teacher")
 
 
-@router.post("/login")
-def login_teacher(credentials: TeacherLoginRequest, response: Response, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.email == credentials.email).first()
-    if (
-            not user
-            or not verify_password_hash(credentials.password, cast(str, user.password_hash))
-            or user.role != UserRole.teacher
-    ):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
-
-    access_token = create_access_token(
-        data={
-            'email': user.email,
-            'role': user.role.value,
-            'user_id': user.id,
-            'name': user.name,
-        }
-    )
-    response.set_cookie(
-        key="access_token",
-        value=access_token,
-        httponly=True,
-        secure=True,
-        samesite="None",
-    )
-
-    return {'message': "Login successful", 'user_id': user.id}
+@router.get('/alloted-subjects')
+def get_alloted_subjects(
+    db: Session = Depends(get_db),
+    current_teacher: TokenData = Depends(get_current_teacher)
+):
+    subjects = db.query(Subject).filter(Subject.teacher_id == current_teacher.user_id).all()
+    return subjects
 
 
-@router.get("/alloted-subjects")
-def get_alloted_subjects(db: Session = Depends(get_db), current_user: TokenData = Depends(get_current_user)):
-    pass
+@router.get('/request/{subject_id}')
+def get_student_requests(subject_id: str, db: Session = Depends(get_db), current_teacher: TokenData = Depends(get_current_teacher)):
+    pass 
+    # requests for a particular subject
+    requests = db.query(Request).filter(
+        Request.subject_id == subject_id,
+        Request.teacher_id == current_teacher.user_id
+    ).all()
+    return requests
 
+@router.get('/students/{subject_id}')
+def get_students_in_subject(
+    subject_id: str,
+    db: Session = Depends(get_db),
+    current_teacher: TokenData = Depends(get_current_teacher)
+):
+    subject = db.query(Subject).filter(Subject.id == subject_id).first()
+    if not subject:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Subject not found")
+    if subject.teacher_id != current_teacher.user_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You are not authorized to view this subject")
+    
+    return subject.enrolled_students
 
-@router.get("/request/{subject_code}")
-def get_student_requests(subject_code: str, db: Session = Depends(get_db),
-                         current_user: dict = Depends(get_current_user)):
-    pass
+@router.post('/add/students')
+def add_students_to_subject(
+    students: List[AddStudentToSubjectSchema],
+    db: Session = Depends(get_db),
+    current_teacher: TokenData = Depends(get_current_teacher)
+):
+    add_status = []
+    for student in students:
+        # check if student exists
+        try:
+            db_student = db.query(User).filter(User.email == student.email, User.role == UserRole.student).first()
+            if not db_student:
+                add_status.append({
+                    'email': student.email,
+                    'success': False,
+                    'message': 'Student not found'
+                })
+                continue 
+
+            # check if subject exists
+            subject = db.query(Subject).filter(Subject.id == student.subject_id).first()
+            if not subject:
+                add_status.append({
+                    'email': student.email,
+                    'success': False,
+                    'message': 'Subject not found'
+                })
+                continue
+
+            # check if student is already enrolled in the subject
+            student_subject = db.query(StudentSubject).filter(
+                StudentSubject.student_id == db_student.id,
+                StudentSubject.subject_id == subject.id
+            ).first()
+            if student_subject:
+                add_status.append({
+                    'email': student.email,
+                    'success': False,
+                    'message': 'Student already enrolled in the subject'
+                })
+                continue
+
+            # add student to subject
+            student_subject = StudentSubject(
+                student_id=db_student.id,
+                subject_id=subject.id
+            )
+
+            db.add(student_subject)
+            db.commit()
+            db.refresh(student_subject)
+
+            add_status.append({
+                'email': student.email,
+                'success': True,
+                'message': 'Student added to subject'
+            })
+        except Exception as e:
+            print(e)
+            db.rollback()
+            add_status.append({
+                'email': student.email,
+                'success': False,
+                'message': 'Unknown error while adding student to subject'
+            })
+            continue
+
+    return {
+        'status': add_status
+    }

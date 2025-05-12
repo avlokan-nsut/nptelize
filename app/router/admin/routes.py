@@ -1,44 +1,95 @@
-from typing import cast
-
-from fastapi import APIRouter, Depends, HTTPException, status, Response
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, Depends
 
 from app.config.db import get_db
-from app.models import User, UserRole
-from app.oauth2 import create_access_token
-from app.router.admin.schemas import AdminLoginRequest
-from app.services.utils.hashing import verify_password_hash
+from app.models import UserRole, User
+from app.oauth2 import get_current_admin
+from app.router.admin.schemas import StudentCreate, TeacherCreate, AdminCreate
+from app.schemas import TokenData
+from app.services.utils.hashing import generate_password_hash
 
-router = APIRouter(prefix="/admin")
+from sqlalchemy.orm import Session
+
+from typing import List
 
 
-@router.post("/login")
-async def login(
-        credentials: AdminLoginRequest, response: Response, db: Session = Depends(get_db),
+router = APIRouter('/admin')
+
+@router.post('/create_students')
+def create_students(
+    students: List[StudentCreate], 
+    current_admin: TokenData = Depends(get_current_admin), 
+    db: Session = Depends(get_db)
 ):
-    user = db.query(User).filter(User.email == credentials.email).first()
-    if (
-            not user
-            or not verify_password_hash(credentials.password, cast(str, user.password_hash))
-            or user.role != UserRole.admin
-    ):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
+    db_students = []
+    
+    for student in students: 
+        student_password_hash = generate_password_hash(student.password)
+        db_students.append(
+            User(
+                name=student.name,
+                email=student.email,
+                password_hash=student_password_hash,
+                role=UserRole.student,
+                roll_number=student.roll_number
+            )
+        )
+    try:
+        db.add_all(db_students)
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        print(e)
 
-    access_token = create_access_token(
-        data={
-            'email': user.email,
-            'role': user.role.value,
-            'user_id': user.id,
-            'name': user.name,
-        }
-    )
+@router.post('/create_teachers')
+def create_teachers(
+    teachers: List[TeacherCreate], 
+    current_admin: TokenData = Depends(get_current_admin), 
+    db: Session = Depends(get_db)
+):
+    db_teachers = []
+    
+    for teacher in teachers: 
+        teacher_password_hash = generate_password_hash(teacher.password)
+        db_teachers.append(
+            User(
+                name=teacher.name,
+                email=teacher.email,
+                password_hash=teacher_password_hash,
+                role=UserRole.teacher,
+                employee_id=teacher.employee_id
+            )
+        )
+    try:
+        db.add_all(db_teachers)
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        print(e)
 
-    response.set_cookie(
-        key="access_token",
-        value=access_token,
-        httponly=True,
-        secure=True,
-        samesite="None",
-    )
 
-    return {'message': "Login successful", 'user_id': user.id}
+@router.post('/create_admins')
+def create_admins(
+    admins: List[AdminCreate], 
+    current_admin: TokenData = Depends(get_current_admin), 
+    db: Session = Depends(get_db)
+):
+    db_admins = []
+    
+    for admin in admins: 
+        admin_password_hash = generate_password_hash(admin.password)
+        db_admins.append(
+            User(
+                name=admin.name,
+                email=admin.email,
+                password_hash=admin_password_hash,
+                role=UserRole.admin,
+                employee_id=admin.employee_id
+            )
+        )
+    try:
+        db.add_all(db_admins)
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        print(e)
+

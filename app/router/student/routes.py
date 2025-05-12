@@ -1,52 +1,78 @@
-from typing import cast
-
-from fastapi import APIRouter, Depends, HTTPException, status, Response
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.config.db import get_db
-from app.models import User, UserRole
-from app.oauth2 import create_access_token, get_current_user
-from app.router.student.schemas import StudentLoginRequest
+from app.models import User, RequestStatus
 from app.schemas import TokenData
-from app.services.utils.hashing import verify_password_hash
+
+from app.oauth2 import get_current_student
+
 
 router = APIRouter(prefix="/student")
 
 
-@router.post("/login")
-async def login(
-        credentials: StudentLoginRequest, response: Response, db: Session = Depends(get_db),
-):
-    user = db.query(User).filter(User.email == credentials.email).first()
-    if (
-            not user
-            or not verify_password_hash(credentials.password, cast(str, user.password_hash))
-            or user.role != UserRole.student
-    ):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
-
-    access_token = create_access_token(
-        data={
-            'email': user.email,
-            'role': user.role.value,
-            'user_id': user.id,
-            'name': user.name,
-        }
-    )
-
-    response.set_cookie(
-        key="access_token",
-        value=access_token,
-        httponly=True,
-        secure=True,
-        samesite="None",
-    )
-
-    return {'message': "Login successful", 'user_id': user.id}
-
-
 @router.get('/pending')
-async def get_pending_requests(
-        current_user: TokenData = Depends(get_current_user), db: Session = Depends(get_db),
+def get_pending_requests(
+    current_student: TokenData = Depends(get_current_student), db: Session = Depends(get_db),
+):
+   try:
+        student = db.query(User).filter(User.id == current_student.user_id).one()
+        pending_requests = filter(
+            lambda x: x.status == RequestStatus.pending,
+            student.requests_received
+        )
+        return [
+            {
+                'subject_id': request.subject.id,
+                'subject': request.subject,
+                'teacher_id': request.teacher.id,
+                'teacher': request.teacher,
+            }
+            for request in pending_requests
+        ]
+   except Exception as e:
+        db.rollback()
+        print(e)
+        raise e
+
+# TODO: Make a single route for all types of requests with request status as a body parameter
+@router.get('/completed')
+def get_completed_requests(
+    current_student: TokenData = Depends(get_current_student), db: Session = Depends(get_db),
+):
+   try:
+        student = db.query(User).filter(User.id == current_student.user_id).one()
+        completed_requests = filter(
+            lambda x: x.status == RequestStatus.completed,
+            student.requests_received
+        )
+        return [
+            {
+                'subject_id': request.subject.id,
+                'subject': request.subject,
+                'teacher_id': request.teacher.id,
+                'teacher': request.teacher,
+            }
+            for request in completed_requests
+        ]
+   except Exception as e:
+        db.rollback()
+        print(e)
+        raise e
+
+@router.post('/upload')
+def upload_certificate(
+    request_id: str,
+    
 ):
     pass
+    # enforce size and type contraints on this file
+    # upload the file to cloud
+    # set the request status to processing
+    # perform basic checks for the information in the file (ocr)
+    # ensure the integrity of the qr code link
+    # download the verification qr code file to verify the certificate
+    # perform the verification 
+    # if verified, set the request status to completed, return the request
+    # if not verified, set the request status to error
+    

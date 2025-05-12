@@ -6,12 +6,13 @@ from fastapi import HTTPException, status, Request
 
 from app.config import config
 from app.schemas import TokenData
+from app.models import UserRole
 
 JWT_SECRET_KEY = config['JWT_SECRET_KEY']
 ALGORITHM = config['ALGORITHM']
+ACCESS_TOKEN_EXPIRE_MINUTES = config['ACCESS_TOKEN_EXPIRE_MINUTES']
 
-
-def create_access_token(data: Dict, expire_minutes: timedelta = timedelta(minutes=60)) -> str:
+def create_access_token(data: Dict, expire_minutes: timedelta = timedelta(int(ACCESS_TOKEN_EXPIRE_MINUTES))) -> str:
     to_encode = data.copy()
     expire_time = datetime.now(timezone.utc) + expire_minutes
 
@@ -25,7 +26,7 @@ def verify_access_token(token: str, credentials_exception: Exception) -> TokenDa
     if not token:
         raise credentials_exception
     try:
-        payload = jwt.decode(token, JWT_SECRET_KEY)
+        payload = jwt.decode(token, JWT_SECRET_KEY, [ALGORITHM])
         user_id = payload.user_id
         role = payload.role
 
@@ -42,7 +43,7 @@ def verify_access_token(token: str, credentials_exception: Exception) -> TokenDa
         raise credentials_exception
 
 
-def get_current_user(request: Request) -> TokenData:
+def get_current_user(request: Request, role: UserRole) -> TokenData:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Couldn't not validate credentials",
@@ -51,4 +52,19 @@ def get_current_user(request: Request) -> TokenData:
     jwt_token = request.cookie.get('access_token')
     token_data = verify_access_token(jwt_token, credentials_exception)
 
+    if not token_data.role == role.value:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid role"
+        )
+
     return token_data
+
+def get_current_student(request: Request) -> TokenData:
+    return get_current_user(request, UserRole.student)
+
+def get_current_teacher(request: Request) -> TokenData:
+    return get_current_user(request, UserRole.teacher)
+
+def get_current_admin(request: Request) -> TokenData:
+    return get_current_user(request, UserRole.admin)

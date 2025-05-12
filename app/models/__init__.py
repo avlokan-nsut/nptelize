@@ -7,6 +7,7 @@ from typing import List, Optional
 from cuid import cuid
 from sqlalchemy import Column, String, Enum, ForeignKey, Text, Boolean, DateTime, func
 from sqlalchemy.orm import relationship, Mapped
+from sqlalchemy.sql.expression import text
 
 from app.config.db import Base
 
@@ -27,7 +28,7 @@ class User(Base):
     role = Column(Enum(UserRole), nullable=False)
     roll_number = Column(String, nullable=True)
     employee_id = Column(String, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.utcnow, server_default=text('now()'))
 
     # Relationships
     subjects: Mapped[List["Subject"]] = relationship("Subject", back_populates="teacher", cascade="all, delete")
@@ -41,7 +42,7 @@ class Subject(Base):
 
     id = Column(String, primary_key=True, default=cuid)
     name = Column(String, nullable=False)
-    teacher_id = Column(String, ForeignKey("users.id"), nullable=False)
+    teacher_id = Column(String, ForeignKey("users.id"), unique=True, nullable=False)
 
     teacher: Mapped["User"] = relationship("User", back_populates="subjects")
     requests: Mapped[List["Request"]] = relationship("Request", back_populates="subject", cascade="all, delete")
@@ -59,7 +60,7 @@ class StudentSubject(Base):
 
 class RequestStatus(enum.Enum):
     pending = "pending"
-    uploaded = "uploaded"
+    completed = "completed"
     rejected = "rejected"
     error = "error"
 
@@ -72,7 +73,7 @@ class Request(Base):
     teacher_id = Column(String, ForeignKey("users.id"), nullable=False)
     student_id = Column(String, ForeignKey("users.id"), nullable=False)
     status = Column(Enum(RequestStatus), default=RequestStatus.pending)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.utcnow, server_default=text('now()'))
 
     subject: Mapped["Subject"] = relationship("Subject", back_populates="requests")
     teacher: Mapped["User"] = relationship("User", foreign_keys=[teacher_id], back_populates="requests_sent")
@@ -87,7 +88,7 @@ class Certificate(Base):
     request_id = Column(String, ForeignKey("requests.id"), nullable=False, unique=True)
     student_id = Column(String, ForeignKey("users.id"), nullable=False)
     file_url = Column(Text, nullable=False)
-    uploaded_at = Column(DateTime, default=datetime.utcnow)
+    uploaded_at = Column(DateTime, default=datetime.utcnow, server_default=text('now()'))
     verified = Column(Boolean, default=False)
 
     request: Mapped["Request"] = relationship("Request", back_populates="certificate")
