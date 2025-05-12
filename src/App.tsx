@@ -1,12 +1,14 @@
 import Navbar from "./components/Navbar";
+import History from "./components/student/History";
 import Dashboard from "./pages/student/Dashboard";
 
 function App() {
  
   return (
     <div >
-      <Navbar/>
+      {/* <Navbar/>
       <Dashboard/>
+      <History/> */}
      
     </div>
   );

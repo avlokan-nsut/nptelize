@@ -19,9 +19,9 @@ const data = [
     submittedDate: '2025-05-01',
     dueDate: '2025-06-01',
     reuploadCertificate: false,
-    // You can add more fields as needed
+   
   },
-  // Add more rows as needed
+  
 ];
 
 const CompletedRequest = () => {
