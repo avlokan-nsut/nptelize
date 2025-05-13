@@ -5,45 +5,58 @@ from typing import List
 from app.config.db import get_db
 from app.oauth2 import get_current_teacher
 from app.schemas import TokenData
-from app.router.teacher.schemas import AddStudentToSubjectSchema
+from app.router.teacher.schemas import AddStudentToSubjectSchema, SubjectResponse, EnrolledStudentResponse
 from app.models import User, UserRole, Subject, StudentSubject, Request
 
 
 router = APIRouter(prefix="/teacher")
 
-
-@router.get('/alloted-subjects')
+@router.get('/subjects', response_model=SubjectResponse)
 def get_alloted_subjects(
     db: Session = Depends(get_db),
     current_teacher: TokenData = Depends(get_current_teacher)
 ):
     subjects = db.query(Subject).filter(Subject.teacher_id == current_teacher.user_id).all()
-    return subjects
+    return {
+        'subjects': subjects
+    }
 
 
 @router.get('/request/{subject_id}')
 def get_student_requests(subject_id: str, db: Session = Depends(get_db), current_teacher: TokenData = Depends(get_current_teacher)):
-    pass 
     # requests for a particular subject
     requests = db.query(Request).filter(
         Request.subject_id == subject_id,
         Request.teacher_id == current_teacher.user_id
     ).all()
-    return requests
+    return {
+        'requests': requests
+    }
 
-@router.get('/students/{subject_id}')
+@router.get('/students/{subject_id}', response_model=EnrolledStudentResponse)
 def get_students_in_subject(
     subject_id: str,
     db: Session = Depends(get_db),
     current_teacher: TokenData = Depends(get_current_teacher)
 ):
     subject = db.query(Subject).filter(Subject.id == subject_id).first()
+
     if not subject:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Subject not found")
+
     if subject.teacher_id != current_teacher.user_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You are not authorized to view this subject")
     
-    return subject.enrolled_students
+    enrolled_students = db.query(User).join(
+        StudentSubject,
+        StudentSubject.student_id == User.id
+    ).filter(
+        StudentSubject.subject_id == subject_id
+    ).all()
+
+    return {
+        'enrolled_students': enrolled_students
+    }
 
 @router.post('/add/students')
 def add_students_to_subject(

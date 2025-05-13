@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import List, Optional
 
 from cuid import cuid
-from sqlalchemy import Column, String, Enum, ForeignKey, Text, Boolean, DateTime, func
+from sqlalchemy import Column, String, Enum, ForeignKey, Text, Boolean, DateTime
 from sqlalchemy.orm import relationship, Mapped
 from sqlalchemy.sql.expression import text
 
@@ -42,7 +42,8 @@ class Subject(Base):
 
     id = Column(String, primary_key=True, default=cuid)
     name = Column(String, nullable=False)
-    teacher_id = Column(String, ForeignKey("users.id"), unique=True, nullable=False)
+    subject_code = Column(String, unique=True, nullable=False)
+    teacher_id = Column(String, ForeignKey("users.id"), nullable=False)
 
     teacher: Mapped["User"] = relationship("User", back_populates="subjects")
     requests: Mapped[List["Request"]] = relationship("Request", back_populates="subject", cascade="all, delete")

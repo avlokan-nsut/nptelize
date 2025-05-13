@@ -25,7 +25,7 @@ def login(
     access_token = create_access_token(
         data={
             'email': user.email,
-            'role': user.role,
+            'role': user.role.value,
             'user_id': user.id,
             'name': user.name,
         }

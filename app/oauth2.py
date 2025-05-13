@@ -27,8 +27,8 @@ def verify_access_token(token: str, credentials_exception: Exception) -> TokenDa
         raise credentials_exception
     try:
         payload = jwt.decode(token, JWT_SECRET_KEY, [ALGORITHM])
-        user_id = payload.user_id
-        role = payload.role
+        user_id = payload['user_id']
+        role = payload['role']
 
         return TokenData(user_id=user_id, role=role)
 
@@ -49,7 +49,7 @@ def get_current_user(request: Request, role: UserRole) -> TokenData:
         detail="Couldn't not validate credentials",
     )
 
-    jwt_token = request.cookie.get('access_token')
+    jwt_token = request.cookies.get('access_token')
     token_data = verify_access_token(jwt_token, credentials_exception)
 
     if not token_data.role == role.value:
