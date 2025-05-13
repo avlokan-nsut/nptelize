@@ -20,6 +20,7 @@ class CertificateRequest(BaseModel):
     subject: str
     teacher_id: str
     teacher: str
+    status: str
 
 class CertificateRequestResponse(BaseModel):
     requests: List[CertificateRequest]

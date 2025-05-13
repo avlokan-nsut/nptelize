@@ -69,10 +69,10 @@ class RequestStatus(enum.Enum):
 class Request(Base):
     __tablename__ = "requests"
 
-    id = Column(String, primary_key=True, default=cuid)
-    subject_id = Column(String, ForeignKey("subjects.id"), nullable=False)
+    id = Column(String, unique=True, nullable=False, default=cuid)
+    subject_id = Column(String, ForeignKey("subjects.id"), primary_key=True, nullable=False)
+    student_id = Column(String, ForeignKey("users.id"), primary_key=True, nullable=False)
     teacher_id = Column(String, ForeignKey("users.id"), nullable=False)
-    student_id = Column(String, ForeignKey("users.id"), nullable=False)
     status = Column(Enum(RequestStatus), default=RequestStatus.pending)
     created_at = Column(DateTime, default=datetime.utcnow, server_default=text('now()'))
 

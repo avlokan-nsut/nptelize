@@ -13,7 +13,7 @@ from app.oauth2 import get_current_student
 router = APIRouter(prefix="/student")
 
 
-@router.get('/requests', response_model=CertificateRequestResponse)
+@router.post('/requests', response_model=CertificateRequestResponse)
 def get_certificate_requests(
     request_types: List[RequestStatus],
     db: Session = Depends(get_db),
@@ -33,6 +33,7 @@ def get_certificate_requests(
                     'subject': request.subject.name,
                     'teacher_id': request.teacher.id,
                     'teacher': request.teacher.name,
+                    'status': request.status,
                 }
                 for request in filtered_requests
             ]

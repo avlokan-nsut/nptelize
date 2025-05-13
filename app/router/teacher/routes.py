@@ -106,7 +106,14 @@ def add_students_to_subject(
                 subject_id=subject.id
             )
 
+            certificate_request = Request(
+                subject_id=student.subject_id,
+                student_id=db_student.id,
+                teacher_id=current_teacher.user_id,
+            )
+
             db.add(student_subject)
+            db.add(certificate_request)
             db.commit()
             db.refresh(student_subject)
 
