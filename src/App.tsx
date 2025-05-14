@@ -1,7 +1,8 @@
 import LoginForm from "./components/LoginForm";
 import Navbar from "./components/Navbar";
-import History from "./components/student/History";
-import Dashboard from "./pages/student/Dashboard";
+// import History from "./components/student/History";
+// import Dashboard from "./pages/student/Dashboard";
+import Dashboard from "./pages/faculty/Dashboard";
 
 function App() {
  
@@ -11,6 +12,7 @@ function App() {
       <Dashboard/>
       <History/> */}
      {/* <LoginForm/> */}
+     <Dashboard />
     </div>
   );
 }
