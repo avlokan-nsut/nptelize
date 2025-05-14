@@ -112,11 +112,11 @@ const Request = () => {
 
               
               <div className="mb-3">
-                <label className="font-medium">Students List (CSV File)</label>
+                <label className="font-medium">Students List (CSV or Excel File)</label>
                 <input
                   name="file"
                   type="file"
-                  // accept=".csv"
+                  accept=".csv , application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
                   onChange={handleChange}
                   className={`file-input file-input-bordered w-full mt-1 ${
                     errors.file && "file-input-error"
