@@ -1,15 +1,15 @@
 import Navbar from "./components/Navbar";
-import History from "./components/student/History";
-import Dashboard from "./pages/student/Dashboard";
-
+// import History from "./components/student/History";
+// import Dashboard from "./pages/student/Dashboard";
+import Dashboard from "./pages/faculty/Dashboard";
 function App() {
  
   return (
     <div >
-      {/* <Navbar/>
-      <Dashboard/>
+      <Navbar/>
+      {/* <Dashboard/>
       <History/> */}
-     
+      <Dashboard/>
     </div>
   );
 }
