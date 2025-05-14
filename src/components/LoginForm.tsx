@@ -1,5 +1,7 @@
-import { useState, ChangeEvent, FC } from "react";
+import { useState, ChangeEvent, FC, useEffect } from "react";
 import * as z from "zod";
+import { useAuthStore } from "../store/useAuthStore";
+import { useNavigate } from 'react-router-dom';
 
 const loginSchema = z.object({
     email: z
@@ -11,7 +13,7 @@ const loginSchema = z.object({
 
 type LoginFormData = z.infer<typeof loginSchema>;
 type LoginFormErrors = Partial<Record<keyof LoginFormData, string>>;
-type UserRole = "student" | "faculty";
+type UserRole = "student" | "teacher";
 
 const LoginForm: FC = () => {
     const [role, setRole] = useState<UserRole>("student");
@@ -23,6 +25,16 @@ const LoginForm: FC = () => {
     const [showPassword, setShowPassword] = useState<boolean>(false);
     const [isLoading, setIsLoading] = useState<boolean>(false);
 
+    const login = useAuthStore((state) => state.login);
+    const user = useAuthStore((state) => state.user);
+    const navigate = useNavigate();
+
+     useEffect(() => {
+    if (user) {
+      navigate('/');
+    }
+  }, [user, navigate]);
+    
     const eyeClosedIcon = (
         <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -75,16 +87,22 @@ const LoginForm: FC = () => {
         }
     };
 
-    const handleSubmit = (): void => {
+    const handleSubmit = async(): Promise<void> => {
         try {
             loginSchema.parse(formData);
 
             setErrors({});
             setIsLoading(true);
 
-            setTimeout(() => {
+            setTimeout(async() => {
                 console.log("Form submitted:", formData, "Role:", role);
                 setIsLoading(false);
+
+                const email = formData.email
+                const password = formData.password
+                
+                await login({ email, password,role })
+                
             }, 800);
         } catch (error) {
             if (error instanceof z.ZodError) {
@@ -106,7 +124,7 @@ const LoginForm: FC = () => {
             <div className="w-full max-w-md p-6 bg-white rounded-lg shadow-lg">
                 {/* Role Selection Tabs */}
                 <div className="flex mb-6 overflow-hidden border rounded-md">
-                    {(["student", "faculty"] as UserRole[]).map((type) => (
+                    {(["student", "teacher"] as UserRole[]).map((type) => (
                         <button
                             key={type}
                             type="button"
@@ -127,7 +145,7 @@ const LoginForm: FC = () => {
                     Login
                 </h2>
                 <p className="mb-6 text-center text-gray-500">
-                    Login as {role === "student" ? "Student" : "Faculty"}
+                    Login as {role === "student" ? "Student" : "Teacher"}
                 </p>
 
                 {/* Login Form */}
