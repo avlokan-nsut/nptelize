@@ -20,8 +20,7 @@ const data = [
     dueDate: '2025-06-01',
     reuploadCertificate: false,
    
-  },
-  
+  }, 
 ];
 
 const CompletedRequest = () => {
