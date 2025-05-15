@@ -1,4 +1,5 @@
 import { FaArrowRight } from "react-icons/fa";
+import { Link } from "react-router-dom";
 
 const headings = [
   "Subject Code",
@@ -20,6 +21,15 @@ const data = [
     notverified: 2,
     notsubmitted: 1,
   },
+  {
+    code: "FECS01",
+    name: "Computer Science Fundamentals",
+    duedate: "20/12/2025",
+    totalstudents: 6,
+    verified: 0,
+    notverified: 0,
+    notsubmitted: 6,
+  }
 ];
 
 const Table = function () {
@@ -49,9 +59,9 @@ const Table = function () {
               <td className="px-6 py-4 text-center">{row.notverified}</td>
               <td className="px-6 py-4 text-center">{row.notsubmitted}</td>
               <td>
-                <button className="btn btn-primary border-none bg-blue-400">
+                <Link to={`/faculty/students/${row.code}`} className="btn btn-primary border-none bg-black">
                   <FaArrowRight className="ml-2 text-xl text-white" />
-                </button>
+                </Link>
               </td>
             </tr>
           ))}

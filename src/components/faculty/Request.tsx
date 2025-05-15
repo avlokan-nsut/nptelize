@@ -44,7 +44,7 @@ const Request = () => {
     <>
       <button
         onClick={() => setIsopen(true)}
-        className="btn btn-primary border-none w-32 font-bold text-white bg-blue-400"
+        className="btn btn-primary border-none w-32 font-bold text-white bg-black"
       >
         New Request
       </button>
