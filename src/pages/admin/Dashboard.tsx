@@ -4,12 +4,11 @@ import CreateFaculty from '../../components/admin/CreateFaculty';
 import CreateAdmin from '../../components/admin/CreateAdmin';
 import CreateSubject from '../../components/admin/CreateSubject';
 
-type TabType = 'dashboard' | 'students' | 'faculty' | 'admins' | 'subjects';
+type TabType = 'students' | 'faculty' | 'admins' | 'subjects';
 
 const Dashboard = () => {
-  const [activeTab, setActiveTab] = useState<TabType>('dashboard');
+  const [activeTab, setActiveTab] = useState<TabType>('students');
 
-  // Render different content based on active tab
   const renderTabContent = () => {
     switch (activeTab) {
       case 'students':
