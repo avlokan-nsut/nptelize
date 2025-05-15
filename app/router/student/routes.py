@@ -29,11 +29,17 @@ def get_certificate_requests(
         return {
             'requests': [
                 {
-                    'subject_id': request.subject.id,
-                    'subject': request.subject.name,
-                    'teacher_id': request.teacher.id,
-                    'teacher': request.teacher.name,
+                    'subject': {
+                        'id': request.subject.id,
+                        'name': request.subject.name,
+                        'code': request.subject.subject_code,
+                        'teacher': {
+                            'id': request.teacher.id,
+                            'name': request.teacher.name,
+                        },
+                    },
                     'status': request.status,
+                    'due_date': request.due_date,
                 }
                 for request in filtered_requests
             ]

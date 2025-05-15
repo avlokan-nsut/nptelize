@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 from datetime import datetime
 
 # -----------------------------------------------------------------------
@@ -13,6 +13,7 @@ class TeacherLoginRequest(BaseModel):
 class AddStudentToSubjectSchema(BaseModel):
     email: str
     subject_id: str
+    due_date: Optional[datetime] = None
 
 # -----------------------------------------------------------------------
 # Response Schemas

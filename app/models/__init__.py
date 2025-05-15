@@ -75,6 +75,8 @@ class Request(Base):
     teacher_id = Column(String, ForeignKey("users.id"), nullable=False)
     status = Column(Enum(RequestStatus), default=RequestStatus.pending)
     created_at = Column(DateTime, default=datetime.utcnow, server_default=text('now()'))
+    updated_at = Column(DateTime, default=datetime.utcnow, server_default=text('now()'), onupdate=datetime.utcnow)
+    due_date = Column(DateTime, nullable=True)
 
     subject: Mapped["Subject"] = relationship("Subject", back_populates="requests")
     teacher: Mapped["User"] = relationship("User", foreign_keys=[teacher_id], back_populates="requests_sent")
@@ -90,6 +92,7 @@ class Certificate(Base):
     student_id = Column(String, ForeignKey("users.id"), nullable=False)
     file_url = Column(Text, nullable=False)
     uploaded_at = Column(DateTime, default=datetime.utcnow, server_default=text('now()'))
+    updated_at = Column(DateTime, default=datetime.utcnow, server_default=text('now()'), onupdate=datetime.utcnow)
     verified = Column(Boolean, default=False)
 
     request: Mapped["Request"] = relationship("Request", back_populates="certificate")

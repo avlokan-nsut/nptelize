@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from typing import List
+from datetime import datetime
 
 
 # -----------------------------------------------------------------------
@@ -15,15 +16,6 @@ class StudentLoginRequest(BaseModel):
 # Response Schemas
 # -----------------------------------------------------------------------
 
-class CertificateRequest(BaseModel):
-    subject_id: str
-    subject: str
-    teacher_id: str
-    teacher: str
-    status: str
-
-class CertificateRequestResponse(BaseModel):
-    requests: List[CertificateRequest]
 
 class Teacher(BaseModel):
     id: str
@@ -34,6 +26,15 @@ class Subject(BaseModel):
     code: str
     name: str
     teacher: Teacher
+
+class CertificateRequest(BaseModel):
+    subject: Subject
+    status: str
+    due_date: datetime | None
+
+class CertificateRequestResponse(BaseModel):
+    requests: List[CertificateRequest]
+
 
 class StudentSubjectsResponse(BaseModel):
     subjects: List[Subject]
