@@ -7,6 +7,7 @@ import Layout from './Layout';
 import LoginForm from './components/LoginForm';
 import StudentList from './pages/faculty/StudentList';
 import Dashboard from './pages/faculty/Dashboard';
+import AdminDashboard from './pages/admin/Dashboard';
 
 
 const routes = createBrowserRouter( 
@@ -15,11 +16,17 @@ const routes = createBrowserRouter(
       <Route index element={<App />} />
       <Route path="login" element={<LoginForm/>} />
       
+      {/* Faculty routes */}
       <Route path="faculty">
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="students/:subjectCode" element={<StudentList />} />
+        <Route path="students" element={<StudentList />} />
       </Route>
 
+      {/* Admin routes */}
+      <Route path="admin">
+        <Route path="dashboard" element={<AdminDashboard />} />
+      </Route>
     </Route>
   )
 );
