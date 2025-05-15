@@ -30,7 +30,25 @@ def get_student_requests(subject_id: str, db: Session = Depends(get_db), current
         Request.teacher_id == current_teacher.user_id
     ).all()
     return {
-        'requests': requests
+        'requests': [
+            {
+               'student': {
+                    'id': request.student.id,
+                    'name': request.student.name,
+                    'email': request.student.email,
+                    'roll_number': request.student.roll_number,
+                },
+                'subject': {
+                    'id': request.subject.id,
+                    'name': request.subject.name,
+                    'subject_code': request.subject.subject_code,
+                    'teacher_id': request.subject.teacher_id,
+                },
+                'status': request.status,
+                'created_at': request.created_at,
+            }
+            for request in requests
+        ]
     }
 
 @router.get('/students/{subject_id}', response_model=EnrolledStudentResponse)
