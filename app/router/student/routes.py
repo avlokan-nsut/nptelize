@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Body
 from sqlalchemy.orm import Session
 from typing import List
 
@@ -15,7 +15,7 @@ router = APIRouter(prefix="/student")
 
 @router.post('/requests', response_model=CertificateRequestResponse)
 def get_certificate_requests(
-    request_types: List[RequestStatus],
+    request_types: List[RequestStatus] = Body(embed=True),
     db: Session = Depends(get_db),
     current_student: TokenData = Depends(get_current_student),
 ):
