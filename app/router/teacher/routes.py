@@ -22,7 +22,7 @@ def get_alloted_subjects(
     }
 
 
-@router.get('/request/{subject_id}')
+@router.get('/requests/{subject_id}')
 def get_student_requests(subject_id: str, db: Session = Depends(get_db), current_teacher: TokenData = Depends(get_current_teacher)):
     # requests for a particular subject
     requests = db.query(Request).filter(
