@@ -18,3 +18,9 @@ class LoginResponse(BaseModel):
     message: str
     user_id: str
     name: str
+
+class UserInfoResponse(BaseModel):
+    user_id: str
+    name: str
+    email: str
+    role: str

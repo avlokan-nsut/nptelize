@@ -68,3 +68,14 @@ def get_current_teacher(request: Request) -> TokenData:
 
 def get_current_admin(request: Request) -> TokenData:
     return get_current_user(request, UserRole.admin)
+
+def get_current_user_role_agnostic(request: Request) -> TokenData:
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Couldn't not validate credentials",
+    )
+
+    jwt_token = request.cookies.get('access_token')
+    token_data = verify_access_token(jwt_token, credentials_exception)
+
+    return token_data
