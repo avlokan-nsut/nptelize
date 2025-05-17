@@ -1,6 +1,7 @@
 
 import RequestedTable from '../../components/student/RequestedTable'
 import CompletedRequest from '../../components/student/CompletedRequest'
+import History from '../../components/student/History'
 
 
 
@@ -13,6 +14,10 @@ const StudentDashboard: React.FC = () => {
       <hr className="my-12 h-0.5 border-t-0 bg-black" />
       <h1 className='text-center text-2xl font-semibold text-gray-800 m-10 tracking-wider'>Completed Requests</h1>
       <CompletedRequest/>
+      <hr className="my-12 h-0.5 border-t-0 bg-black" />
+      <h1 className='text-center text-2xl font-semibold text-gray-800 m-10 tracking-wider'>History</h1>
+      <History/>
+
     </div>
   )
 }

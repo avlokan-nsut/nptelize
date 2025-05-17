@@ -1,92 +1,142 @@
-import React from "react";
-import Pagination from "./Pagination";
+import { useQuery } from "@tanstack/react-query";
+import axios from "axios";
 
-
-type Data = {
-  subject_code: string;
-  subject_name: string;
-  coordinator: string;
-  status: string;
-  submitted_date: string;
-  due_date: string;
-};
-
-const data: Data[] = [
-  {
-    subject_code: "CS101",
-    subject_name: "Introduction to Programming",
-    coordinator: "Dr. Anita Sharma",
-    status: "Submitted",
-    submitted_date: "2025-05-01",
-    due_date: "2025-05-05"
-  },
-  {
-    subject_code: "CS101",
-    subject_name: "Introduction to Programming",
-    coordinator: "Dr. Anita Sharma",
-    status: "Submitted",
-    submitted_date: "2025-05-01",
-    due_date: "2025-05-05"
-  },
-  {
-    subject_code: "CS101",
-    subject_name: "Introduction to Programming",
-    coordinator: "Dr. Anita Sharma",
-    status: "Submitted",
-    submitted_date: "2025-05-01",
-    due_date: "2025-05-05"
-  },
-  
-  
-  
+const headings = [
+  "Subject Code",
+  "Subject Name",
+  "Coordinator",
+  "Status",
+  "Submitted Date",
+  "Due Date",
 ];
 
-const PAGE_SIZE = 15;
 
-export default function History() {
-  const [page, setPage] = React.useState(1);
+export type Teacher = {
+  id: string;
+  name: string;
+};
 
-  const totalPages = Math.ceil(data.length / PAGE_SIZE);
+export type Subject = {
+  id: string;
+  code: string;
+  name: string;
+  teacher: Teacher;
+};
 
-  const paginatedData = React.useMemo(
-    () => data.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
-    [page]
-  );
+export type Request = {
+  subject: Subject;
+  status: string;
+  due_date: string; 
+};
 
+export type ApiResponse = {
+  requests: Request[];
+};
+
+
+const fetchData = async () => {
+  const apiUrl = import.meta.env.VITE_API_URL;
+  const reqType = {
+    request_types: ["pending"],
+  };
+
+  const { data} = await axios.post<ApiResponse>(
+  `${apiUrl}/student/requests`,
+  reqType,
+  {
+    withCredentials: true,
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  }
+);
+
+
+  console.log(data);
+
+  return data;
+};
+
+function formatDateOnly(isoString: string): string {
+
+  if(isoString === null || isoString === undefined){
+    return "";
+  }
+
+  const date = new Date(isoString);
+
+  const options: Intl.DateTimeFormatOptions = {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  };
+
+  return date.toLocaleDateString('en-US', options);
+}
+
+
+const RequestedTable = () => {
+  const { data, error, isLoading } = useQuery({
+  queryKey: ["myData"],
+  queryFn: fetchData,
+  staleTime: 1000 * 60 * 1, 
+});
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="alert alert-error shadow-lg">
+          <div>
+            <span>{(error as any).message}</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center ">
+       <span className="loading loading-ring loading-xl"></span>
+      </div>
+    );
+  }
+
+
+  if(data){
+    console.log("hello");
   return (
-    <div className="container mx-auto px-4 py-4">
-      <h1 className='text-center text-2xl font-semibold text-gray-800 mb-5 tracking-wider'>History</h1>
     <div className="overflow-x-auto rounded-lg shadow-sm border border-gray-100 bg-white max-w-7xl mx-auto">
       <table className="table w-full">
         <thead className="bg-gray-200">
           <tr className="text-gray-600 text-sm font-medium">
-            <th>Subject code</th>
-            <th>Subject Name</th>
-            <th>Coordinator</th>
-            <th>Status</th>
-            <th>Submitted Date</th>
-            <th>Due Date</th>
+            {headings.map((heading, idx) => (
+              <th key={idx} className="px-6 py-4">
+                {heading}
+              </th>
+            ))}
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-100">
-          {paginatedData.map((row, idx) => (
-            <tr key={idx}>
-              <td>{row.subject_code}</td>
-              <td>{row.subject_name}</td>
-              <td>{row.coordinator}</td>
-              <td>{row.status}</td>
-              <td>{row.submitted_date}</td>
-              <td>{row.due_date}</td>
+          {data.requests.map((row, idx) => (
+            <tr
+              key={idx}
+              className="hover:bg-gray-50 transition-colors duration-200"
+            >
+              <td className="px-6 py-4 font-medium">{row.subject.code}</td>
+              <td className="px-6 py-4">{row.subject.name}</td>
+              <td className="px-6 py-4">{row.subject.teacher.name}</td>
+              <td className="px-6 py-4">{`${row.status?.[0]?.toUpperCase()}${row.status?.slice(1)}`
+}</td>
+              {/* <td className="px-6 py-4">{row.submitted_date || 'N/A'}</td> */}
+              <td className="px-6 py-4">{'N/A'}</td>
+              <td className="px-6 py-4">{formatDateOnly(row.due_date) || 'N/A'}</td>
             </tr>
           ))}
         </tbody>
       </table>
-      <Pagination
-        totalPages={totalPages}
-        currentPage={page}
-        onPageChange={setPage}
-      />
     </div>
-    </div>
-  );
-}
+
+  )};
+};
+
+export default RequestedTable;
