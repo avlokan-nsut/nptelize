@@ -3,6 +3,7 @@ import Navbar from "./components/Navbar";
 // import History from "./components/student/History";
 // import Dashboard from "./pages/student/Dashboard";
 import Dashboard from "./pages/faculty/Dashboard";
+import StudentTable from "./components/faculty/StudentTable";
 
 function App() {
  
@@ -12,7 +13,7 @@ function App() {
       <Dashboard/>
       <History/> */}
      {/* <LoginForm/> */}
-     <Dashboard />
+     {/* <Dashboard /> */}
     </div>
   );
 }
