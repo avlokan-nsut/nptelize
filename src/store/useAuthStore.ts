@@ -1,8 +1,11 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+
 interface User {
   user_id: string;
+  name : string;
+  role : string
 }
 
 interface Credentials {
@@ -40,6 +43,7 @@ export const useAuthStore = create<AuthState>()(
                 email : credentials.email,
                 password : credentials.password
             }),
+            credentials: 'include'
           });
 
           if (!response.ok) {
@@ -48,12 +52,32 @@ export const useAuthStore = create<AuthState>()(
           }
 
           const data = await response.json();
-          set({ user: { user_id: data.user_id }, loading: false });
+          set({ user: { user_id: data.user_id , name:data.name, role:credentials.role }, loading: false });
         } catch (error: any) {
           set({ error: error.message, loading: false });
         }
       },
-      logout: () => set({ user: null }),
+      logout: async () => {
+        try {
+          const response = await fetch(`${apiUrl}/user/logout`, {
+            method: "POST",
+            credentials: "include",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          });
+          const data = await response.json();
+          if (!response.ok) {
+            throw new Error(data.message || "Logout failed");
+          }
+          window.location.href = '/';
+          
+        } catch (err) {
+          console.error("Logout failed", err);
+        } finally {
+          set({ user: null });
+        }
+      },
     }),
     { name: 'auth-store' }
   )
