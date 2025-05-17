@@ -4,7 +4,7 @@ import CompletedRequest from '../../components/student/CompletedRequest'
 
 import { useAuthStore } from '../../store/useAuthStore';
 
-const Dashboard: React.FC = () => {
+const StudentDashboard: React.FC = () => {
    const user = useAuthStore((state) => state.user);
    const logout = useAuthStore((state) => state.logout);
   return (
@@ -26,4 +26,4 @@ const Dashboard: React.FC = () => {
   )
 }
 
-export default Dashboard
+export default StudentDashboard
