@@ -10,8 +10,10 @@ class TeacherLoginRequest(BaseModel):
     email: str
     password: str
 
-class AddStudentToSubjectSchema(BaseModel):
-    email: str
+
+
+class CreateCertificateRequestFields(BaseModel):
+    student_id: str
     subject_id: str
     due_date: Optional[datetime] = None
 

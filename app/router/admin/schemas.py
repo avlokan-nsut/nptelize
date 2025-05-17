@@ -1,5 +1,6 @@
 from pydantic import BaseModel, EmailStr
-from typing import List
+from typing import List, Optional
+from datetime import datetime
 
 # -----------------------------------------------------------------------
 # Request Schemas
@@ -22,8 +23,11 @@ class AdminCreate(UserBase):
 class SubjectCreate(BaseModel):
     name: str
     subject_code: str
-    teacher_id: str
 
+class AddStudentToSubjectSchema(BaseModel):
+    email: str
+    subject_code: str
+    due_date: Optional[datetime] = None
 # -----------------------------------------------------------------------
 # Response Schemas
 # -----------------------------------------------------------------------
@@ -32,8 +36,16 @@ class UserResponseFields(BaseModel):
     email: str
     success: bool
     message: str
+
+class CreateStudentResponseFields(UserResponseFields):
+    subject_code: str
+
+class CreateStudentResponse(BaseModel):
+    results: List[CreateStudentResponseFields]
+    
 class CreateUserResponse(BaseModel):
     results: List[UserResponseFields]
+
 
 class SubjectCreateResponseFields(BaseModel):
     subject_code: str

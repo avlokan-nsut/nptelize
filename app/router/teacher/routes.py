@@ -1,12 +1,12 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Body
 from sqlalchemy.orm import Session
 from typing import List
 
 from app.config.db import get_db
 from app.oauth2 import get_current_teacher
 from app.schemas import TokenData
-from app.router.teacher.schemas import AddStudentToSubjectSchema, SubjectResponse, EnrolledStudentResponse
-from app.models import User, UserRole, Subject, StudentSubject, Request
+from app.router.teacher.schemas import SubjectResponse, EnrolledStudentResponse, CreateCertificateRequestFields
+from app.models import User, UserRole, Subject, StudentSubject, Request, RequestStatus
 
 
 router = APIRouter(prefix="/teacher")
@@ -76,81 +76,78 @@ def get_students_in_subject(
         'enrolled_students': enrolled_students
     }
 
-@router.post('/add/students')
-def add_students_to_subject(
-    students: List[AddStudentToSubjectSchema],
+# TODO: Add a route to make certificate requests to a set of students by `id`
+
+@router.post('/students/request')
+def make_certificate_request_to_student(
+    student_request_data_list: List[CreateCertificateRequestFields] = Body(embed=True),
     db: Session = Depends(get_db),
-    current_teacher: TokenData = Depends(get_current_teacher)
+    current_teacher = Depends(get_current_teacher)
 ):
-    add_status = []
-    for student in students:
-        # check if student exists
+    results = []
+
+    for student_data in student_request_data_list:
         try:
-            db_student = db.query(User).filter(User.email == student.email, User.role == UserRole.student).first()
+            db_student = db.query(User).filter(User.id == student_data.student_id).first()
             if not db_student:
-                add_status.append({
-                    'email': student.email,
+                results.append({
+                    'student_id': student_data.student_id,
                     'success': False,
-                    'message': 'Student not found'
-                })
-                continue 
-
-            # check if subject exists
-            subject = db.query(Subject).filter(Subject.id == student.subject_id).first()
-            if not subject:
-                add_status.append({
-                    'email': student.email,
-                    'success': False,
-                    'message': 'Subject not found'
+                    'message': 'Student does not exist'
                 })
                 continue
-
-            # check if student is already enrolled in the subject
-            student_subject = db.query(StudentSubject).filter(
-                StudentSubject.student_id == db_student.id,
-                StudentSubject.subject_id == subject.id
+            
+            # Check if the student has already requested a certificate
+            existing_request = db.query(Request).filter(
+                Request.student_id == db_student.id,
+                Request.status == 'pending'
             ).first()
-            if student_subject:
-                add_status.append({
-                    'email': student.email,
+
+            if existing_request:
+                results.append({
+                    'student_id': student_data.student_id,
+                    'subject_id': student_data.subject_id,
                     'success': False,
-                    'message': 'Student already enrolled in the subject'
+                    'message': 'Student has already been requested for certificate'
                 })
                 continue
+                
+            # Create a new request
+            coordinator = db.query(User).filter(
+                User.role == UserRole.teacher,
+                User.id == current_teacher.user_id
+            ).first()
 
-            # add student to subject
-            student_subject = StudentSubject(
-                student_id=db_student.id,
-                subject_id=subject.id
-            )
+            if not coordinator:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Coordinator not found")
 
             certificate_request = Request(
-                subject_id=student.subject_id,
                 student_id=db_student.id,
-                teacher_id=current_teacher.user_id,
-                due_date=student.due_date
+                subject_id=student_data.subject_id,  # Assuming this is a general request
+                teacher_id=coordinator.id,  # Assigning the coordinator's ID
+                status=RequestStatus.pending,
             )
 
-            db.add(student_subject)
             db.add(certificate_request)
             db.commit()
-            db.refresh(student_subject)
 
-            add_status.append({
-                'email': student.email,
+            results.append({
+                'student_id': student_data.student_id,
+                'subject_id': student_data.subject_id,
                 'success': True,
-                'message': 'Student added to subject'
+                'message': 'Certificate request created successfully'
             })
+
         except Exception as e:
-            print(e)
             db.rollback()
-            add_status.append({
-                'email': student.email,
+            results.append({
+                'student_id': student_data.student_id,
+                'suject_id': student_data.subject_id,
                 'success': False,
-                'message': 'Unknown error while adding student to subject'
+                'message': str(e)
             })
-            continue
 
     return {
-        'status': add_status
+        'results': results
     }
+            

@@ -4,3 +4,6 @@ from pydantic import BaseModel
 class TokenData(BaseModel):
     user_id: str
     role: str
+
+class GenericResponse(BaseModel):
+    message: str
