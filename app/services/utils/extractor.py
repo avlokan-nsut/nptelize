@@ -10,7 +10,7 @@ def extract_text_from_first_page(pdf_path: str) -> str:
     return text
 
 
-def extractor(pdf_path: str) -> Tuple[str, str, str, str] | Tuple[None, None, None, None]:
+def extract_student_info_from_pdf(pdf_path: str) -> Tuple[str, str, str, str] | Tuple[None, None, None, None]:
     text = extract_text_from_first_page(pdf_path)
     lines = text.splitlines()
 
