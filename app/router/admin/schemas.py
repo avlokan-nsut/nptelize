@@ -1,6 +1,5 @@
 from pydantic import BaseModel, EmailStr
-from typing import List, Optional
-from datetime import datetime
+from typing import List
 
 # -----------------------------------------------------------------------
 # Request Schemas
@@ -27,7 +26,7 @@ class SubjectCreate(BaseModel):
 class AddStudentToSubjectSchema(BaseModel):
     email: str
     subject_code: str
-    due_date: Optional[datetime] = None
+
 # -----------------------------------------------------------------------
 # Response Schemas
 # -----------------------------------------------------------------------

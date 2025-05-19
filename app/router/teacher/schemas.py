@@ -44,6 +44,21 @@ class StudentCertificateRequest(BaseModel):
     subject: Subject
     status: str
     created_at: datetime
+    updated_at: datetime
+    due_date: Optional[datetime] = None
     
 class GetStudentRequestsResponse(BaseModel):
     requests: List[StudentCertificateRequest]
+
+class GetRequestByIdResponse(BaseModel):
+    request: StudentCertificateRequest
+
+class MakeCertificateRequestResult(BaseModel):
+    success: bool
+    message: str
+    request_id: Optional[str] = None
+    student_id: str
+    subject_id: str
+
+class MakeCertificateRequestResponse(BaseModel):
+    results: List[MakeCertificateRequestResult]
