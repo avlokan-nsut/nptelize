@@ -10,6 +10,7 @@ import StudentList from './pages/faculty/StudentList';
 import Dashboard from './pages/faculty/Dashboard';
 import AdminDashboard from './pages/admin/Dashboard';
 import StudentDashboard from './pages/student/Dashboard';
+import AdminLoginForm from './components/admin/LoginForm';
 
 
 const queryClient = new QueryClient();
@@ -29,6 +30,7 @@ const routes = createBrowserRouter(
 
       {/* Admin routes */}
       <Route path="admin">
+        <Route path = "login" element={<AdminLoginForm />} />
         <Route path="dashboard" element={<AdminDashboard />} />
       </Route>
 

@@ -1,6 +1,6 @@
 import { useState, ChangeEvent, FC, useEffect } from "react";
 import * as z from "zod";
-import { useAuthStore } from "../store/useAuthStore";
+import { useAuthStore } from "../../store/useAuthStore";
 import { useNavigate } from 'react-router-dom';
 
 const loginSchema = z.object({
@@ -13,10 +13,10 @@ const loginSchema = z.object({
 
 type LoginFormData = z.infer<typeof loginSchema>;
 type LoginFormErrors = Partial<Record<keyof LoginFormData, string>>;
-type UserRole = "student" | "teacher";
+type UserRole = "admin";
 
-const LoginForm: FC = () => {
-    const [role, setRole] = useState<UserRole>("student");
+const AdminLoginForm: FC = () => {
+    const [role] = useState<UserRole>("admin");
     const [formData, setFormData] = useState<LoginFormData>({
         email: "",
         password: "",
@@ -101,7 +101,7 @@ const LoginForm: FC = () => {
                 const email = formData.email
                 const password = formData.password
                 
-                await login({ email, password,role })
+                await login({ email, password, role })
                 
             }, 800);
         } catch (error) {
@@ -122,30 +122,12 @@ const LoginForm: FC = () => {
     return (
         <div className="p-4 flex items-center justify-center min-h-screen bg-gray-50">
             <div className="w-full max-w-md p-6 bg-white rounded-lg shadow-lg">
-                {/* Role Selection Tabs */}
-                <div className="flex mb-6 overflow-hidden border rounded-md">
-                    {(["student", "teacher"] as UserRole[]).map((type) => (
-                        <button
-                            key={type}
-                            type="button"
-                            className={`w-1/2 py-2 text-center font-medium transition-colors ${
-                                role === type
-                                    ? "bg-black text-white"
-                                    : "bg-white text-gray-600 hover:bg-gray-100"
-                            }`}
-                            onClick={() => setRole(type)}
-                        >
-                            {type.charAt(0).toUpperCase() + type.slice(1)}
-                        </button>
-                    ))}
-                </div>
-
                 {/* Login Header */}
                 <h2 className="mb-1 text-2xl font-bold text-center text-gray-800">
-                    Login
+                    Admin Login
                 </h2>
                 <p className="mb-6 text-center text-gray-500">
-                    Login as {role === "student" ? "Student" : "Teacher"}
+                    Login to admin dashboard
                 </p>
 
                 {/* Login Form */}
@@ -226,4 +208,4 @@ const LoginForm: FC = () => {
     );
 };
 
-export default LoginForm;
+export default AdminLoginForm;
