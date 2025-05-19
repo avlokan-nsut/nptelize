@@ -3,26 +3,50 @@ import CreateStudent from '../../components/admin/CreateStudent';
 import CreateFaculty from '../../components/admin/CreateFaculty';
 import CreateAdmin from '../../components/admin/CreateAdmin';
 import CreateSubject from '../../components/admin/CreateSubject';
+import EnrollStudents from '../../components/admin/EnrollStudents';
+import StudentTable from '../../components/admin/StudentTable';
+import TeacherTable from '../../components/admin/TeacherTable';
+import SubjectTable from '../../components/admin/SubjectTable';
 
-type TabType = 'students' | 'faculty' | 'admins' | 'subjects';
+type TabType = 
+  'createStudents' | 
+  'createFaculty' | 
+  'createAdmins' | 
+  'createSubjects' | 
+  'enrollStudents' | 
+  'viewStudents' | 
+  'viewFaculty' | 
+  'viewSubjects';
 
 const Dashboard = () => {
-  const [activeTab, setActiveTab] = useState<TabType>('students');
+  const [activeTab, setActiveTab] = useState<TabType>('createStudents');
 
   const renderTabContent = () => {
     switch (activeTab) {
-      case 'students':
+      case 'createStudents':
         return <CreateStudent />;
-      case 'faculty':
+      case 'createFaculty':
         return <CreateFaculty />;
-      case 'admins':
+      case 'createAdmins':
         return <CreateAdmin />;
-      case 'subjects':
+      case 'createSubjects':
         return <CreateSubject />;
+      case 'enrollStudents':
+        return <EnrollStudents />;
+      case 'viewStudents':
+        return <StudentTable />;
+      case 'viewFaculty':
+        return <TeacherTable />;
+      case 'viewSubjects':
+        return <SubjectTable />;
       default:
         return null;
     }
   };
+  
+  const isViewTab = activeTab.startsWith('view');
+  const isCreateTab = activeTab.startsWith('create');
+  const isEnrollTab = activeTab === 'enrollStudents';
   
   return (
     <div className="mx-auto px-4 py-8 max-w-7xl">
@@ -32,37 +56,137 @@ const Dashboard = () => {
         </h1>
       </div>
       
-      {/* Tab Navigation */}
-      <div className="flex border-b border-gray-200 mb-6 overflow-x-auto">
-        <button 
-          className={`py-2 px-6 font-medium whitespace-nowrap ${activeTab === 'students' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500'}`}
-          onClick={() => setActiveTab('students')}
-        >
-          Create Students
-        </button>
-        <button 
-          className={`py-2 px-6 font-medium whitespace-nowrap ${activeTab === 'faculty' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500'}`}
-          onClick={() => setActiveTab('faculty')}
-        >
-          Create Faculty
-        </button>
-        <button 
-          className={`py-2 px-6 font-medium whitespace-nowrap ${activeTab === 'admins' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500'}`}
-          onClick={() => setActiveTab('admins')}
-        >
-          Create Admins
-        </button>
-        <button 
-          className={`py-2 px-6 font-medium whitespace-nowrap ${activeTab === 'subjects' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500'}`}
-          onClick={() => setActiveTab('subjects')}
-        >
-          Create Subjects
-        </button>
-      </div>
-      
-      {/* Content Area */}
-      <div className="bg-white p-6 rounded-lg shadow">
-        {renderTabContent()}
+      {/* Main Content Tabs */}
+      <div className="mb-6">
+        <div className="bg-white rounded-lg shadow overflow-hidden">
+          {/* Tab Navigation */}
+          <div className="flex items-center border-b border-gray-200 bg-gray-50">
+            <div className="flex-1">
+              <nav className="flex -mb-px">
+                <button 
+                  className={`mr-1 py-4 px-6 text-center border-b-2 font-medium text-sm ${
+                    isViewTab
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                  onClick={() => setActiveTab('viewStudents')}
+                >
+                  View Data
+                </button>
+                <button 
+                  className={`mr-1 py-4 px-6 text-center border-b-2 font-medium text-sm ${
+                    isCreateTab
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                  onClick={() => setActiveTab('createStudents')}
+                >
+                  Create New
+                </button>
+                <button 
+                  className={`mr-1 py-4 px-6 text-center border-b-2 font-medium text-sm ${
+                    isEnrollTab
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                  onClick={() => setActiveTab('enrollStudents')}
+                >
+                  Enroll Students
+                </button>
+              </nav>
+            </div>
+          </div>
+          
+          {/* Sub Navigation */}
+          {isViewTab && (
+            <div className="bg-white px-6 py-2 border-b border-gray-200">
+              <div className="flex space-x-4">
+                <button
+                  className={`px-3 py-2 text-sm rounded-md ${
+                    activeTab === 'viewStudents' 
+                    ? 'bg-blue-50 text-blue-700 font-medium' 
+                    : 'text-gray-600 hover:bg-gray-50'
+                  }`}
+                  onClick={() => setActiveTab('viewStudents')}
+                >
+                  Students
+                </button>
+                <button
+                  className={`px-3 py-2 text-sm rounded-md ${
+                    activeTab === 'viewFaculty' 
+                    ? 'bg-blue-50 text-blue-700 font-medium' 
+                    : 'text-gray-600 hover:bg-gray-50'
+                  }`}
+                  onClick={() => setActiveTab('viewFaculty')}
+                >
+                  Faculty
+                </button>
+                <button
+                  className={`px-3 py-2 text-sm rounded-md ${
+                    activeTab === 'viewSubjects' 
+                    ? 'bg-blue-50 text-blue-700 font-medium' 
+                    : 'text-gray-600 hover:bg-gray-50'
+                  }`}
+                  onClick={() => setActiveTab('viewSubjects')}
+                >
+                  Subjects
+                </button>
+              </div>
+            </div>
+          )}
+          
+          {isCreateTab && (
+            <div className="bg-white px-6 py-2 border-b border-gray-200">
+              <div className="flex space-x-4">
+                <button
+                  className={`px-3 py-2 text-sm rounded-md ${
+                    activeTab === 'createStudents' 
+                    ? 'bg-blue-50 text-blue-700 font-medium' 
+                    : 'text-gray-600 hover:bg-gray-50'
+                  }`}
+                  onClick={() => setActiveTab('createStudents')}
+                >
+                  Students
+                </button>
+                <button
+                  className={`px-3 py-2 text-sm rounded-md ${
+                    activeTab === 'createFaculty' 
+                    ? 'bg-blue-50 text-blue-700 font-medium' 
+                    : 'text-gray-600 hover:bg-gray-50'
+                  }`}
+                  onClick={() => setActiveTab('createFaculty')}
+                >
+                  Faculty
+                </button>
+                <button
+                  className={`px-3 py-2 text-sm rounded-md ${
+                    activeTab === 'createAdmins' 
+                    ? 'bg-blue-50 text-blue-700 font-medium' 
+                    : 'text-gray-600 hover:bg-gray-50'
+                  }`}
+                  onClick={() => setActiveTab('createAdmins')}
+                >
+                  Admins
+                </button>
+                <button
+                  className={`px-3 py-2 text-sm rounded-md ${
+                    activeTab === 'createSubjects' 
+                    ? 'bg-blue-50 text-blue-700 font-medium' 
+                    : 'text-gray-600 hover:bg-gray-50'
+                  }`}
+                  onClick={() => setActiveTab('createSubjects')}
+                >
+                  Subjects
+                </button>
+              </div>
+            </div>
+          )}
+          
+          {/* Content Area */}
+          <div className="p-6">
+            {renderTabContent()}
+          </div>
+        </div>
       </div>
     </div>
   );

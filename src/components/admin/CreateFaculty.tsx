@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
+import { useMutation } from "@tanstack/react-query";
+import axios from "axios";
 
 interface TeacherForm {
   name: string;
@@ -7,7 +9,25 @@ interface TeacherForm {
   employee_id: string;
 }
 
+const postTeachers = async (teachers: TeacherForm[]) => {
+  const apiUrl = import.meta.env.VITE_API_URL;
+  const response = await axios.post(
+    `${apiUrl}/admin/create/teachers`,
+    teachers,
+    {
+      withCredentials: true,
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }
+  );
+  return response.data;
+};
+
 const CreateFaculty = () => {
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [csvFile, setCsvFile] = useState<File | null>(null);
+
   const [teachers, setTeachers] = useState<TeacherForm[]>([{
     name: '',
     email: '',
@@ -18,6 +38,20 @@ const CreateFaculty = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // React Query mutation for creating faculty
+  const mutation = useMutation({
+    mutationFn: postTeachers,
+    onSuccess: () => {
+      setSuccessMessage(`Successfully created faculty members`);
+      setTeachers([{ name: '', email: '', password: '', employee_id: '' }]);
+      setIsSubmitting(false);
+    },
+    onError: () => {
+      setError("Failed to create faculty members");
+      setIsSubmitting(false);
+    },
+  });
 
   const handleAddTeacher = () => {
     setTeachers([
@@ -39,7 +73,6 @@ const CreateFaculty = () => {
     };
     setTeachers(updatedTeachers);
   };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -56,16 +89,40 @@ const CreateFaculty = () => {
       return;
     }
 
-    // Mock form submission
+    // Form submission
     setIsSubmitting(true);
     setError(null);
     
-    // Simulate API call with timeout
-    setTimeout(() => {
-      setSuccessMessage(`Successfully created ${teachers.length} faculty member${teachers.length > 1 ? 's' : ''}`);
-      setTeachers([{ name: '', email: '', password: '', employee_id: '' }]);
-      setIsSubmitting(false);
-    }, 1000);
+    mutation.mutate(teachers);
+  };
+
+  // CSV file upload
+  const handleCSVChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setCsvFile(e.target.files?.[0] || null);
+  };
+
+  const handleCSVUpload = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!csvFile) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target?.result as string;
+      const lines = text.split("\n").filter(Boolean);
+      const headers = lines[0].split(",").map((h) => h.trim());
+      const teachersFromCSV = lines.slice(1).map((line) => {
+        const values = line.split(",").map((v) => v.trim());
+        const teacher: any = {};
+        headers.forEach((header, i) => {
+          teacher[header] = values[i];
+        });
+        console.log(teacher);
+        return teacher;
+      });
+      setIsSubmitting(true);
+      mutation.mutate(teachersFromCSV);
+    };
+    reader.readAsText(csvFile);
   };
 
   return (
@@ -85,6 +142,60 @@ const CreateFaculty = () => {
           {error}
         </div>
       )}
+
+      {/* CSV Upload Section */}
+      <div className="mb-6 p-5 border border-gray-200 rounded-lg bg-gray-50 shadow-sm">
+        <h3 className="text-lg font-medium mb-4">Import Faculty via CSV</h3>
+
+        <form
+          onSubmit={handleCSVUpload}
+          className="flex flex-col sm:flex-row items-start sm:items-center gap-4"
+        >
+          <input
+            type="file"
+            accept=".csv"
+            onChange={handleCSVChange}
+            ref={fileInputRef}
+            style={{ display: "none" }}
+            className="file-input file-input-neutral"
+          />
+
+          <button
+            type="button"
+            className="px-4 py-2 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors text-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            Select CSV File
+          </button>
+
+          {csvFile ? (
+            <div className="flex-1 px-3 py-2 bg-white border border-gray-300 rounded-md text-sm text-gray-600 truncate max-w-xs">
+              {csvFile.name}
+            </div>
+          ) : (
+            <div className="flex-1 px-3 py-2 bg-white border border-dashed border-gray-300 rounded-md text-sm text-gray-400">
+              No file selected
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={!csvFile}
+            className={`px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors ${
+              !isSubmitting
+                ? "btn btn-neutral hover:bg-gray-800"
+                : "bg-gray-200 text-gray-500 cursor-not-allowed"
+            }`}
+          >
+            {isSubmitting ? "Creating..." : "Create Faculty"}
+          </button>
+        </form>
+
+        <p className="mt-3 text-xs text-gray-500">
+          CSV should include columns with headings as name, email, password, and
+          employee_id
+        </p>
+      </div>
 
       <form onSubmit={handleSubmit}>
         {teachers.map((teacher, index) => (
