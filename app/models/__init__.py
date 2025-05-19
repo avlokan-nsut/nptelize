@@ -92,6 +92,7 @@ class Certificate(Base):
     request_id = Column(String, ForeignKey("requests.id"), nullable=False, unique=True)
     student_id = Column(String, ForeignKey("users.id"), nullable=False)
     file_url = Column(Text, nullable=False)
+    verification_file_url = Column(Text, nullable=True)
     uploaded_at = Column(DateTime, default=datetime.utcnow, server_default=text('now()'))
     updated_at = Column(DateTime, default=datetime.utcnow, server_default=text('now()'), onupdate=datetime.utcnow)
     verified = Column(Boolean, default=False)
