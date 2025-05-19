@@ -61,6 +61,7 @@ class StudentSubject(Base):
 
 class RequestStatus(enum.Enum):
     pending = "pending"
+    processing = "processing"
     completed = "completed"
     rejected = "rejected"
     error = "error"
@@ -94,6 +95,7 @@ class Certificate(Base):
     uploaded_at = Column(DateTime, default=datetime.utcnow, server_default=text('now()'))
     updated_at = Column(DateTime, default=datetime.utcnow, server_default=text('now()'), onupdate=datetime.utcnow)
     verified = Column(Boolean, default=False)
+    remark = Column(String, nullable=True)
 
     request: Mapped["Request"] = relationship("Request", back_populates="certificate")
     student: Mapped["User"] = relationship("User", back_populates="certificates")
