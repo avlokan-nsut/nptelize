@@ -35,6 +35,14 @@ class CertificateRequest(BaseModel):
 class CertificateRequestResponse(BaseModel):
     requests: List[CertificateRequest]
 
+class CertificateResponse(BaseModel):
+    id: str
+    request_id: str
+    student_id: str
+    file_url: str
+    verified: bool
+    uploaded_at: datetime
+    updated_at: datetime
 
 class StudentSubjectsResponse(BaseModel):
     subjects: List[Subject]
