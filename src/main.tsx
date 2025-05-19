@@ -45,7 +45,7 @@ const routes = createBrowserRouter(
             {/* Protected Routes */}
 
             {/* Faculty routes */}
-            <Route element={<ProtectedRoute allowedRoles={["faculty"]} />}>
+            <Route element={<ProtectedRoute allowedRoles={["teacher"]} />}>
                 <Route path="faculty/dashboard" element={<Dashboard />} />
                 <Route
                     path="faculty/students/:subjectCode"

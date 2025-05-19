@@ -58,7 +58,7 @@ const Navbar = () => {
               <span className="text-gray-700 font-medium">
                 <div className="avatar avatar-placeholder">
                   <div className="bg-neutral text-neutral-content w-10 rounded-full">
-                    <span className="text-xl">{user.name[0]}</span>
+                    <span className="text-xl">{user.name[0].toUpperCase()}</span>
                   </div>
                 </div>
               </span>
