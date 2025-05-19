@@ -3,11 +3,20 @@ import CreateStudent from '../../components/admin/CreateStudent';
 import CreateFaculty from '../../components/admin/CreateFaculty';
 import CreateAdmin from '../../components/admin/CreateAdmin';
 import CreateSubject from '../../components/admin/CreateSubject';
+import EnrollStudents from '../../components/admin/EnrollStudents';
 import StudentTable from '../../components/admin/StudentTable';
 import TeacherTable from '../../components/admin/TeacherTable';
 import SubjectTable from '../../components/admin/SubjectTable';
 
-type TabType = 'createStudents' | 'createFaculty' | 'createAdmins' | 'createSubjects' | 'viewStudents' | 'viewFaculty' | 'viewSubjects';
+type TabType = 
+  'createStudents' | 
+  'createFaculty' | 
+  'createAdmins' | 
+  'createSubjects' | 
+  'enrollStudents' | 
+  'viewStudents' | 
+  'viewFaculty' | 
+  'viewSubjects';
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState<TabType>('createStudents');
@@ -22,6 +31,8 @@ const Dashboard = () => {
         return <CreateAdmin />;
       case 'createSubjects':
         return <CreateSubject />;
+      case 'enrollStudents':
+        return <EnrollStudents />;
       case 'viewStudents':
         return <StudentTable />;
       case 'viewFaculty':
@@ -35,6 +46,7 @@ const Dashboard = () => {
   
   const isViewTab = activeTab.startsWith('view');
   const isCreateTab = activeTab.startsWith('create');
+  const isEnrollTab = activeTab === 'enrollStudents';
   
   return (
     <div className="mx-auto px-4 py-8 max-w-7xl">
@@ -70,6 +82,16 @@ const Dashboard = () => {
                   onClick={() => setActiveTab('createStudents')}
                 >
                   Create New
+                </button>
+                <button 
+                  className={`mr-1 py-4 px-6 text-center border-b-2 font-medium text-sm ${
+                    isEnrollTab
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                  onClick={() => setActiveTab('enrollStudents')}
+                >
+                  Enroll Students
                 </button>
               </nav>
             </div>

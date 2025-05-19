@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import SubjectStudentsTable from './SubjectStudentsTable';
 
 interface Subject {
   id: string;
@@ -20,6 +21,7 @@ const SubjectTable = () => {
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -27,7 +29,6 @@ const SubjectTable = () => {
         setLoading(true);
         const apiUrl = import.meta.env.VITE_API_URL;
         
-        // Fetch subjects and teachers in parallel
         const [subjectsResponse, teachersResponse] = await Promise.all([
           axios.get(`${apiUrl}/admin/get/subjects`, { withCredentials: true }),
           axios.get(`${apiUrl}/admin/get/teachers`, { withCredentials: true })
@@ -69,37 +70,61 @@ const SubjectTable = () => {
       </div>
     );
   }
-
   return (
     <div>
       <h2 className="text-xl font-semibold mb-4">Subject List</h2>
-      <div className="overflow-x-auto">
-        <table className="min-w-full bg-white rounded-lg overflow-hidden">          <thead className="bg-gray-100">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subject Name</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subject Code</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assigned Faculty</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200">
-            {subjects.length > 0 ? (
-              subjects.map((subject) => (
-                <tr key={subject.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{subject.name}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{subject.subject_code}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{getTeacherName(subject.teacher_id)}</td>
-                </tr>
-              ))
-            ) : (
+      
+      {selectedSubject ? (
+        <div className="mb-6">
+          <button 
+            onClick={() => setSelectedSubject(null)}
+            className="mb-4 px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md flex items-center"
+          >
+            <span className="mr-1">←</span> Back to subjects
+          </button>
+          <SubjectStudentsTable 
+            subjectId={selectedSubject.id} 
+            subjectName={selectedSubject.name} 
+          />
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="min-w-full bg-white rounded-lg overflow-hidden">
+            <thead className="bg-gray-100">
               <tr>
-                <td colSpan={3} className="px-6 py-4 text-center text-sm text-gray-500">
-                  No subjects found
-                </td>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subject Name</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subject Code</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assigned Faculty</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
               </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody className="divide-y divide-gray-200">
+              {subjects.length > 0 ? (
+                subjects.map((subject) => (
+                  <tr key={subject.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{subject.name}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{subject.subject_code}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{getTeacherName(subject.teacher_id)}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <button 
+                        onClick={() => setSelectedSubject(subject)}
+                        className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                      >
+                        View Students
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={4} className="px-6 py-4 text-center text-sm text-gray-500">
+                    No subjects found
+                  </td>
+                </tr>              )}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 };
