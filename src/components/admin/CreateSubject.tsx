@@ -5,7 +5,6 @@ import axios from "axios";
 interface SubjectForm {
   name: string;
   subject_code: string;
-  teacher_id: string;
 }
 
 const postSubjects = async (subjects: SubjectForm[]) => {
@@ -23,23 +22,13 @@ const postSubjects = async (subjects: SubjectForm[]) => {
   return response.data;
 };
 
-// Mock teacher data
-const mockTeachers = [
-  { id: '1', name: 'Dr. John Smith', employee_id: 'EMP001' },
-  { id: '2', name: 'Prof. Sarah Johnson', employee_id: 'EMP002' },
-  { id: '3', name: 'Dr. Michael Brown', employee_id: 'EMP003' },
-  { id: '4', name: 'Prof. Lisa Davis', employee_id: 'EMP004' },
-  { id: '5', name: 'Dr. Robert Wilson', employee_id: 'EMP005' },
-];
-
 const CreateSubject = () => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [csvFile, setCsvFile] = useState<File | null>(null);
 
   const [subjects, setSubjects] = useState<SubjectForm[]>([{
     name: '',
-    subject_code: '',
-    teacher_id: ''
+    subject_code: ''
   }]);
   
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -51,7 +40,7 @@ const CreateSubject = () => {
     mutationFn: postSubjects,
     onSuccess: () => {
       setSuccessMessage(`Successfully created subjects`);
-      setSubjects([{ name: '', subject_code: '', teacher_id: '' }]);
+      setSubjects([{ name: '', subject_code: '' }]);
       setIsSubmitting(false);
     },
     onError: () => {
@@ -63,7 +52,7 @@ const CreateSubject = () => {
   const handleAddSubject = () => {
     setSubjects([
       ...subjects,
-      { name: '', subject_code: '', teacher_id: '' }
+      { name: '', subject_code: '' }
     ]);
   };
 
@@ -86,8 +75,7 @@ const CreateSubject = () => {
     // Validate form
     const isValid = subjects.every(subject => 
       subject.name.trim() !== '' && 
-      subject.subject_code.trim() !== '' && 
-      subject.teacher_id.trim() !== ''
+      subject.subject_code.trim() !== ''
     );
     
     if (!isValid) {
@@ -120,9 +108,11 @@ const CreateSubject = () => {
         const values = line.split(",").map((v) => v.trim());
         const subject: any = {};
         headers.forEach((header, i) => {
-          subject[header] = values[i];
+          // Only include name and subject_code fields
+          if (header === 'name' || header === 'subject_code') {
+            subject[header] = values[i];
+          }
         });
-        console.log(subject);
         return subject;
       });
       setIsSubmitting(true);
@@ -198,8 +188,7 @@ const CreateSubject = () => {
         </form>
 
         <p className="mt-3 text-xs text-gray-500">
-          CSV should include columns with headings as name, subject_code, and
-          teacher_id
+          CSV should include columns with headings as name and subject_code
         </p>
       </div>
 
@@ -240,23 +229,6 @@ const CreateSubject = () => {
                   className="w-full p-2 border border-gray-300 rounded"
                   required
                 />
-              </div>
-              
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Assign Faculty</label>
-                <select
-                  value={subject.teacher_id}
-                  onChange={(e) => handleChange(index, 'teacher_id', e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded"
-                  required
-                >
-                  <option value="">Select a faculty member</option>
-                  {mockTeachers.map((teacher) => (
-                    <option key={teacher.id} value={teacher.id}>
-                      {teacher.name} ({teacher.employee_id})
-                    </option>
-                  ))}
-                </select>
               </div>
             </div>
           </div>
