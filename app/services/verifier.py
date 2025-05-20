@@ -1,11 +1,15 @@
+from fastapi import HTTPException, status
+from datetime import datetime, timezone
 from sqlalchemy.orm import Session
+from typing import Tuple, Optional, cast
+
+from app.models import Request, RequestStatus, Certificate
+
 from .utils.qr_extraction import extract_link
 from .utils.downloader import download_verification_pdf
 from .utils.extractor import extract_student_info_from_pdf
-from fastapi import HTTPException, status
-from app.models import Request, RequestStatus, Certificate
 
-from typing import Tuple, Optional, cast
+
 
 
 import tempfile
@@ -30,7 +34,12 @@ class Verifier:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Request not found or does not belong to the current student"
             ) 
-
+        
+        if db_request.due_date and datetime.now(timezone.utc) > db_request.due_date:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Request is past the due date"
+            )
 
         db_request.status = RequestStatus.processing
 
@@ -85,7 +94,7 @@ class Verifier:
             )
 
             if not success:
-                self.update_status_to_rejected(db_request, db_certificate, "Verification failed due to mismatched data")
+                self.update_status_to_rejected(db_request, db_certificate, output)
                 return
             
             # Now, since verification has been done, update the final status to all good
@@ -117,7 +126,7 @@ class Verifier:
             or uploaded_total_marks is None
             or uploaded_roll_number is None
         ):
-            return False, "Invalid PDF uploaded", None, None
+            return False, "Invalid PDF uploaded. Data missing.", None, None
         
         if (
             valid_course_name is None
