@@ -14,6 +14,7 @@ def check_config() -> None:
         'JWT_SECRET_KEY',
         'ALGORITHM',
         'ACCESS_TOKEN_EXPIRE_MINUTES'
+        'ENV',
     ]
     
     for var in required_env_vars:
