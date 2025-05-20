@@ -9,9 +9,13 @@ from app.schemas import TokenData
 from app.services.utils.hashing import verify_password_hash
 
 from typing import cast
+import os
 
 
 router = APIRouter(prefix='/user')
+
+ENV=os.environ.get('ENV', 'PRODUCTION')
+PRODUCTION = ENV == 'PRODUCTION'
 
 @router.post("/login", response_model=LoginResponse)
 def login(
@@ -37,9 +41,10 @@ def login(
     response.set_cookie(
         key="access_token",
         value=access_token,
-        httponly=True,
-        secure=True,
-        samesite="None",
+        httponly=True,                          # not accessible by client side javascript
+        secure=True if PRODUCTION else False,   # only sent over https
+        samesite="strict" if PRODUCTION else False,     
+        path="/",
     )
 
     return {
@@ -67,7 +72,13 @@ def get_user_info(
 @router.post("/logout")
 def logout(request: Request, response: Response):
     if request.cookies.get("access_token"):
-        response.delete_cookie("access_token")
+        response.delete_cookie(
+            "access_token",
+            path='/',
+            httponly=True,
+            secure=True if PRODUCTION else False,
+            samesite="strict" if PRODUCTION else 'none',
+        )
         return {"message": "Logout successful"}
     else:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No active session found")

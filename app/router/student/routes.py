@@ -31,9 +31,11 @@ def get_certificate_requests(
             lambda x: x.status in request_types,
             student.requests_received
         )
+
         return {
             'requests': [
                 {
+                    'request_id': request.id,
                     'subject': {
                         'id': request.subject.id,
                         'name': request.subject.name,
@@ -45,6 +47,7 @@ def get_certificate_requests(
                     },
                     'status': request.status,
                     'due_date': request.due_date,
+                    'certificate_uploaded_at': request.certificate.uploaded_at if request.certificate else None,
                 }
                 for request in filtered_requests
             ]
@@ -111,7 +114,7 @@ def get_certificate(
     }
 
 
-@router.post('/upload', response_model=GenericResponse)
+@router.post('/certificate/upload', response_model=GenericResponse)
 async def upload_certificate(
     request_id: str,
     file: UploadFile = Depends(process_upload),
@@ -146,7 +149,7 @@ async def upload_certificate(
     
     os.makedirs(f"{TOP_LEVEL_FOLDER}/certificates", exist_ok=True)
 
-    file_path = f"{TOP_LEVEL_FOLDER}/certificates/{request_id}"
+    file_path = f"{TOP_LEVEL_FOLDER}/certificates/{request_id}.pdf"
 
     await save_file_to_local_storage(
         file,

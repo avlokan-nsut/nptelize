@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 from datetime import datetime
 
 
@@ -28,9 +28,11 @@ class Subject(BaseModel):
     teacher: Teacher
 
 class CertificateRequest(BaseModel):
+    request_id: str
     subject: Subject
     status: str
-    due_date: datetime | None
+    certificate_uploaded_at: Optional[datetime] = None
+    due_date: Optional[datetime] = None
 
 class CertificateRequestResponse(BaseModel):
     requests: List[CertificateRequest]
