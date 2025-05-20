@@ -9,7 +9,7 @@ const headings = [
   "NSUT Roll No.",
   "Email",
   "Status",
-  "Request Date"
+  "Due Date"
 ];
 
 export type Student = {
@@ -31,6 +31,7 @@ export type Request = {
   "subject": Subject;
   "status": "pending" | "completed" | "rejected";
   "created_at": string;
+  "due_date": string;
 }
 
 export type ApiResponse = {
@@ -46,14 +47,16 @@ const StudentStatus = function () {
   const fetchData = async () => {
     const apiUrl = import.meta.env.VITE_API_URL;
 
+
+     
+    
     const {data} = await axios.get<ApiResponse>(
-      `${apiUrl}/teacher/requests/${subjectId}`,
+      `${apiUrl}/teacher/subject/requests/${subjectId}`,
       {
         withCredentials: true,
       }
     );
-    console.log(data);
-   
+    
     
     return data;
   };
@@ -137,7 +140,7 @@ const StudentStatus = function () {
                       {getStatusBadge(request.status)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-gray-700">
-                      {formatDate(request.created_at)}
+                      {formatDate(request.due_date)}
                     </td>
                   </tr>
                 ))

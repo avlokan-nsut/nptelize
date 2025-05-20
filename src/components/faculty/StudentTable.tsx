@@ -9,7 +9,6 @@ const headings = [
   "Student Name",
   "NSUT Roll No.",
   "Email",
-  "Due Date",
 ];
 
 export type Student = {
@@ -32,18 +31,17 @@ const StudentTable = function () {
   const subjectCode = urlSubjectCode;
   const subjectId = location.state?.subjectId;
   
-  // Add state for selected students only (removed due date)
+  // Add state for selected students and due date
   const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
+  const [dueDate, setDueDate] = useState(getDefaultDueDate());
   
   // Calculate default due date (7 days from today)
-  const getDefaultDueDate = () => {
+  function getDefaultDueDate() {
     const today = new Date();
     const futureDate = new Date(today);
     futureDate.setDate(today.getDate() + 7);
     return futureDate.toISOString().split('T')[0]; // Format as YYYY-MM-DD
-  };
-  
-  const defaultDueDate = getDefaultDueDate();
+  }
 
   // Function to handle student selection
   const handleStudentSelection = (studentId: string) => {
@@ -56,10 +54,15 @@ const StudentTable = function () {
     });
   };
 
-  // Function to handle form submission (updated to use default due date)
+  // Function to handle form submission (updated to use selected due date)
   const handleSubmit = async() => {
     if (selectedStudents.length === 0) {
       alert("Please select at least one student");
+      return;
+    }
+
+    if (!dueDate) {
+      alert("Please select a due date");
       return;
     }
 
@@ -67,7 +70,7 @@ const StudentTable = function () {
       student_request_data_list: selectedStudents.map(studentId => ({
         student_id: studentId,
         subject_id: subjectId,
-        due_date: new Date(defaultDueDate).toISOString()
+        due_date: new Date(dueDate).toISOString()
       }))
     };
 
@@ -192,9 +195,6 @@ const StudentTable = function () {
                       <td className="px-6 py-4 whitespace-nowrap text-gray-700">
                         {student.email}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-gray-700">
-                        {defaultDueDate}
-                      </td>
                     </tr>
                   ))
                 ) : (
@@ -211,9 +211,14 @@ const StudentTable = function () {
           <div className="p-4 bg-gray-50 border-t border-gray-200">
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div className="flex items-center gap-2">
-                {/* <span className="text-sm text-gray-600">
-                  Default due date: <span className="font-medium">{defaultDueDate}</span>
-                </span> */}
+                <span className="text-sm text-gray-600 mr-2">Due Date:</span>
+                <input 
+                  type="date" 
+                  value={dueDate}
+                  min={new Date().toISOString().split('T')[0]}
+                  onChange={(e) => setDueDate(e.target.value)}
+                  className="border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
               </div>
               
               <div className="flex items-center gap-2">
@@ -222,7 +227,7 @@ const StudentTable = function () {
                 </span>
                 <button
                   onClick={handleSubmit}
-                  disabled={selectedStudents.length === 0}
+                  disabled={selectedStudents.length === 0 || !dueDate}
                   className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed"
                 >
                   {isLoadingPost ? "Submitting Request" : "Submit Request"}

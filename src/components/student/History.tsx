@@ -26,6 +26,7 @@ export type Request = {
     subject: Subject;
     status: string;
     due_date: string;
+    certificate_uploaded_at: string
 };
 
 export type ApiResponse = {
@@ -78,7 +79,7 @@ function formatDateOnly(isoString: string): string {
 
 const RequestedTable = () => {
     const { data, error, isLoading } = useQuery({
-        queryKey: ["myData"],
+        queryKey: ["myDataHistory"],
         queryFn: fetchData,
         staleTime: 1000 * 60 * 1,
     });
@@ -134,7 +135,7 @@ const RequestedTable = () => {
                                     1
                                 )}`}</td>
                                 {/* <td className="px-6 py-4">{row.submitted_date || 'N/A'}</td> */}
-                                <td className="px-6 py-4">{"N/A"}</td>
+                                <td className="px-6 py-4">{formatDateOnly(row.certificate_uploaded_at) || "N/A"}</td>
                                 <td className="px-6 py-4">
                                     {formatDateOnly(row.due_date) || "N/A"}
                                 </td>

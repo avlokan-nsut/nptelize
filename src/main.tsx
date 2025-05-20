@@ -18,6 +18,7 @@ import StudentDashboard from "./pages/student/Dashboard";
 import AdminLoginForm from "./components/admin/LoginForm";
 import ProtectedRoute from "./components/ProtectedRoute";
 import PublicRoute from "./components/PublicRoutes";
+import StudentStatus from "./components/faculty/StudentStatus";
 
 const queryClient = new QueryClient();
 
@@ -51,7 +52,7 @@ const routes = createBrowserRouter(
                     path="faculty/students/:subjectCode"
                     element={<StudentTable />}
                 />
-                <Route path="faculty/students" element={<StudentTable />} />
+                <Route path="faculty/students/requests/:subjectCode" element={<StudentStatus />} />
             </Route>
 
             {/* Admin routes */}
