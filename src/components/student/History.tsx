@@ -37,7 +37,7 @@ export type ApiResponse = {
 const fetchData = async () => {
   const apiUrl = import.meta.env.VITE_API_URL;
   const reqType = {
-    request_types: ["pending"],
+    request_types: ["pending","completed", "rejected"],
   };
 
   const { data} = await axios.post<ApiResponse>(
@@ -50,8 +50,6 @@ const fetchData = async () => {
     }
   }
 );
-
-
   console.log(data);
 
   return data;
@@ -77,7 +75,7 @@ function formatDateOnly(isoString: string): string {
 
 const RequestedTable = () => {
   const { data, error, isLoading } = useQuery({
-  queryKey: ["myData"],
+  queryKey: ["myHistory"],
   queryFn: fetchData,
   staleTime: 1000 * 60 * 1, 
 });
@@ -101,9 +99,18 @@ const RequestedTable = () => {
     );
   }
 
+  if(!data || data.requests.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="alert alert-info shadow-lg">
+          <div>
+            <span>No requests found</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-  if(data){
-    console.log("hello");
   return (
     <div className="overflow-x-auto rounded-lg shadow-sm border border-gray-100 bg-white max-w-7xl mx-auto">
       <table className="table w-full">
@@ -137,6 +144,6 @@ const RequestedTable = () => {
     </div>
 
   )};
-};
+
 
 export default RequestedTable;

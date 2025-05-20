@@ -1,5 +1,5 @@
 import Table from "../../components/faculty/Table";
-import Request from "../../components/faculty/Request";
+
 
 const Dashboard = () => {
   return (
@@ -8,9 +8,6 @@ const Dashboard = () => {
         Alloted Subjects
       </h1>
       <Table />
-      <div className="flex justify-center mt-4">
-        <Request/>
-      </div>
     </div>
   );
 };
