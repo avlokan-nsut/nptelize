@@ -5,7 +5,6 @@ import { useMutation } from '@tanstack/react-query';
 interface EnrollmentData {
   email: string;
   subject_code: string;
-  due_date: string;
 }
 
 interface EnrollStudentsProps {
@@ -15,12 +14,9 @@ interface EnrollStudentsProps {
 const EnrollStudents = ({ onSuccess }: EnrollStudentsProps) => {
   const [email, setEmail] = useState('');
   const [subjectCode, setSubjectCode] = useState('');
-  const [dueDate, setDueDate] = useState('');
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-
-  const today = new Date().toISOString().split('T')[0];
 
   const mutation = useMutation({
     mutationFn: async (data: EnrollmentData[]) => {
@@ -29,12 +25,10 @@ const EnrollStudents = ({ onSuccess }: EnrollStudentsProps) => {
         withCredentials: true,
       });
       return response.data;
-    },
-    onSuccess: () => {
+    },    onSuccess: () => {
       setSuccess('Students enrolled successfully');
       setEmail('');
       setSubjectCode('');
-      setDueDate('');
       setCsvFile(null);
       if (onSuccess) onSuccess();
       setTimeout(() => {
@@ -46,10 +40,9 @@ const EnrollStudents = ({ onSuccess }: EnrollStudentsProps) => {
       console.error('Enrollment error:', error);
     },
   });
-
   const handleSingleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !subjectCode || !dueDate) {
+    if (!email || !subjectCode) {
       setError('Please fill all required fields');
       return;
     }
@@ -58,7 +51,6 @@ const EnrollStudents = ({ onSuccess }: EnrollStudentsProps) => {
       {
         email,
         subject_code: subjectCode,
-        due_date: new Date(dueDate).toISOString(),
       },
     ];
 
@@ -75,11 +67,10 @@ const EnrollStudents = ({ onSuccess }: EnrollStudentsProps) => {
 
     const reader = new FileReader();
     reader.onload = (event) => {
-      try {
-        const text = event.target?.result as string;
+      try {        const text = event.target?.result as string;
         const lines = text.split('\n').filter(Boolean);
         const headers = lines[0].split(',').map((h) => h.trim().toLowerCase());
-        const requiredHeaders = ['email', 'subject_code', 'due_date'];
+        const requiredHeaders = ['email', 'subject_code'];
         const missingHeaders = requiredHeaders.filter(
           (header) => !headers.includes(header)
         );
@@ -93,16 +84,7 @@ const EnrollStudents = ({ onSuccess }: EnrollStudentsProps) => {
           const values = line.split(',').map((v) => v.trim());
           const item: any = {};
           headers.forEach((header, i) => {
-            if (header === 'due_date') {
-              const dateValue = values[i];
-              try {
-                item[header] = new Date(dateValue).toISOString();
-              } catch (e) {
-                throw new Error(`Invalid date format in row: ${line}`);
-              }
-            } else {
-              item[header] = values[i];
-            }
+            item[header] = values[i];
           });
           return item as EnrollmentData;
         });
@@ -181,23 +163,7 @@ const EnrollStudents = ({ onSuccess }: EnrollStudentsProps) => {
                 onChange={(e) => setSubjectCode(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 placeholder="e.g. CS101"
-                required
-              />
-            </div>
-
-            <div className="mb-4">
-              <label htmlFor="dueDate" className="block text-gray-700 font-medium mb-2">
-                Due Date <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="date"
-                id="dueDate"
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-                min={today}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                required
-              />
+                required              />
             </div>
 
             <button
@@ -223,11 +189,10 @@ const EnrollStudents = ({ onSuccess }: EnrollStudentsProps) => {
                 id="csvFile"
                 accept=".csv"
                 onChange={(e) => setCsvFile(e.target.files?.[0] || null)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                required
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"                required
               />
               <p className="mt-1 text-sm text-gray-500">
-                CSV must include headers: email, subject_code, due_date
+                CSV must include headers: email, subject_code
               </p>
             </div>
 
