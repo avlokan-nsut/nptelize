@@ -51,7 +51,7 @@ Make sure the following guidelines are followed:
 
 - Make commits in a new branch, and then add a pull request to the test branch.
 - Please install packages using the command `uv add <package_name>`
-- Make sure you run `pip freeze > requirements.txt` in the root of the project before pushing, to ensure a seamless
+- Make sure you run `uv pip freeze > requirements.txt` in the root of the project before pushing, to ensure a seamless
   development experience for others.
 - Ensure best practices like using docstrings and typing using Pydantic and typing package of Python.
 
