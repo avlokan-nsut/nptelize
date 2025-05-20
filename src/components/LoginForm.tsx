@@ -22,10 +22,14 @@ const LoginForm: FC = () => {
         password: "",
     });
     const [errors, setErrors] = useState<LoginFormErrors>({});
+
     // const [showPassword, setShowPassword] = useState<boolean>(false);
     const [isLoading, setIsLoading] = useState<boolean>(false);
 
+    const [toastMessage, setToastMessage] = useState<string | null>(null);
+
     const login = useAuthStore((state) => state.login);
+    const authError = useAuthStore((state) => state.error);
     const user = useAuthStore((state) => state.user);
     const navigate = useNavigate();
 
@@ -74,6 +78,16 @@ const LoginForm: FC = () => {
     //     </svg>
     // );
 
+    useEffect(() => {
+        if (authError) {
+            setToastMessage(authError);
+            setTimeout(() => {
+                useAuthStore.setState({ error: null });
+                setToastMessage(null);
+            }, 2000);
+        }
+    }, [authError]);
+
     const handleChange = (e: ChangeEvent<HTMLInputElement>): void => {
         const { name, value } = e.target;
         setFormData((prev) => ({ ...prev, [name]: value }));
@@ -90,20 +104,13 @@ const LoginForm: FC = () => {
     const handleSubmit = async (): Promise<void> => {
         try {
             loginSchema.parse(formData);
-
             setErrors({});
             setIsLoading(true);
 
-            setTimeout(async () => {
-                console.log("Form submitted:", formData, "Role:", role);
-                setIsLoading(false);
-
-                const email = formData.email;
-                const password = formData.password;
-
-                await login({ email, password, role });
-            }, 800);
+            const { email, password } = formData;
+            await login({ email, password, role });
         } catch (error) {
+            setIsLoading(false);
             if (error instanceof z.ZodError) {
                 const formattedErrors: LoginFormErrors = {};
                 error.errors.forEach((err) => {
@@ -115,12 +122,26 @@ const LoginForm: FC = () => {
                 });
                 setErrors(formattedErrors);
             }
+        } finally {
+            setIsLoading(false);
         }
     };
 
     return (
         <div className="p-4 flex items-center justify-center min-h-screen bg-gray-50">
-            <div className="w-full max-w-md p-6 bg-white rounded-lg shadow-lg">
+            {toastMessage && (
+                <div
+                    className={`absolute top-[70px] right-4 px-4 py-3 rounded border ${
+                        authError
+                            ? "bg-red-200 border-red-400 text-red-700"
+                            : "bg-green-200 border-green-400 text-green-700"
+                    }`}
+                    role="alert"
+                >
+                    <span className="block sm :inline ml-2">{toastMessage}</span>
+                </div>
+            )}
+            <div className="w-full max-w-md p-6 bg-white rounded-lg shadow-lg relative">
                 {/* Role Selection Tabs */}
                 <div className="flex mb-6 overflow-hidden border rounded-md">
                     {(["student", "teacher"] as UserRole[]).map((type) => (

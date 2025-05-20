@@ -48,10 +48,12 @@ export const useAuthStore = create<AuthState>()(
 
           if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.message || 'Login failed');
+            // console.log(errorData.detail);
+            throw new Error(errorData.detail || 'Login failed');
           }
 
           const data = await response.json();
+          // console.log(data.message);
           set({ user: { user_id: data.user_id , name:data.name, role:credentials.role }, loading: false });
         } catch (error: any) {
           set({ error: error.message, loading: false });
