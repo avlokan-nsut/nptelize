@@ -20,7 +20,7 @@ const StudentDashboard: React.FC = () => {
           >
             Pending Requests
           </button>
-          <button
+          {/* <button
             className={`py-2 px-4 font-medium ${
               activeTab === 'completed' 
                 ? 'text-blue-600 border-b-2 border-blue-600' 
@@ -29,7 +29,7 @@ const StudentDashboard: React.FC = () => {
             onClick={() => setActiveTab('completed')}
           >
             Completed Requests
-          </button>
+          </button> */}
           <button
             className={`py-2 px-4 font-medium ${
               activeTab === 'history' 

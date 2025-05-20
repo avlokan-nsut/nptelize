@@ -11,13 +11,14 @@ import App from "./App";
 import "./index.css";
 import Layout from "./Layout";
 import LoginForm from "./components/LoginForm";
-import StudentList from "./pages/faculty/StudentList";
+import StudentTable from "./components/faculty/StudentTable";
 import Dashboard from "./pages/faculty/Dashboard";
 import AdminDashboard from "./pages/admin/Dashboard";
 import StudentDashboard from "./pages/student/Dashboard";
 import AdminLoginForm from "./components/admin/LoginForm";
 import ProtectedRoute from "./components/ProtectedRoute";
 import PublicRoute from "./components/PublicRoutes";
+import StudentStatus from "./components/faculty/StudentStatus";
 
 const queryClient = new QueryClient();
 
@@ -49,9 +50,9 @@ const routes = createBrowserRouter(
                 <Route path="faculty/dashboard" element={<Dashboard />} />
                 <Route
                     path="faculty/students/:subjectCode"
-                    element={<StudentList />}
+                    element={<StudentTable />}
                 />
-                <Route path="faculty/students" element={<StudentList />} />
+                <Route path="faculty/students/requests/:subjectCode" element={<StudentStatus />} />
             </Route>
 
             {/* Admin routes */}

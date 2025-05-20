@@ -1,159 +1,246 @@
 import { FaArrowLeft } from "react-icons/fa";
-import { Link } from "react-router-dom";
-import { useMemo } from "react";
-
-interface StudentTableProps {
-  subjectCode: string;
-}
+import { Link, useParams, useLocation } from "react-router-dom";
+import axios from "axios";
+import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 
 const headings = [
+  "Select",
   "Student Name",
   "NSUT Roll No.",
-  "NPTEL Roll No.",
-  "Total Marks",
-  "Result",
-  "Status",
-  "Remarks",
+  "Email",
 ];
 
-// Sample student data with subject code
-const allStudents = [
-  {
-    name: "Deepak Kumar Mandal",
-    nsutRoll: "2021UCS1522",
-    nptelRoll: "-",
-    totalMarks: "-",
-    result: "Pending",
-    status: "pending",
-    remarks: "-",
-    subjectCode: "FECS01",
-  },
-  {
-    name: "aakshat malhotra",
-    nsutRoll: "2021UCS1555",
-    nptelRoll: "-",
-    totalMarks: "-",
-    result: "Pending",
-    status: "pending",
-    remarks: "-",
-    subjectCode: "FECS01",
-  },
-  {
-    name: "komal",
-    nsutRoll: "2021UCS1517",
-    nptelRoll: "-",
-    totalMarks: "-",
-    result: "Pending",
-    status: "pending",
-    remarks: "-",
-    subjectCode: "FECS01",
-  },
-  {
-    name: "Khushal Yadav",
-    nsutRoll: "2021UCS1542",
-    nptelRoll: "-",
-    totalMarks: "-",
-    result: "Pending",
-    status: "pending",
-    remarks: "-",
-    subjectCode: "FECS01",
-  },
-  {
-    name: "chirag saini",
-    nsutRoll: "2021UCS1501",
-    nptelRoll: "-",
-    totalMarks: "-",
-    result: "Pending",
-    status: "pending",
-    remarks: "-",
-    subjectCode: "FECS01",
-  },
-  {
-    name: "Deepika",
-    nsutRoll: "2021UCS1540",
-    nptelRoll: "-",
-    totalMarks: "-",
-    result: "Pending",
-    status: "pending",
-    remarks: "-",
-    subjectCode: "FECS01",
-  },
-  {
-    name: "John Doe",
-    nsutRoll: "2021UCS1601",
-    nptelRoll: "-",
-    totalMarks: "-",
-    result: "Pending",
-    status: "pending",
-    remarks: "-",
-    subjectCode: "DNCS04",
-  },
-];
+export type Student = {
+  "id": string;
+  "name": string;
+  "email": string;
+  "roll_number": string;
+}
 
-const Table: React.FC<StudentTableProps> = function ({ subjectCode = "FECS01" }) {
-  const filteredStudents = useMemo(() => {
-    return allStudents.filter((student) => student.subjectCode === subjectCode);
-  }, [subjectCode]);
+export type ApiResponse = {
+  enrolled_students: Student[];
+}
+
+const StudentTable = function () {
+  const { subjectCode: urlSubjectCode } = useParams<{ subjectCode: string }>();
+  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState(false);
+  const [isLoadingPost, setIsLoadingPost] = useState(false);
+  const location = useLocation();
+  const subjectCode = urlSubjectCode;
+  const subjectId = location.state?.subjectId;
+  
+  // Add state for selected students and due date
+  const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
+  const [dueDate, setDueDate] = useState(getDefaultDueDate());
+  
+  // Calculate default due date (7 days from today)
+  function getDefaultDueDate() {
+    const today = new Date();
+    const futureDate = new Date(today);
+    futureDate.setDate(today.getDate() + 7);
+    return futureDate.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+  }
+
+  // Function to handle student selection
+  const handleStudentSelection = (studentId: string) => {
+    setSelectedStudents(prev => {
+      if (prev.includes(studentId)) {
+        return prev.filter(id => id !== studentId);
+      } else {
+        return [...prev, studentId];
+      }
+    });
+  };
+
+  // Function to handle form submission (updated to use selected due date)
+  const handleSubmit = async() => {
+    if (selectedStudents.length === 0) {
+      alert("Please select at least one student");
+      return;
+    }
+
+    if (!dueDate) {
+      alert("Please select a due date");
+      return;
+    }
+
+    const formattedData = {
+      student_request_data_list: selectedStudents.map(studentId => ({
+        student_id: studentId,
+        subject_id: subjectId,
+        due_date: new Date(dueDate).toISOString()
+      }))
+    };
+
+    console.log("Submission data:", formattedData);
+   
+    const apiUrl = import.meta.env.VITE_API_URL;
+    setIsLoadingPost(true);
+    const response = await axios.post(`${apiUrl}/teacher/students/request`, formattedData, {
+    withCredentials: true,
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  })
+    .catch((error) => {
+      console.error("Error submitting request:", error);
+      setError(true);
+    });
+
+    console.log(response)
+    if (response && response.status === 200) {
+      setSuccess(true);
+      setSelectedStudents([]);
+    } else {
+      setError(true);
+    }
+    setIsLoadingPost(false);
+  };
+
+  const fetchData = async () => {
+    const apiUrl = import.meta.env.VITE_API_URL;
+    
+    const {data} = await axios.get<ApiResponse>(
+      `${apiUrl}/teacher/students/${subjectId}`,
+      {
+        withCredentials: true,
+      }
+    );
+    // console.log(data);
+    
+    return data;
+  };
+
+  const { data: apiData, error:apiError, isLoading } = useQuery({
+    queryKey: ["teacherRequestsStudents", subjectId],
+    queryFn: fetchData,
+    refetchOnWindowFocus: false,
+  });
 
   return (
-    <div className="overflow-x-auto rounded-lg shadow-sm border border-gray-100 bg-white max-w-7xl mx-auto">
-      <div className="flex items-center p-4 border-b">
-        <Link to="/faculty/dashboard">
-          <FaArrowLeft className="text-xl mr-2" />
+    <>
+    <div className="mx-auto px-4 py-8">
+      <h1 className="text-center text-2xl font-semibold text-gray-800 mb-10 tracking-wider">
+        Student List
+      </h1>
+
+      {success && (
+        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">
+          <strong className="font-bold">Success!</strong>
+          <span className="block sm:inline"> Request submitted successfully.</span>
+        </div>
+      )}
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+          <strong className="font-bold">Error!</strong>
+          <span className="block sm:inline"> Error submitting request. Please try again.</span>
+        </div>
+      )}
+    
+    <div className="overflow-hidden rounded-lg shadow-md border border-gray-100 bg-white max-w-7xl mx-auto">
+      <div className="flex items-center p-4 border-b bg-gray-50">
+        <Link to="/faculty/dashboard" className="hover:bg-gray-200 p-2 rounded-full transition-colors">
+          <FaArrowLeft className="text-gray-600" />
         </Link>
-        <h2 className="text-xl font-semibold">{subjectCode}</h2>
+        <h2 className="text-xl font-semibold ml-3 text-gray-800">{subjectCode}</h2>
       </div>
-      <table className="table w-full">
-        <thead className="">
-          <tr className="text-sm font-medium">
-            {headings.map((heading, idx) => (
-              <th key={idx} className="px-6 py-4 text-center">
-                {heading}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-100">
-          {filteredStudents.length > 0 ? (
-            filteredStudents.map((row, idx) => (
-              <tr
-                key={idx}
-                className="hover:bg-gray-50 transition-colors duration-200"
-              >
-                <td className="px-6 py-4 text-center">{row.name}</td>
-                <td className="px-6 py-4 text-center">{row.nsutRoll}</td>
-                <td className="px-6 py-4 text-center">{row.nptelRoll}</td>
-                <td className="px-6 py-4 text-center">{row.totalMarks}</td>
-                <td className="px-6 py-4 text-center">{row.result}</td>
-                <td className="px-6 py-4 text-center">
-                  <div className="flex justify-center">
-                    <span
-                      className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                        row.status === "verified"
-                          ? "bg-green-100 text-green-800"
-                          : row.status === "notverified"
-                          ? "bg-yellow-100 text-yellow-800"
-                          : "bg-red-100 text-red-800"
+
+      {isLoading ? (
+        <div className="flex justify-center items-center h-64">
+          Loading
+        </div>
+      ) : apiError ? (
+        <div className="p-6 text-center text-red-500">
+          Error loading student data. Please try again.
+        </div>
+      ) : (
+        <>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  {headings.map((heading, idx) => (
+                    <th key={idx} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      {heading}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {apiData?.enrolled_students && apiData.enrolled_students.length > 0 ? (
+                  apiData.enrolled_students.map((student) => (
+                    <tr 
+                      key={student.id} 
+                      className={`hover:bg-gray-50 transition-colors duration-150 cursor-pointer ${
+                        selectedStudents.includes(student.id) ? 'bg-blue-50' : ''
                       }`}
+                      onClick={() => handleStudentSelection(student.id)}
                     >
-                      {row.status}
-                    </span>
-                  </div>
-                </td>
-                <td className="px-6 py-4 text-center">{row.remarks}</td>
-              </tr>
-            ))
-          ) : (
-            <tr>
-              <td colSpan={7} className="px-6 py-4 text-center">
-                No students found for this subject code
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <input 
+                          type="checkbox" 
+                          checked={selectedStudents.includes(student.id)}
+                          onChange={() => {}} 
+                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                        />
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="font-medium text-gray-900">{student.name}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-gray-700">
+                        {student.roll_number}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-gray-700">
+                        {student.email}
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={headings.length} className="px-6 py-10 text-center text-gray-500">
+                      No students found for this subject.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+          
+          <div className="p-4 bg-gray-50 border-t border-gray-200">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-600 mr-2">Due Date:</span>
+                <input 
+                  type="date" 
+                  value={dueDate}
+                  min={new Date().toISOString().split('T')[0]}
+                  onChange={(e) => setDueDate(e.target.value)}
+                  className="border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-600">
+                  {selectedStudents.length} student{selectedStudents.length !== 1 ? 's' : ''} selected
+                </span>
+                <button
+                  onClick={handleSubmit}
+                  disabled={selectedStudents.length === 0 || !dueDate}
+                  className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                >
+                  {isLoadingPost ? "Submitting Request" : "Submit Request"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
+    </div>
+    </>
   );
 };
 
-export default Table;
+export default StudentTable;

@@ -8,6 +8,8 @@ interface SubjectForm {
 }
 
 const postSubjects = async (subjects: SubjectForm[]) => {
+
+  console.log(subjects);
   const apiUrl = import.meta.env.VITE_API_URL;
   const response = await axios.post(
     `${apiUrl}/admin/create/subjects`,
