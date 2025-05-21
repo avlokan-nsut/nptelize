@@ -92,7 +92,7 @@ const Table = function () {
                 <Link 
                   to={`/faculty/students/${subject.subject_code}`} 
                   state={{ subjectId: subject.id }}
-                  className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md shadow-sm transition-colors duration-200"
+                  className="inline-flex items-center px-4 py-2 bg-black text-white text-sm font-medium rounded-md shadow-sm transition-colors duration-200"
                 >
                   View Students
                   <FaArrowRight className="ml-2 text-sm" />
@@ -102,7 +102,7 @@ const Table = function () {
                 <Link 
                   to={`/faculty/students/requests/${subject.subject_code}`} 
                   state={{ subjectId: subject.id }}
-                  className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md shadow-sm transition-colors duration-200"
+                  className="inline-flex items-center px-4 py-2 bg-slate-600 hover:bg-black text-white text-sm font-medium rounded-md shadow-sm transition-colors duration-200"
                 >
                   Request Status
                   <FaArrowRight className="ml-2 text-sm" />

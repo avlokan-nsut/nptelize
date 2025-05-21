@@ -7,11 +7,19 @@ interface SubjectForm {
   subject_code: string;
 }
 
-const postSubjects = async (subjects: SubjectForm[]) => {
+type subject = {
+  subject_code: string;
+  success: boolean;
+  message: string;
+}
 
-  console.log(subjects);
+type ApiResponse = {
+  results: subject[]
+}
+
+const postSubjects = async (subjects: SubjectForm[]) => {
   const apiUrl = import.meta.env.VITE_API_URL;
-  const response = await axios.post(
+  const response = await axios.post<ApiResponse>(
     `${apiUrl}/admin/create/subjects`,
     subjects,
     {
@@ -34,14 +42,30 @@ const CreateSubject = () => {
   }]);
   
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  
   const [error, setError] = useState<string | null>(null);
+  const [apiCalled, setApiCalled] = useState(false);
+  const [successCount, setSuccessCount] = useState(0);
+  const [errorSubjects, setErrorSubjects] = useState<subject[]>([]);
 
   // React Query mutation for creating subjects
   const mutation = useMutation({
     mutationFn: postSubjects,
-    onSuccess: () => {
-      setSuccessMessage(`Successfully created subjects`);
+    onSuccess: (data) => {
+      setApiCalled(true);
+      setSuccessCount(0);
+      setErrorSubjects([]);
+
+      // Process response data
+      data.results.forEach((subject) => {
+        if (subject.success) {
+          setSuccessCount(prev => prev + 1);
+        } else {
+          setErrorSubjects(prev => [...prev, subject]);
+        }
+      });
+
+    
       setSubjects([{ name: '', subject_code: '' }]);
       setIsSubmitting(false);
     },
@@ -118,6 +142,7 @@ const CreateSubject = () => {
         return subject;
       });
       setIsSubmitting(true);
+      setError(null);
       mutation.mutate(subjectsFromCSV);
     };
     reader.readAsText(csvFile);
@@ -127,17 +152,56 @@ const CreateSubject = () => {
     <div>
       <h2 className="text-xl font-semibold mb-4">Create Subjects</h2>
       
-      {/* Success message */}
-      {successMessage && (
-        <div className="mb-4 p-3 bg-green-100 border border-green-300 rounded">
-          <p className="text-green-700">{successMessage}</p>
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+          <strong className="font-bold">Error: </strong>
+          <span className="block sm:inline">{error}</span>
         </div>
       )}
 
-      {/* Error message */}
-      {error && (
-        <div className="mb-4 p-3 bg-red-100 border border-red-300 text-red-600 rounded">
-          {error}
+      {apiCalled && (
+        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">
+          <strong className="font-bold">Successfully Created: </strong>
+          <span className="block sm:inline">{successCount} subjects</span>
+        </div>
+      )}
+
+      {mutation.isPending && (
+        <div className="flex items-center justify-center py-4">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+          <span className="ml-2">Processing...</span>
+        </div>
+      )}
+
+      {errorSubjects.length > 0 && (
+        <div className="mt-6 bg-white p-6 rounded-lg shadow-md">
+          <h3 className="text-lg font-medium mb-4 text-red-600">Failed Creations ({errorSubjects.length})</h3>
+          <div className="border rounded-md overflow-hidden">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Subject Code
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Error Message
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {errorSubjects.map((subject, index) => (
+                  <tr key={index} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      {subject.subject_code}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-red-600">
+                      {subject.message}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 

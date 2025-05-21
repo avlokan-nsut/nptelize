@@ -22,7 +22,6 @@ const AdminLoginForm: FC = () => {
         password: "",
     });
     const [errors, setErrors] = useState<LoginFormErrors>({});
-    const [showPassword, setShowPassword] = useState<boolean>(false);
     const [isLoading, setIsLoading] = useState<boolean>(false);
 
     const login = useAuthStore((state) => state.login);
