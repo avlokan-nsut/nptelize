@@ -13,7 +13,7 @@ def check_config() -> None:
         'DB_URI',
         'JWT_SECRET_KEY',
         'ALGORITHM',
-        'ACCESS_TOKEN_EXPIRE_MINUTES'
+        'ACCESS_TOKEN_EXPIRE_MINUTES',
         'ENV',
     ]
     

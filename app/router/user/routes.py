@@ -17,6 +17,7 @@ router = APIRouter(prefix='/user')
 ENV=os.environ.get('ENV', 'PRODUCTION')
 PRODUCTION = ENV == 'PRODUCTION'
 
+
 @router.post("/login", response_model=LoginResponse)
 def login(
     role: UserRole, credentials: LoginRequest, response: Response, db: Session = Depends(get_db),
@@ -42,8 +43,8 @@ def login(
         key="access_token",
         value=access_token,
         httponly=True,                          # not accessible by client side javascript
-        secure=True if PRODUCTION else False,   # only sent over https
-        samesite="strict" if PRODUCTION else False,     
+        secure=True,                            # only sent over https
+        samesite='strict' if PRODUCTION else 'none',     
         path="/",
     )
 
@@ -77,7 +78,7 @@ def logout(request: Request, response: Response):
             path='/',
             httponly=True,
             secure=True if PRODUCTION else False,
-            samesite="strict" if PRODUCTION else 'none',
+            samesite='strict' if PRODUCTION else 'none',
         )
         return {"message": "Logout successful"}
     else:
