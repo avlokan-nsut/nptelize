@@ -164,8 +164,7 @@ async def upload_certificate(
         db=db
     )
 
-    loop = asyncio.get_running_loop()
-    await loop.run_in_executor(None, verifier.start_verification)
+    await verifier.start_verification()
 
     return {'message': 'Certificate uploaded successfully'}
     

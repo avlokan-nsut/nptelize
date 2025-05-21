@@ -9,9 +9,6 @@ from .utils.qr_extraction import extract_link
 from .utils.downloader import download_verification_pdf
 from .utils.extractor import extract_student_info_from_pdf
 
-
-
-
 import tempfile
 
 class Verifier:
@@ -22,7 +19,7 @@ class Verifier:
         self.db = db
         self.verification_filename = None
     
-    def start_verification(self) -> None:
+    async def start_verification(self) -> None:
         # update db request status to processing
         db_request = self.db.query(Request).filter(
             Request.id == self.request_id,
@@ -35,7 +32,10 @@ class Verifier:
                 detail="Request not found or does not belong to the current student"
             ) 
         
-        if db_request.due_date and datetime.now(timezone.utc) > db_request.due_date:
+        offset_aware_due_date = db_request.due_date.replace(tzinfo=timezone.utc) if db_request.due_date else None
+        print(f"Offset aware due date: {offset_aware_due_date}")
+
+        if offset_aware_due_date and datetime.now(timezone.utc) > offset_aware_due_date: 
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Request is past the due date"
@@ -74,7 +74,7 @@ class Verifier:
 
         with tempfile.NamedTemporaryFile(mode='w+', delete=True, suffix=".pdf", prefix="certificate_") as temp_f:
             print(f"Temporary file created at: {temp_f.name}")
-            success, pdf_url, output = download_verification_pdf(verification_link, temp_f)
+            success, pdf_url, output = await download_verification_pdf(verification_link, temp_f.name)
 
             if not success:
                 self.update_status_to_error(db_request, db_certificate, "Could not download the verification pdf")
