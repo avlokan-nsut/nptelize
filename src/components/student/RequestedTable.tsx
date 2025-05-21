@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import { useState } from "react";
 
+
 const headings = [
   "Subject Code",
   "Subject Name",
@@ -34,12 +35,15 @@ export type ApiResponse = {
 };
 
 function formatDateOnly(isoString: string): string {
-
   if(isoString === null || isoString === undefined){
     return "";
   }
 
+ 
   const date = new Date(isoString);
+  
+ 
+  const adjustedDate = new Date(date.getTime() + (330 * 60 * 1000));
 
   const options: Intl.DateTimeFormatOptions = {
     year: 'numeric',
@@ -47,7 +51,7 @@ function formatDateOnly(isoString: string): string {
     day: 'numeric',
   };
 
-  return date.toLocaleDateString('en-US', options);
+  return adjustedDate.toLocaleDateString('en-US', options);
 }
 
 const fetchData = async () => {
@@ -67,7 +71,7 @@ const fetchData = async () => {
   }
   
 );
-console.log(data)
+
   return data;
 };
 
@@ -75,6 +79,7 @@ const RequestedTable = () => {
   const [fileUploads, setFileUploads] = useState<Record<string, File | null>>({});
   const [uploadLoading, setUploadLoading] = useState<Record<string, boolean>>({});
   const [uploadStatus, setUploadStatus] = useState<Record<string, { success: boolean; message: string } | null>>({});
+  const [loadingStage, setLoadingStage] = useState<Record<string, string>>({});
 
   const { data, error, isLoading, refetch } = useQuery({
     queryKey: ["myData"],
@@ -109,11 +114,27 @@ const RequestedTable = () => {
       }));
       return;
     }
+     if (file.size > 1048576) {
+    setUploadStatus(prev => ({
+      ...prev,
+      [requestId]: {
+        success: false,
+        message: "File size must be less than 1 MB"
+      }
+    }));
+    return;
+  }
 
     // Set loading state for this specific request
     setUploadLoading(prev => ({
       ...prev,
       [requestId]: true
+    }));
+    
+    // Set initial loading stage
+    setLoadingStage(prev => ({
+      ...prev,
+      [requestId]: "Preparing certificate..."
     }));
 
     // Create form data
@@ -121,8 +142,24 @@ const RequestedTable = () => {
     formData.append('file', file);
 
     try {
+      // Update loading stage
+      setLoadingStage(prev => ({
+        ...prev,
+        [requestId]: "Uploading certificate..."
+      }));
+      
       const apiUrl = import.meta.env.VITE_API_URL;
-      const response = await axios.post(
+      
+      // Short delay to show the uploading stage
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Update loading stage
+      setLoadingStage(prev => ({
+        ...prev,
+        [requestId]: "Verifying certificate..."
+      }));
+      
+      await axios.post(
         `${apiUrl}/student/certificate/upload?request_id=${requestId}`,
         formData,
         {
@@ -166,6 +203,13 @@ const RequestedTable = () => {
         ...prev,
         [requestId]: false
       }));
+      
+      // Clear loading stage
+      setLoadingStage(prev => {
+        const newState = {...prev};
+        delete newState[requestId];
+        return newState;
+      });
     }
   };
 
@@ -213,9 +257,10 @@ const RequestedTable = () => {
                 <td className="px-6 py-4">{formatDateOnly(row.due_date)}</td>
                 <td className="px-6 py-4">
                   <div className="flex flex-col space-y-2">
-                    <div className="flex items-center justify-center space-x-2">
+                    <div className="flex items-center space-x-2">
                       <input
                         type="file"
+                        accept=".pdf"
                         onChange={(e) => handleFileChange(row.request_id, e.target.files ? e.target.files[0] : null)}
                         className="
                           file-input file-input-sm w-[65%] max-w-xs text-sm
@@ -233,17 +278,27 @@ const RequestedTable = () => {
                       </button>
                     </div>
                     
+                    {/* Loading stages display */}
+                    {uploadLoading[row.request_id] && loadingStage[row.request_id] && (
+                      <div className="text-xs px-2 py-1 rounded bg-blue-50 text-blue-600 flex items-center">
+                        <span className="loading loading-spinner loading-xs mr-2"></span>
+                        {loadingStage[row.request_id]}
+                      </div>
+                    )}
+                    
                     {uploadStatus[row.request_id] && (
                       <div className={`text-xs px-2 py-1 rounded ${uploadStatus[row.request_id]?.success ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                         {uploadStatus[row.request_id]?.message}
                       </div>
                     )}
+                    <div className="text-[10px] text-left text-gray-500">File Size should be less than 1 MB</div>
                   </div>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
+        
       </div>
     )
   };

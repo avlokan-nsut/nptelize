@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowRight, Award, FileCheck, Verified as FileVerified } from 'lucide-react';
+import { ArrowRight, Award, FileCheck } from 'lucide-react';
 
 
 interface HeroContentProps {

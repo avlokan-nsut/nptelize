@@ -7,39 +7,63 @@ interface EnrollmentData {
   subject_code: string;
 }
 
-interface EnrollStudentsProps {
-  onSuccess?: () => void;
+
+
+type Student = {
+  email:string;
+  message : string;
+  success : boolean;
 }
 
-const EnrollStudents = ({ onSuccess }: EnrollStudentsProps) => {
+type ApiResponse = {
+
+  results: Student[];
+
+}
+
+const enrollApi = async (students : EnrollmentData[]) =>{
+
+  const apiUrl = import.meta.env.VITE_API_URL;
+      const response = await axios.post<ApiResponse>(`${apiUrl}/admin/add/students`, students, {
+        withCredentials: true,
+      });
+
+      return response.data;
+
+}
+
+const EnrollStudents = () => {
   const [email, setEmail] = useState('');
   const [subjectCode, setSubjectCode] = useState('');
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const [apiCalled, setApiCalled] = useState(false);
+  const [successStudent, setSuccessStudent] = useState(0);
+  const [errorStudents, setErrorStudents] = useState<Student[]>([]);
 
   const mutation = useMutation({
-    mutationFn: async (data: EnrollmentData[]) => {
-      const apiUrl = import.meta.env.VITE_API_URL;
-      const response = await axios.post(`${apiUrl}/admin/add/students`, data, {
-        withCredentials: true,
-      });
-      return response.data;
-    },    onSuccess: () => {
-      setSuccess('Students enrolled successfully');
-      setEmail('');
-      setSubjectCode('');
-      setCsvFile(null);
-      if (onSuccess) onSuccess();
-      setTimeout(() => {
-        setSuccess(null);
-      }, 3000);
+    mutationFn:enrollApi,
+    onSuccess:(data) =>{
+      setApiCalled(true);
+      setSuccessStudent(0);
+      setErrorStudents([]);
+
+      data.results.forEach((obj)=>{
+        if(obj.success===true){
+          setSuccessStudent(prev=>prev+1)
+        }
+        else{
+          setErrorStudents((prev)=>([...prev,obj]))
+        }
+
+      })
     },
-    onError: (error: any) => {
-      setError(error.response?.data?.message || 'Failed to enroll students');
-      console.error('Enrollment error:', error);
-    },
-  });
+    onError:()=>{
+      setError("Failed to enroll student");
+
+
+    }
+  })
   const handleSingleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !subjectCode) {
@@ -119,10 +143,10 @@ const EnrollStudents = ({ onSuccess }: EnrollStudentsProps) => {
         </div>
       )}
 
-      {success && (
+      {apiCalled && (
         <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">
-          <strong className="font-bold">Success: </strong>
-          <span className="block sm:inline">{success}</span>
+          <strong className="font-bold">Enrolled Students: </strong>
+          <span className="block sm:inline">{successStudent}</span>
         </div>
       )}
 
@@ -130,6 +154,38 @@ const EnrollStudents = ({ onSuccess }: EnrollStudentsProps) => {
         <div className="flex items-center justify-center py-4">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
           <span className="ml-2">Processing...</span>
+        </div>
+      )}
+
+      {errorStudents.length > 0 && (
+        <div className="mt-6 bg-white p-6 rounded-lg shadow-md">
+          <h3 className="text-lg font-medium mb-4 text-red-600">Failed Enrollments ({errorStudents.length})</h3>
+          <div className="border rounded-md overflow-hidden">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Email
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Error Message
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {errorStudents.map((student, index) => (
+                  <tr key={index} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      {student.email}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-red-600">
+                      {student.message}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 

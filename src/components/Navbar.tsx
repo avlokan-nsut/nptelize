@@ -22,12 +22,18 @@ const Navbar = () => {
     <nav className="w-full bg-gradient-to-b from-gray-100 to-gray-200 shadow-md py-3 px-6">
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         {/* Logo */}
+        
         <a
           href="/"
           className="text-2xl font-bold tracking-tight text-gray-800 hover:text-gray-600 transition-colors duration-200"
         >
-          Avlokan
+          <div className="flex flex-row justify-evenly items-center space-x-4">
+          <div>Avlokan</div>
+          <div className="hidden md:block">X</div>
+          <img src= '/uni_logo.png' alt='logo' width={60} className="hidden md:block"/>
+          </div>
         </a>
+        
 
         {/* Hamburger button for mobile */}
         <div className="md:hidden">
