@@ -1,4 +1,3 @@
-import asyncio
 from fastapi import APIRouter, Depends, Body, UploadFile, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List

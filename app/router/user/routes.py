@@ -11,12 +11,12 @@ from app.services.utils.hashing import verify_password_hash
 from typing import cast
 import os
 
+ENV=os.environ.get('ENV', 'PRODUCTION')
+
+DEVELOPMENT = ENV == 'DEVELOPMENT'
+TESTING = ENV == 'TESTING'
 
 router = APIRouter(prefix='/user')
-
-ENV=os.environ.get('ENV', 'PRODUCTION')
-PRODUCTION = ENV == 'PRODUCTION'
-
 
 @router.post("/login", response_model=LoginResponse)
 def login(
@@ -43,8 +43,8 @@ def login(
         key="access_token",
         value=access_token,
         httponly=True,                          # not accessible by client side javascript
-        secure=True,                            # only sent over https
-        samesite='strict' if PRODUCTION else 'none',     
+        secure=False if TESTING else False,
+        samesite='none' if DEVELOPMENT else 'strict',
         path="/",
     )
 
@@ -77,8 +77,8 @@ def logout(request: Request, response: Response):
             "access_token",
             path='/',
             httponly=True,
-            secure=True if PRODUCTION else False,
-            samesite='strict' if PRODUCTION else 'none',
+            secure=False if TESTING else False,
+            samesite='none' if DEVELOPMENT else 'strict',
         )
         return {"message": "Logout successful"}
     else:
