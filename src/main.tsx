@@ -19,6 +19,7 @@ import AdminLoginForm from "./components/admin/LoginForm";
 import ProtectedRoute from "./components/ProtectedRoute";
 import PublicRoute from "./components/PublicRoutes";
 import StudentStatus from "./components/faculty/StudentStatus";
+import Developers from "./components/Developers";
 
 const queryClient = new QueryClient();
 
@@ -66,6 +67,15 @@ const routes = createBrowserRouter(
                     element={<StudentDashboard />}
                 />
             </Route>
+
+            <Route path ="developers" element = {
+                
+                        <Developers />
+                    
+            }
+            />
+                    
+            
         </Route>
     )
 );

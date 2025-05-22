@@ -1,4 +1,5 @@
 
+
 import Hero from './components/landing/Hero';
 
 const App = () => {
@@ -11,6 +12,7 @@ const App = () => {
       
       <main>
         <Hero />
+        
       </main>
     </div>
   );

@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import axios from "axios";
+import axios, { isAxiosError } from "axios";
 import { useState } from "react";
 
 
@@ -189,12 +189,17 @@ const RequestedTable = () => {
       refetch();
 
     } catch (error) {
+
+      let errorMessage = 'Failed Uploading Certificate'
       console.error("Error uploading certificate:", error);
+      if(isAxiosError(error)){
+        errorMessage = error.response?.data.detail || error.message
+      }
       setUploadStatus(prev => ({
         ...prev,
         [requestId]: { 
           success: false, 
-          message: "Failed to upload certificate. Please try again." 
+          message: `${errorMessage}` 
         }
       }));
     } finally {
