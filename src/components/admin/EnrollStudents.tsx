@@ -190,7 +190,7 @@ const EnrollStudents = () => {
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white p-6 rounded-lg shadow-md">
+        {/* <div className="bg-white p-6 rounded-lg shadow-md">
           <h3 className="text-lg font-medium mb-4">Single Enrollment</h3>
           <form onSubmit={handleSingleSubmit}>
             <div className="mb-4">
@@ -230,7 +230,7 @@ const EnrollStudents = () => {
               Enroll Student
             </button>
           </form>
-        </div>
+        </div> */}
 
         {/* CSV Upload Section */}
         <div className="bg-white p-6 rounded-lg shadow-md">
