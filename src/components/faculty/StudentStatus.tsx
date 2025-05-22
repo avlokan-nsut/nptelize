@@ -47,7 +47,7 @@ const StudentStatus = function () {
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(2);
+  const [itemsPerPage] = useState(10);
   
   // Filter state
   const [statusFilter, setStatusFilter] = useState<"all" | "pending" | "completed" | "rejected">("all");
