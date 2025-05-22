@@ -2,7 +2,8 @@ import { FaArrowLeft } from "react-icons/fa";
 import { Link, useParams, useLocation } from "react-router-dom";
 import axios from "axios";
 import { useQuery } from "@tanstack/react-query";
-
+import { useState, useMemo } from "react";
+import Pagination from "./Pagination";
 
 const headings = [
   "Student Name",
@@ -44,11 +45,12 @@ const StudentStatus = function () {
   const subjectCode = urlSubjectCode;
   const subjectId = location.state?.subjectId;
 
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(2);
+
   const fetchData = async () => {
     const apiUrl = import.meta.env.VITE_API_URL;
-
-
-     
     
     const {data} = await axios.get<ApiResponse>(
       `${apiUrl}/teacher/subject/requests/${subjectId}`,
@@ -56,7 +58,6 @@ const StudentStatus = function () {
         withCredentials: true,
       }
     );
-    
     
     return data;
   };
@@ -66,6 +67,34 @@ const StudentStatus = function () {
     queryFn: fetchData,
     refetchOnWindowFocus: false,
   });
+
+  // Calculate pagination data
+  const paginationData = useMemo(() => {
+    if (!apiData?.requests) {
+      return {
+        currentPageData: [],
+        totalPages: 0,
+        totalItems: 0
+      };
+    }
+
+    const totalItems = apiData.requests.length;
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const currentPageData = apiData.requests.slice(startIndex, endIndex);
+
+    return {
+      currentPageData,
+      totalPages,
+      totalItems
+    };
+  }, [apiData?.requests, currentPage, itemsPerPage]);
+
+  // Handle page change
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
 
   // Format date to readable format
   const formatDate = (dateString: string) => {
@@ -112,48 +141,59 @@ const StudentStatus = function () {
           Error loading student data. Please try again.
         </div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                {headings.map((heading, idx) => (
-                  <th key={idx} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {heading}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {apiData?.requests && apiData.requests.length > 0 ? (
-                apiData.requests.map((request) => (
-                  <tr key={request.student.id} className="hover:bg-gray-50 transition-colors duration-150">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="font-medium text-gray-900">{request.student.name}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-gray-700">
-                      {request.student.roll_number}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-gray-700">
-                      {request.student.email}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {getStatusBadge(request.status)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-gray-700">
-                      {formatDate(request.due_date)}
+        <>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  {headings.map((heading, idx) => (
+                    <th key={idx} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      {heading}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {paginationData.currentPageData.length > 0 ? (
+                  paginationData.currentPageData.map((request) => (
+                    <tr key={request.student.id} className="hover:bg-gray-50 transition-colors duration-150">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="font-medium text-gray-900">{request.student.name}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-gray-700">
+                        {request.student.roll_number}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-gray-700">
+                        {request.student.email}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {getStatusBadge(request.status)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-gray-700">
+                        {formatDate(request.due_date)}
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={headings.length} className="px-6 py-4 text-center text-gray-500">
+                      No students found
                     </td>
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={headings.length} className="px-6 py-4 text-center text-gray-500">
-                    No students found
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination Component */}
+          <Pagination
+            currentPage={currentPage}
+            totalPages={paginationData.totalPages}
+            onPageChange={handlePageChange}
+            itemsPerPage={itemsPerPage}
+            totalItems={paginationData.totalItems}
+          />
+        </>
       )}
     </div>
     </div>
