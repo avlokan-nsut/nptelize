@@ -48,6 +48,9 @@ const StudentStatus = function () {
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(2);
+  
+  // Filter state
+  const [statusFilter, setStatusFilter] = useState<"all" | "pending" | "completed" | "rejected">("all");
 
   const fetchData = async () => {
     const apiUrl = import.meta.env.VITE_API_URL;
@@ -68,9 +71,55 @@ const StudentStatus = function () {
     refetchOnWindowFocus: false,
   });
 
+  // Calculate statistics and filtered data
+  const statisticsAndFilteredData = useMemo(() => {
+    if (!apiData?.requests) {
+      return {
+        filteredRequests: [],
+        totalRequests: 0,
+        completedCount: 0,
+        pendingCount: 0,
+        rejectedCount: 0,
+        duplicateNamesCount: 0
+      };
+    }
+
+    const requests = apiData.requests;
+    
+    // Calculate statistics
+    const totalRequests = requests.length;
+    const completedCount = requests.filter(req => req.status === "completed").length;
+    const pendingCount = requests.filter(req => req.status === "pending").length;
+    const rejectedCount = requests.filter(req => req.status === "rejected").length;
+    
+    // Calculate duplicate names
+    const nameCount = new Map<string, number>();
+    requests.forEach(req => {
+      const name = req.student.name.toLowerCase().trim();
+      nameCount.set(name, (nameCount.get(name) || 0) + 1);
+    });
+    const duplicateNamesCount = Array.from(nameCount.values()).filter(count => count > 1).length;
+
+    // Apply status filter
+    const filteredRequests = statusFilter === "all" 
+      ? requests 
+      : requests.filter(req => req.status === statusFilter);
+
+    return {
+      filteredRequests,
+      totalRequests,
+      completedCount,
+      pendingCount,
+      rejectedCount,
+      duplicateNamesCount
+    };
+  }, [apiData?.requests, statusFilter]);
+
   // Calculate pagination data
   const paginationData = useMemo(() => {
-    if (!apiData?.requests) {
+    const { filteredRequests } = statisticsAndFilteredData;
+    
+    if (!filteredRequests.length) {
       return {
         currentPageData: [],
         totalPages: 0,
@@ -78,22 +127,28 @@ const StudentStatus = function () {
       };
     }
 
-    const totalItems = apiData.requests.length;
+    const totalItems = filteredRequests.length;
     const totalPages = Math.ceil(totalItems / itemsPerPage);
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
-    const currentPageData = apiData.requests.slice(startIndex, endIndex);
+    const currentPageData = filteredRequests.slice(startIndex, endIndex);
 
     return {
       currentPageData,
       totalPages,
       totalItems
     };
-  }, [apiData?.requests, currentPage, itemsPerPage]);
+  }, [statisticsAndFilteredData.filteredRequests, currentPage, itemsPerPage]);
 
   // Handle page change
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
+  };
+
+  // Handle filter change
+  const handleFilterChange = (filter: "all" | "pending" | "completed" | "rejected") => {
+    setStatusFilter(filter);
+    setCurrentPage(1); // Reset to first page when filter changes
   };
 
   // Format date to readable format
@@ -130,6 +185,74 @@ const StudentStatus = function () {
           <FaArrowLeft className="text-gray-600" />
         </Link>
         <h2 className="text-xl font-semibold ml-3 text-gray-800">{subjectCode}</h2>
+      </div>
+
+      {/* Statistics Section */}
+      <div className="p-4 bg-blue-50 border-b">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="text-center">
+            <div className="text-2xl font-bold text-blue-600">{statisticsAndFilteredData.completedCount}</div>
+            <div className="text-sm text-gray-600">Completed</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-yellow-600">{statisticsAndFilteredData.pendingCount}</div>
+            <div className="text-sm text-gray-600">Pending</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-red-600">{statisticsAndFilteredData.rejectedCount}</div>
+            <div className="text-sm text-gray-600">Rejected</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-purple-600">{statisticsAndFilteredData.duplicateNamesCount}</div>
+            <div className="text-sm text-gray-600">Duplicate Names</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Filter Section */}
+      <div className="p-4 border-b bg-gray-50">
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => handleFilterChange("all")}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              statusFilter === "all"
+                ? "bg-blue-600 text-white"
+                : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
+            }`}
+          >
+            All ({statisticsAndFilteredData.totalRequests})
+          </button>
+          <button
+            onClick={() => handleFilterChange("pending")}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              statusFilter === "pending"
+                ? "bg-yellow-600 text-white"
+                : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
+            }`}
+          >
+            Pending ({statisticsAndFilteredData.pendingCount})
+          </button>
+          <button
+            onClick={() => handleFilterChange("completed")}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              statusFilter === "completed"
+                ? "bg-green-600 text-white"
+                : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
+            }`}
+          >
+            Completed ({statisticsAndFilteredData.completedCount})
+          </button>
+          <button
+            onClick={() => handleFilterChange("rejected")}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              statusFilter === "rejected"
+                ? "bg-red-600 text-white"
+                : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
+            }`}
+          >
+            Rejected ({statisticsAndFilteredData.rejectedCount})
+          </button>
+        </div>
       </div>
 
       {isLoading ? (
@@ -177,7 +300,7 @@ const StudentStatus = function () {
                 ) : (
                   <tr>
                     <td colSpan={headings.length} className="px-6 py-4 text-center text-gray-500">
-                      No students found
+                      {statusFilter === "all" ? "No students found" : `No ${statusFilter} students found`}
                     </td>
                   </tr>
                 )}
