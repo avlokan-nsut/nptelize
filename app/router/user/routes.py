@@ -43,7 +43,7 @@ def login(
         key="access_token",
         value=access_token,
         httponly=True,                          # not accessible by client side javascript
-        secure=False if TESTING else False,
+        secure=False if TESTING else True,
         samesite='none' if DEVELOPMENT else 'strict',
         path="/",
     )
@@ -77,7 +77,7 @@ def logout(request: Request, response: Response):
             "access_token",
             path='/',
             httponly=True,
-            secure=False if TESTING else False,
+            secure=False if TESTING else True,
             samesite='none' if DEVELOPMENT else 'strict',
         )
         return {"message": "Logout successful"}
