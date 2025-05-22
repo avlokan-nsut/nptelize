@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Response, Request
 from sqlalchemy.orm import Session
 
+from app.config import config
 from app.config.db import get_db
 from app.models import User, UserRole
 from app.router.user.schemas import LoginRequest, LoginResponse, UserInfoResponse
@@ -9,9 +10,8 @@ from app.schemas import TokenData
 from app.services.utils.hashing import verify_password_hash
 
 from typing import cast
-import os
 
-ENV=os.environ.get('ENV', 'PRODUCTION')
+ENV=config['ENV']
 
 DEVELOPMENT = ENV == 'DEVELOPMENT'
 TESTING = ENV == 'TESTING'
