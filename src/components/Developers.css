@@ -1,0 +1,95 @@
+.developers-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  margin-top: 50px;
+  margin-bottom: 50px;
+  padding: 2rem;
+  background-color: #f8f9fa;
+  min-height: 100vh;
+  
+}
+
+.developers-title {
+  font-size: 3.5rem;
+  text-align: center;
+  color: #343a40;
+  margin-bottom: 0.5rem;
+}
+
+.developers-subtitle {
+  font-size: 1.2rem;
+  text-align: center;
+  color: #6c757d;
+  margin-bottom: 3rem;
+}
+
+.developers-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 2rem;
+}
+
+.developer-card {
+  background-color: white;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  padding: 1.5rem;
+}
+
+.developer-info {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.developer-name {
+  font-size: 1.5rem;
+  margin: 0 0 0.5rem 0;
+  color: #343a40;
+}
+
+.linkedin-link {
+  color: #0077b5;
+  display: inline-block;
+}
+
+.linkedin-icon {
+  font-size: 1.5rem;
+}
+
+.developer-image-container {
+  width: 100px;
+  height: 100px;
+  overflow: hidden;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.developer-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .developers-grid {
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  }
+}
+
+@media (max-width: 576px) {
+  .developers-title {
+    font-size: 2.5rem;
+  }
+  
+  .developers-grid {
+    grid-template-columns: 1fr;
+  }
+}

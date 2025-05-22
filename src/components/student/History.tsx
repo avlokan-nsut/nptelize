@@ -37,7 +37,6 @@ const fetchData = async () => {
     const apiUrl = import.meta.env.VITE_API_URL;
     const reqType = {
         request_types: [
-            "pending",
             "processing",
             "completed",
             "rejected",
