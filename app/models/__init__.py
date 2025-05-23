@@ -43,6 +43,7 @@ class Subject(Base):
     id = Column(String, primary_key=True, default=cuid)
     name = Column(String, nullable=False)
     subject_code = Column(String, unique=True, nullable=False)
+    nptel_course_code = Column(String, unique=True, nullable=False)
     teacher_id = Column(String, ForeignKey("users.id"), nullable=False)
 
     teacher: Mapped["User"] = relationship("User", back_populates="subjects")

@@ -25,6 +25,7 @@ class Subject(BaseModel):
     id: str
     name: str
     subject_code: str
+    nptel_course_code: str
     teacher_id: str
 
 class SubjectResponse(BaseModel):

@@ -74,6 +74,7 @@ def get_student_subjects(
                 {
                     'id': subject.id,
                     'code': subject.subject_code,
+                    'nptel_course_code': subject.nptel_course_code,
                     'name': subject.name,
                     'teacher': {
                         'id': subject.teacher.id,
