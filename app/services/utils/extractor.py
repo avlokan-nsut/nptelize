@@ -10,18 +10,19 @@ def extract_text_from_first_page(pdf_path: str) -> str:
     return text
 
 
-def extract_student_info_from_pdf(pdf_path: str) -> Tuple[str, str, str, str] | Tuple[None, None, None, None]:
+def extract_student_info_from_pdf(pdf_path: str) -> Tuple[str, str, str, str, str] | Tuple[None, None, None, None, None]:
     text = extract_text_from_first_page(pdf_path)
     lines = text.splitlines()
 
     if len(lines) != 12:
         print("PDF is invalid / has been tampered with")
-        return None, None, None, None
+        return None, None, None, None, None
 
     print("Extracted lines:")
     for i, line in enumerate(lines):
         print(f"Line {i}: {line}")
 
+    course_period = lines[3].strip()
     course_name = lines[5].strip()
     student_name = lines[6].strip()
     assignment_marks = lines[7].strip()
@@ -34,4 +35,5 @@ def extract_student_info_from_pdf(pdf_path: str) -> Tuple[str, str, str, str] | 
         student_name,
         total_marks,
         roll_no,
+        course_period
     )

@@ -7,7 +7,7 @@ import tempfile
 def extract_qr_code(pdf_path: str, page_number: int, output_image_path: str) -> None:
     with pdfplumber.open(pdf_path) as pdf:
         page = pdf.pages[page_number]
-        im = page.to_image(resolution=300)
+        im = page.to_image(resolution=150)
         im.save(output_image_path)
 
 

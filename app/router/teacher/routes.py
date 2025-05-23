@@ -147,7 +147,8 @@ def make_certificate_request_to_student(
             # Check if the student has already requested a certificate
             existing_request = db.query(Request).filter(
                 Request.student_id == db_student.id,
-                Request.status == 'pending'
+                Request.status == 'pending',
+                Request.subject_id == student_data.subject_id 
             ).first()
 
             if existing_request:
