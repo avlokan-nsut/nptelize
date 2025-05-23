@@ -41,6 +41,7 @@ def get_certificate_requests(
                         'id': request.subject.id,
                         'name': request.subject.name,
                         'code': request.subject.subject_code,
+                        'nptel_course_code': request.subject.nptel_course_code,
                         'teacher': {
                             'id': request.teacher.id,
                             'name': request.teacher.name,
