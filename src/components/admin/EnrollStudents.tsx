@@ -33,8 +33,8 @@ const enrollApi = async (students : EnrollmentData[]) =>{
 }
 
 const EnrollStudents = () => {
-  const [email, setEmail] = useState('');
-  const [subjectCode, setSubjectCode] = useState('');
+  // const [email, setEmail] = useState('');
+  // const [subjectCode, setSubjectCode] = useState('');
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [apiCalled, setApiCalled] = useState(false);
@@ -64,23 +64,23 @@ const EnrollStudents = () => {
 
     }
   })
-  const handleSingleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email || !subjectCode) {
-      setError('Please fill all required fields');
-      return;
-    }
+  // const handleSingleSubmit = (e: React.FormEvent) => {
+  //   e.preventDefault();
+  //   if (!email || !subjectCode) {
+  //     setError('Please fill all required fields');
+  //     return;
+  //   }
 
-    const data: EnrollmentData[] = [
-      {
-        email,
-        subject_code: subjectCode,
-      },
-    ];
+  //   const data: EnrollmentData[] = [
+  //     {
+  //       email,
+  //       subject_code: subjectCode,
+  //     },
+  //   ];
 
-    setError(null);
-    mutation.mutate(data);
-  };
+  //   setError(null);
+  //   mutation.mutate(data);
+  // };
 
   const handleCSVUpload = (e: React.FormEvent) => {
     e.preventDefault();
