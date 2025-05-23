@@ -41,6 +41,7 @@ def get_certificate_requests(
                         'id': request.subject.id,
                         'name': request.subject.name,
                         'code': request.subject.subject_code,
+                        'nptel_course_code': request.subject.nptel_course_code,
                         'teacher': {
                             'id': request.teacher.id,
                             'name': request.teacher.name,
@@ -74,6 +75,7 @@ def get_student_subjects(
                 {
                     'id': subject.id,
                     'code': subject.subject_code,
+                    'nptel_course_code': subject.nptel_course_code,
                     'name': subject.name,
                     'teacher': {
                         'id': subject.teacher.id,
@@ -147,7 +149,8 @@ async def upload_certificate(
 
     os.makedirs(CERTIFICATES_FOLDER_PATH, exist_ok=True)
 
-    file_path = f"{CERTIFICATES_FOLDER_PATH}/{request_id}.pdf"
+    relative_file_path = f"{request_id}.pdf"
+    file_path = f"{CERTIFICATES_FOLDER_PATH}/{relative_file_path}"
 
     await save_file_to_local_storage(
         file,
@@ -156,6 +159,7 @@ async def upload_certificate(
 
     # set the request status to processing
     verifier = Verifier(
+        uploaded_file_path_relative=relative_file_path,
         uploaded_file_path=file_path,
         request_id=request_id,
         student_id=current_student.user_id,

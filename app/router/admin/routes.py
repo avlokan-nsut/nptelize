@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 
 from app.config.db import get_db
 from app.models import UserRole, User, Subject, StudentSubject
@@ -9,7 +9,7 @@ from app.services.utils.hashing import generate_password_hash
 
 from sqlalchemy.orm import Session
 
-from typing import List
+from typing import List, Literal
 
 
 router = APIRouter(prefix='/admin')
@@ -62,6 +62,7 @@ def get_subjects(
                 'id': subject.id,
                 'name': subject.name,
                 'subject_code': subject.subject_code,
+                'nptel_course_code': subject.nptel_course_code,
                 'teacher_id': subject.teacher_id
             }
             for subject in subjects
@@ -300,11 +301,13 @@ def create_subjects(
 @router.post('/add/students')
 def add_students_to_subject(
     students: List[AddStudentToSubjectSchema],
+    mode: Literal['nptel', 'nsut'] = Query('nptel'), 
     db: Session = Depends(get_db),
     current_teacher: TokenData = Depends(get_current_admin)
 ):
     add_status = []
     for student in students:
+        subject_condition = Subject.nptel_course_code == student.course_code if mode == 'nptel' else Subject.subject_code == student.course_code
         # check if student exists
         try:
             db_student = db.query(User).filter(User.email == student.email, User.role == UserRole.student).first()
@@ -312,17 +315,19 @@ def add_students_to_subject(
                 add_status.append({
                     'email': student.email,
                     'success': False,
-                    'message': 'Student not found'
+                    'message': 'Student not found',
+                    'course_code': student.course_code
                 })
                 continue 
 
             # check if subject exists
-            db_subject = db.query(Subject).filter(Subject.subject_code == student.subject_code).first()
+            db_subject = db.query(Subject).filter(subject_condition).first()
             if not db_subject:
                 add_status.append({
                     'email': student.email,
                     'success': False,
-                    'message': 'Subject not found'
+                    'message': 'Subject not found',
+                    'course_code': student.course_code,
                 })
                 continue
 
@@ -335,7 +340,8 @@ def add_students_to_subject(
                 add_status.append({
                     'email': student.email,
                     'success': False,
-                    'message': 'Student already enrolled in the subject'
+                    'message': 'Student already enrolled in the subject',
+                    'course_code': student.course_code,
                 })
                 continue
 
@@ -353,7 +359,8 @@ def add_students_to_subject(
             add_status.append({
                 'email': student.email,
                 'success': True,
-                'message': 'Student added to subject'
+                'message': 'Student added to subject',
+                'course_code': student.course_code,
             })
         except Exception as e:
             print(e)
@@ -361,7 +368,8 @@ def add_students_to_subject(
             add_status.append({
                 'email': student.email,
                 'success': False,
-                'message': 'Unknown error while adding student to subject'
+                'message': 'Unknown error while adding student to subject',
+                'course_code': student.course_code,
             })
             continue
 

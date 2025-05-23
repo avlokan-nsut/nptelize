@@ -12,7 +12,8 @@ from .utils.extractor import extract_student_info_from_pdf
 import tempfile
 
 class Verifier:
-    def __init__(self, uploaded_file_path: str, request_id: str, student_id: str, db: Session):
+    def __init__(self, uploaded_file_path_relative: str, uploaded_file_path: str, request_id: str, student_id: str, db: Session):
+        self.uploaded_file_path_relative = uploaded_file_path_relative
         self.uploaded_file_path = uploaded_file_path
         self.request_id = request_id
         self.student_id = student_id
@@ -53,7 +54,7 @@ class Verifier:
             db_certificate = Certificate(
                 request_id=self.request_id,
                 student_id=self.student_id,
-                file_url=self.uploaded_file_path,
+                file_url=self.uploaded_file_path_relative,
                 verified=False,
             )
             self.db.add(db_certificate)
@@ -100,6 +101,7 @@ class Verifier:
             
             # Now, since verification has been done, update the final status to all good
             db_request.status = RequestStatus.completed
+            db_certificate.verified_total_marks = int(verified_total_marks)         # type: ignore
             db_certificate.verified = True
             db_certificate.remark = "Verification successful"
             self.db.commit()
