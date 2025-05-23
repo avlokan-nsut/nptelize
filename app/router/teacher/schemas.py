@@ -43,6 +43,7 @@ class EnrolledStudentResponse(BaseModel):
 class StudentCertificateRequest(BaseModel):
     student: EnrolledStudent
     subject: Subject
+    verified_total_marks: Optional[int] = None
     status: str
     created_at: datetime
     updated_at: datetime
