@@ -69,7 +69,7 @@ const Table = function () {
   }
 
   return (
-    <div className="overflow-hidden rounded-lg shadow-sm border border-gray-100 bg-white max-w-7xl mx-auto">
+    <div className="overflow-x-scroll rounded-lg shadow-sm border border-gray-100 bg-white max-w-7xl mx-auto">
       <table className="w-full">
         <thead className="bg-gray-50">
           <tr className="text-sm font-medium text-gray-700">

@@ -114,7 +114,7 @@ const RequestedTable = () => {
       }));
       return;
     }
-     if (file.size > 1048576) {
+     if (file.size > 2097152) {
     setUploadStatus(prev => ({
       ...prev,
       [requestId]: {
@@ -296,7 +296,7 @@ const RequestedTable = () => {
                         {uploadStatus[row.request_id]?.message}
                       </div>
                     )}
-                    <div className="text-[10px] text-left text-gray-500">File Size should be less than 1 MB</div>
+                    <div className="text-[10px] text-left text-gray-500">File Size should be less than 2 MB</div>
                   </div>
                 </td>
               </tr>
