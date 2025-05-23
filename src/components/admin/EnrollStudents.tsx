@@ -158,7 +158,7 @@ const EnrollStudents = () => {
       )}
 
       {errorStudents.length > 0 && (
-        <div className="mt-6 bg-white p-6 rounded-lg shadow-md">
+        <div className="mt-6 bg-white p-6 rounded-lg shadow-md mb-8">
           <h3 className="text-lg font-medium mb-4 text-red-600">Failed Enrollments ({errorStudents.length})</h3>
           <div className="border rounded-md overflow-hidden">
             <table className="min-w-full divide-y divide-gray-200">
@@ -172,7 +172,7 @@ const EnrollStudents = () => {
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white divide-y divide-gray-200 ">
                 {errorStudents.map((student, index) => (
                   <tr key={index} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
@@ -181,6 +181,7 @@ const EnrollStudents = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-red-600">
                       {student.message}
                     </td>
+                    
                   </tr>
                 ))}
               </tbody>
