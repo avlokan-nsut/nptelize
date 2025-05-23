@@ -25,7 +25,7 @@ class SubjectCreate(BaseModel):
 
 class AddStudentToSubjectSchema(BaseModel):
     email: str
-    subject_code: str
+    course_code: str
 
 # -----------------------------------------------------------------------
 # Response Schemas

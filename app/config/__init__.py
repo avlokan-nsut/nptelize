@@ -15,6 +15,7 @@ def check_config() -> None:
         'ALGORITHM',
         'ACCESS_TOKEN_EXPIRE_MINUTES',
         'ENV',
+        'CERTIFICATES_FOLDER_PATH',
     ]
     
     for var in required_env_vars:

@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Response, Request
+from fastapi import APIRouter, Depends, HTTPException, status, Response, Request, Query
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
 from app.config import config
@@ -9,12 +10,16 @@ from app.oauth2 import create_access_token, get_current_user_role_agnostic
 from app.schemas import TokenData
 from app.services.utils.hashing import verify_password_hash
 
-from typing import cast
+import os
+from typing import cast, Optional
+
 
 ENV=config['ENV']
+CERTIFICATES_FOLDER_PATH = config['CERTIFICATES_FOLDER_PATH']
 
 DEVELOPMENT = ENV == 'DEVELOPMENT'
 TESTING = ENV == 'TESTING'
+
 
 router = APIRouter(prefix='/user')
 
@@ -83,3 +88,30 @@ def logout(request: Request, response: Response):
         return {"message": "Logout successful"}
     else:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No active session found")
+
+
+@router.get('/certificate/file/{request_id}.pdf')
+def get_certificate_file_static(
+    request_id: str,
+    download: Optional[bool] = Query(False),
+    db: Session = Depends(get_db),
+):
+    file_path = f"{CERTIFICATES_FOLDER_PATH}/{request_id}.pdf"
+
+    # check if file exists
+    if not os.path.exists(file_path):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="File not found"
+        )
+
+    content_disposition = "attachment" if download else "inline"
+    
+    return FileResponse(
+        path=file_path,
+        media_type="application/pdf",
+        filename=f"{request_id}.pdf",
+        headers={
+            "Content-Disposition": f"{content_disposition}; filename={request_id}.pdf"
+        }
+    )

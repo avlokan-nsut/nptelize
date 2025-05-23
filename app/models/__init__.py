@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import List, Optional
 
 from cuid import cuid
-from sqlalchemy import Column, String, Enum, ForeignKey, Text, Boolean, DateTime
+from sqlalchemy import Column, String, Enum, ForeignKey, Integer, Text, Boolean, DateTime
 from sqlalchemy.orm import relationship, Mapped
 from sqlalchemy.sql.expression import text
 
@@ -43,6 +43,7 @@ class Subject(Base):
     id = Column(String, primary_key=True, default=cuid)
     name = Column(String, nullable=False)
     subject_code = Column(String, unique=True, nullable=False)
+    nptel_course_code = Column(String, unique=True, nullable=False)
     teacher_id = Column(String, ForeignKey("users.id"), nullable=False)
 
     teacher: Mapped["User"] = relationship("User", back_populates="subjects")
@@ -93,6 +94,7 @@ class Certificate(Base):
     student_id = Column(String, ForeignKey("users.id"), nullable=False)
     file_url = Column(Text, nullable=False)
     verification_file_url = Column(Text, nullable=True)
+    verified_total_marks = Column(Integer, nullable=True)
     uploaded_at = Column(DateTime, default=datetime.utcnow, server_default=text('now()'))
     updated_at = Column(DateTime, default=datetime.utcnow, server_default=text('now()'), onupdate=datetime.utcnow)
     verified = Column(Boolean, default=False)

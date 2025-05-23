@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List
 import os
 
+from app.config import config
 from app.config.db import get_db
 from app.models import User, RequestStatus, StudentSubject, Subject, Request, Certificate
 from app.router.student.schemas import CertificateRequestResponse, StudentSubjectsResponse, CertificateResponse
@@ -16,6 +17,7 @@ from app.oauth2 import get_current_student
 
 router = APIRouter(prefix="/student")
 
+CERTIFICATES_FOLDER_PATH = config['CERTIFICATES_FOLDER_PATH']
 
 @router.post('/requests', response_model=CertificateRequestResponse)
 def get_certificate_requests(
@@ -39,6 +41,7 @@ def get_certificate_requests(
                         'id': request.subject.id,
                         'name': request.subject.name,
                         'code': request.subject.subject_code,
+                        'nptel_course_code': request.subject.nptel_course_code,
                         'teacher': {
                             'id': request.teacher.id,
                             'name': request.teacher.name,
@@ -72,6 +75,7 @@ def get_student_subjects(
                 {
                     'id': subject.id,
                     'code': subject.subject_code,
+                    'nptel_course_code': subject.nptel_course_code,
                     'name': subject.name,
                     'teacher': {
                         'id': subject.teacher.id,
@@ -86,7 +90,6 @@ def get_student_subjects(
         print(e)
         raise e
 
-# TODO : add a route to serve static files from the certificates folder
 @router.get('/certificate/{request_id}', response_model=CertificateResponse | None)
 def get_certificate(
     request_id: str,
@@ -144,11 +147,10 @@ async def upload_certificate(
             detail="Request already in processing"
         )
 
-    TOP_LEVEL_FOLDER = '.'
-    
-    os.makedirs(f"{TOP_LEVEL_FOLDER}/certificates", exist_ok=True)
+    os.makedirs(CERTIFICATES_FOLDER_PATH, exist_ok=True)
 
-    file_path = f"{TOP_LEVEL_FOLDER}/certificates/{request_id}.pdf"
+    relative_file_path = f"{request_id}.pdf"
+    file_path = f"{CERTIFICATES_FOLDER_PATH}/{relative_file_path}"
 
     await save_file_to_local_storage(
         file,
@@ -157,6 +159,7 @@ async def upload_certificate(
 
     # set the request status to processing
     verifier = Verifier(
+        uploaded_file_path_relative=relative_file_path,
         uploaded_file_path=file_path,
         request_id=request_id,
         student_id=current_student.user_id,
@@ -166,4 +169,3 @@ async def upload_certificate(
     await verifier.start_verification()
 
     return {'message': 'Certificate uploaded successfully'}
-    

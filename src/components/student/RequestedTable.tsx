@@ -34,6 +34,8 @@ export type ApiResponse = {
   requests: Request[];
 };
 
+const FILE_SIZE_LIMIT = 2097152;
+
 function formatDateOnly(isoString: string): string {
   if(isoString === null || isoString === undefined){
     return "";
@@ -114,12 +116,12 @@ const RequestedTable = () => {
       }));
       return;
     }
-     if (file.size > 2097152) {
+     if (file.size >FILE_SIZE_LIMIT) {
     setUploadStatus(prev => ({
       ...prev,
       [requestId]: {
         success: false,
-        message: "File size must be less than 1 MB"
+        message: "File size must be less than 2 MB"
       }
     }));
     return;

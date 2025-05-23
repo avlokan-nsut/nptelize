@@ -43,8 +43,10 @@ def get_student_requests_for_a_subject(subject_id: str, db: Session = Depends(ge
                     'id': request.subject.id,
                     'name': request.subject.name,
                     'subject_code': request.subject.subject_code,
+                    'nptel_course_code': request.subject.nptel_course_code,
                     'teacher_id': request.subject.teacher_id,
                 },
+                'veriried_total_marks': request.certificate.verified_total_marks if request.certificate else None,
                 'status': request.status,
                 'created_at': request.created_at,
                 'updated_at': request.updated_at,
@@ -147,7 +149,8 @@ def make_certificate_request_to_student(
             # Check if the student has already requested a certificate
             existing_request = db.query(Request).filter(
                 Request.student_id == db_student.id,
-                Request.status == 'pending'
+                Request.status == 'pending',
+                Request.subject_id == student_data.subject_id 
             ).first()
 
             if existing_request:
