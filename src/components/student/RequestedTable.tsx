@@ -57,7 +57,7 @@ function formatDateOnly(isoString: string): string {
 const fetchData = async () => {
   const apiUrl = import.meta.env.VITE_API_URL;
   const reqType = {
-    request_types: ["pending", "rejected"],
+    request_types: ["pending", "rejected", "error"],
   };
 
   const { data} = await axios.post<ApiResponse>(
@@ -159,7 +159,7 @@ const RequestedTable = () => {
         [requestId]: "Verifying certificate..."
       }));
       
-      await axios.post(
+      const response = await axios.post(
         `${apiUrl}/student/certificate/upload?request_id=${requestId}`,
         formData,
         {
@@ -169,6 +169,8 @@ const RequestedTable = () => {
           }
         }
       );
+
+      console.log(response)
 
       // Handle successful upload
       setUploadStatus(prev => ({
