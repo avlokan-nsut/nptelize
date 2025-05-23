@@ -43,6 +43,7 @@ def get_student_requests_for_a_subject(subject_id: str, db: Session = Depends(ge
                     'id': request.subject.id,
                     'name': request.subject.name,
                     'subject_code': request.subject.subject_code,
+                    'nptel_course_code': request.subject.nptel_course_code,
                     'teacher_id': request.subject.teacher_id,
                 },
                 'status': request.status,
