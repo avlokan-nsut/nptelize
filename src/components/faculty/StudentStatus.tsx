@@ -1,4 +1,4 @@
-import { FaArrowLeft } from "react-icons/fa";
+import { FaArrowLeft ,FaDownload} from "react-icons/fa";
 import { Link, useParams, useLocation } from "react-router-dom";
 import axios from "axios";
 import { useQuery } from "@tanstack/react-query";
@@ -155,6 +155,7 @@ const StudentStatus = function () {
     const endIndex = startIndex + itemsPerPage;
     const currentPageData = filteredRequests.slice(startIndex, endIndex);
 
+
     return {
       currentPageData,
       totalPages,
@@ -177,14 +178,81 @@ const StudentStatus = function () {
 
   // Format date to readable format
   const formatDate = (dateString: string) => {
-    if(dateString==null || dateString==undefined){
-      return "";
+  if(dateString == null || dateString == undefined){
+    return "";
+  }
+  
+  const date = new Date(dateString);
+  const istOffset = 5.5 * 60 * 60 * 1000; 
+  const istDate = new Date(date.getTime() + istOffset);
+  
+  return istDate.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+};
+
+
+  //CSV funtionality
+  const downloadCSV = () => {
+    if (!statisticsAndFilteredData.filteredRequests.length) {
+      alert('No data to download');
+      return;
     }
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
+
+    const headers = [
+      'Student Name',
+      'NSUT Roll No.',
+      'Email',
+      'Status',
+      'Due Date',
+      'Created At',
+      'Subject',
+      'Subject Code'
+    ];
+
+    const escapeCSV = (value: string) => {
+      if (value == null || value === undefined) return '';
+      const stringValue = String(value);
+      // Escape quotes and wrap in quotes if contains comma, quote, or newline
+      if (stringValue.includes('"') || stringValue.includes(',') || stringValue.includes('\n')) {
+        return `"${stringValue.replace(/"/g, '""')}"`;
+      }
+      return stringValue;
+    };
+
+    // Convert data to CSV format
+    const csvRows = [
+      headers.join(','), // Header row
+      ...statisticsAndFilteredData.filteredRequests.map(request => [
+        escapeCSV(request.student.name),
+        escapeCSV(request.student.roll_number),
+        escapeCSV(request.student.email),
+      ].join(','))
+    ];
+
+    const csvContent = csvRows.join('\n');
+
+    try {
+      // Create and download file
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      
+      if (link.download !== undefined) {
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `${subjectCode}_students_${statusFilter}_${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url); 
+      }
+    } catch (err) {
+      console.error('Error generating CSV:', err);
+      alert('Error generating CSV file');
+    }
   };
 
   // Get appropriate status badge
@@ -219,16 +287,28 @@ const StudentStatus = function () {
         </h1>
 
         <div className="overflow-hidden rounded-lg shadow-md border border-gray-100 bg-white max-w-7xl mx-auto">
-          <div className="flex items-center p-4 border-b bg-gray-50">
-            <Link
-              to="/faculty/dashboard"
-              className="hover:bg-gray-200 p-2 rounded-full transition-colors"
+          <div className="flex items-center justify-between p-4 border-b bg-gray-50">
+            <div className="flex items-center">
+              <Link
+                to="/faculty/dashboard"
+                className="hover:bg-gray-200 p-2 rounded-full transition-colors"
+              >
+                <FaArrowLeft className="text-gray-600" />
+              </Link>
+              <h2 className="text-xl font-semibold ml-3 text-gray-800">
+                {subjectCode}
+              </h2>
+            </div>
+            
+            {/* Download Button */}
+            <button
+              onClick={downloadCSV}
+              disabled={!statisticsAndFilteredData.filteredRequests.length}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
             >
-              <FaArrowLeft className="text-gray-600" />
-            </Link>
-            <h2 className="text-xl font-semibold ml-3 text-gray-800">
-              {subjectCode}
-            </h2>
+              <FaDownload className="text-sm" />
+              Download CSV
+            </button>
           </div>
 
           {/* Statistics Section */}
