@@ -1,7 +1,7 @@
 from fastapi import UploadFile, HTTPException
 import magic  # python-magic library for file type detection
 
-MAX_FILE_SIZE = 1 * 1024 * 1024  # 1MB
+MAX_FILE_SIZE = 2 * 1024 * 1024  # 1MB
 
 async def process_upload(file: UploadFile) -> UploadFile:
     # 1. Check file extension first

@@ -77,8 +77,9 @@ class Verifier:
             success, pdf_url, output = await download_verification_pdf(verification_link, temp_f.name)
 
             if not success:
-                self.update_status_to_error(db_request, db_certificate, "Could not download the verification pdf")
-                return 
+                remark =  "Could not download the verification pdf"
+                self.update_status_to_error(db_request, db_certificate, remark)
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=remark)
 
             db_certificate.verification_file_url = pdf_url
 
@@ -114,17 +115,24 @@ class Verifier:
             uploaded_student_name,
             uploaded_total_marks,
             uploaded_roll_number,
+            uploaded_course_period,
         ) = extract_student_info_from_pdf(self.uploaded_file_path)
 
-        valid_course_name, valid_student_name, valid_total_marks, valid_roll_number = (
-            extract_student_info_from_pdf(verification_file_path)
-        )
+        (
+            valid_course_name, 
+            valid_student_name, 
+            valid_total_marks, 
+            valid_roll_number ,
+            valid_course_period
+        ) = extract_student_info_from_pdf(verification_file_path)
+
 
         if (
             uploaded_course_name is None
             or uploaded_student_name is None
             or uploaded_total_marks is None
             or uploaded_roll_number is None
+            or uploaded_course_period is None
         ):
             return False, "Invalid PDF uploaded. Data missing.", None, None
         
@@ -133,14 +141,15 @@ class Verifier:
             or valid_student_name is None
             or valid_total_marks is None
             or valid_roll_number is None
+            or valid_course_period is None
         ):
             return False, "Invalid details in the verification file", None, None
 
         print(
-            f"Uploaded: {uploaded_course_name}, {uploaded_student_name}, {uploaded_total_marks}, {uploaded_roll_number}"
+            f"Uploaded: {uploaded_course_name}, {uploaded_student_name}, {uploaded_total_marks}, {uploaded_roll_number}, {uploaded_course_period}"
         )
         print(
-            f"Valid: {valid_course_name}, {valid_student_name}, {valid_total_marks}, {valid_roll_number}"
+            f"Valid: {valid_course_name}, {valid_student_name}, {valid_total_marks}, {valid_roll_number}, {valid_course_period}"
         )
 
         if (uploaded_course_name.lower().strip() != valid_course_name.lower().strip()) or (
@@ -158,6 +167,9 @@ class Verifier:
 
         if uploaded_roll_number != valid_roll_number:
             return False, "Roll number mismatch", None, None
+        
+        if uploaded_course_period != valid_course_period:
+            return False, "Course period/year mismatch", None, None
 
 
         return (
