@@ -10,8 +10,6 @@ class TeacherLoginRequest(BaseModel):
     email: str
     password: str
 
-
-
 class CreateCertificateRequestFields(BaseModel):
     student_id: str
     subject_id: str
