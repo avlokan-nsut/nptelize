@@ -22,6 +22,7 @@ class AdminCreate(UserBase):
 class SubjectCreate(BaseModel):
     name: str
     subject_code: str
+    nptel_course_code: str
 
 class AddStudentToSubjectSchema(BaseModel):
     email: str
@@ -48,6 +49,7 @@ class CreateUserResponse(BaseModel):
 
 class SubjectCreateResponseFields(BaseModel):
     subject_code: str
+    nptel_course_code: str
     success: bool
     message: str
 

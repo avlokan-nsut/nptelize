@@ -41,6 +41,7 @@ class EnrolledStudentResponse(BaseModel):
     enrolled_students: List[EnrolledStudent]
 
 class StudentCertificateRequest(BaseModel):
+    id: str
     student: EnrolledStudent
     subject: Subject
     verified_total_marks: Optional[int] = None
