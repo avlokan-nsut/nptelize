@@ -1,5 +1,6 @@
 from datetime import datetime
 from pydantic import BaseModel, EmailStr
+from typing import Optional
 
 from app.models import UserRole, RequestStatus
 
@@ -44,5 +45,7 @@ class Certificate(BaseModel):
     id: str
     request_id: str
     file_url: str
-    verification_file_url: str
-    verified_total_marks: str
+    verification_file_url: Optional[str] = None
+    verified_total_marks: Optional[int] = None
+    verfied: bool
+    remark: Optional[int] = None
