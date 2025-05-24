@@ -117,7 +117,7 @@ export default function StudentTable() {
         const apiUrl = import.meta.env.VITE_API_URL;
         setIsLoadingPost(true);
         try {
-            console.log(formattedData)
+            
             setStudentsNotSubmitted([])
             const response = await axios.post<FileUploadResponse>(
                 `${apiUrl}/teacher/students/request`,
@@ -127,6 +127,8 @@ export default function StudentTable() {
                     headers: { "Content-Type": "application/json" },
                 }
             );
+
+            console.log(response.data)
 
             response.data.results.forEach((obj) => {
                 if (obj.success === false) {

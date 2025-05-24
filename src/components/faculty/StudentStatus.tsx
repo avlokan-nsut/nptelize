@@ -11,6 +11,7 @@ const headings = [
   "Email",
   "Status",
   "Due Date",
+  "Total Marks"
 ];
 
 export type Student = {
@@ -24,6 +25,7 @@ export type Subject = {
   id: string;
   name: string;
   subject_code: string;
+  nptel_course_code: string;
   teacher_id: string;
 };
 
@@ -31,6 +33,7 @@ export type Request = {
   student: Student;
   subject: Subject;
   status: "pending" | "completed" | "rejected";
+  verified_total_marks : "string";
   created_at: string;
   due_date: string;
 };
@@ -63,6 +66,7 @@ const StudentStatus = function () {
         withCredentials: true,
       }
     );
+    console.log(data)
 
     return data;
   };
@@ -205,11 +209,10 @@ const StudentStatus = function () {
       'Student Name',
       'NSUT Roll No.',
       'Email',
-      'Status',
-      'Due Date',
-      'Created At',
-      'Subject',
-      'Subject Code'
+      'Marks',
+      'NPTEL Course Code',
+      'Subject Code',
+      
     ];
 
     const escapeCSV = (value: string) => {
@@ -229,6 +232,9 @@ const StudentStatus = function () {
         escapeCSV(request.student.name),
         escapeCSV(request.student.roll_number),
         escapeCSV(request.student.email),
+        escapeCSV(request.verified_total_marks),
+        escapeCSV(request.subject.nptel_course_code),
+        escapeCSV(request.subject.subject_code)
       ].join(','))
     ];
 
@@ -443,6 +449,9 @@ const StudentStatus = function () {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-gray-700">
                             {formatDate(request.due_date)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-gray-700">
+                            {formatDate(request.verified_total_marks)}
                           </td>
                         </tr>
                       ))
