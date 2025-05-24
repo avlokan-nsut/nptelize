@@ -31,6 +31,7 @@ class Subject(BaseModel):
 class CertificateRequest(BaseModel):
     request_id: str
     subject: Subject
+    verified_total_marks: Optional[int] = None
     status: str
     certificate_uploaded_at: Optional[datetime] = None
     due_date: Optional[datetime] = None
