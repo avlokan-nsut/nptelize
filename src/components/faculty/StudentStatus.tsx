@@ -1,4 +1,4 @@
-import { FaArrowLeft ,FaDownload} from "react-icons/fa";
+import { FaArrowLeft, FaDownload } from "react-icons/fa";
 import { Link, useParams, useLocation } from "react-router-dom";
 import axios from "axios";
 import { useQuery } from "@tanstack/react-query";
@@ -11,6 +11,8 @@ const headings = [
   "Email",
   "Status",
   "Due Date",
+  "Total Marks",
+  "Actions",
 ];
 
 export type Student = {
@@ -24,13 +26,16 @@ export type Subject = {
   id: string;
   name: string;
   subject_code: string;
+  nptel_course_code: string;
   teacher_id: string;
 };
 
 export type Request = {
+  id: string;
   student: Student;
   subject: Subject;
   status: "pending" | "completed" | "rejected";
+  verified_total_marks: string;
   created_at: string;
   due_date: string;
 };
@@ -38,6 +43,8 @@ export type Request = {
 export type ApiResponse = {
   requests: Request[];
 };
+
+const apiUrl = import.meta.env.VITE_API_URL;
 
 const StudentStatus = function () {
   const { subjectCode: urlSubjectCode } = useParams<{ subjectCode: string }>();
@@ -55,7 +62,7 @@ const StudentStatus = function () {
   >("all");
 
   const fetchData = async () => {
-    const apiUrl = import.meta.env.VITE_API_URL;
+    
 
     const { data } = await axios.get<ApiResponse>(
       `${apiUrl}/teacher/subject/requests/${subjectId}`,
@@ -63,6 +70,7 @@ const StudentStatus = function () {
         withCredentials: true,
       }
     );
+    console.log(data);
 
     return data;
   };
@@ -155,7 +163,6 @@ const StudentStatus = function () {
     const endIndex = startIndex + itemsPerPage;
     const currentPageData = filteredRequests.slice(startIndex, endIndex);
 
-
     return {
       currentPageData,
       totalPages,
@@ -178,45 +185,46 @@ const StudentStatus = function () {
 
   // Format date to readable format
   const formatDate = (dateString: string) => {
-  if(dateString == null || dateString == undefined){
-    return "";
-  }
-  
-  const date = new Date(dateString);
-  const istOffset = 5.5 * 60 * 60 * 1000; 
-  const istDate = new Date(date.getTime() + istOffset);
-  
-  return istDate.toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
-};
+    if (dateString == null || dateString == undefined) {
+      return "";
+    }
 
+    const date = new Date(dateString);
+    const istOffset = 5.5 * 60 * 60 * 1000;
+    const istDate = new Date(date.getTime() + istOffset);
+
+    return istDate.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  };
 
   //CSV funtionality
   const downloadCSV = () => {
     if (!statisticsAndFilteredData.filteredRequests.length) {
-      alert('No data to download');
+      alert("No data to download");
       return;
     }
 
     const headers = [
-      'Student Name',
-      'NSUT Roll No.',
-      'Email',
-      'Status',
-      'Due Date',
-      'Created At',
-      'Subject',
-      'Subject Code'
+      "Student Name",
+      "NSUT Roll No.",
+      "Email",
+      "Marks",
+      "NPTEL Course Code",
+      "Subject Code",
     ];
 
     const escapeCSV = (value: string) => {
-      if (value == null || value === undefined) return '';
+      if (value == null || value === undefined) return "";
       const stringValue = String(value);
       // Escape quotes and wrap in quotes if contains comma, quote, or newline
-      if (stringValue.includes('"') || stringValue.includes(',') || stringValue.includes('\n')) {
+      if (
+        stringValue.includes('"') ||
+        stringValue.includes(",") ||
+        stringValue.includes("\n")
+      ) {
         return `"${stringValue.replace(/"/g, '""')}"`;
       }
       return stringValue;
@@ -224,34 +232,44 @@ const StudentStatus = function () {
 
     // Convert data to CSV format
     const csvRows = [
-      headers.join(','), // Header row
-      ...statisticsAndFilteredData.filteredRequests.map(request => [
-        escapeCSV(request.student.name),
-        escapeCSV(request.student.roll_number),
-        escapeCSV(request.student.email),
-      ].join(','))
+      headers.join(","), // Header row
+      ...statisticsAndFilteredData.filteredRequests.map((request) =>
+        [
+          escapeCSV(request.student.name),
+          escapeCSV(request.student.roll_number),
+          escapeCSV(request.student.email),
+          escapeCSV(request.verified_total_marks),
+          escapeCSV(request.subject.nptel_course_code),
+          escapeCSV(request.subject.subject_code),
+        ].join(",")
+      ),
     ];
 
-    const csvContent = csvRows.join('\n');
+    const csvContent = csvRows.join("\n");
 
     try {
       // Create and download file
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a');
-      
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+
       if (link.download !== undefined) {
         const url = URL.createObjectURL(blob);
-        link.setAttribute('href', url);
-        link.setAttribute('download', `${subjectCode}_students_${statusFilter}_${new Date().toISOString().split('T')[0]}.csv`);
-        link.style.visibility = 'hidden';
+        link.setAttribute("href", url);
+        link.setAttribute(
+          "download",
+          `${subjectCode}_students_${statusFilter}_${
+            new Date().toISOString().split("T")[0]
+          }.csv`
+        );
+        link.style.visibility = "hidden";
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        URL.revokeObjectURL(url); 
+        URL.revokeObjectURL(url);
       }
     } catch (err) {
-      console.error('Error generating CSV:', err);
-      alert('Error generating CSV file');
+      console.error("Error generating CSV:", err);
+      alert("Error generating CSV file");
     }
   };
 
@@ -299,7 +317,7 @@ const StudentStatus = function () {
                 {subjectCode}
               </h2>
             </div>
-            
+
             {/* Download Button */}
             <button
               onClick={downloadCSV}
@@ -443,6 +461,40 @@ const StudentStatus = function () {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-gray-700">
                             {formatDate(request.due_date)}
+                          </td>
+                          <td className="px-6 py-4 text-center whitespace-nowrap text-gray-700">
+                            {request.verified_total_marks}
+                          </td>
+
+                          {/* download button */}
+
+                          <td className="px-6 py-4 text-center whitespace-nowrap text-gray-700">
+                            {request.status === "completed" && (
+                              <div>
+                                <div className=" text-black py-2 rounded-md shadow-md transition-all duration-300 transform hover:scale-105 hover:bg-black hover:text-white">
+                                  <a
+                                    href={`${apiUrl}/user/certificate/file/${request.id}.pdf?download=false`}
+                                    target="_blank"
+                                    className="flex items-center justify-center font-medium"
+                                  >
+                                    <svg
+                                      xmlns="http://www.w3.org/2000/svg"
+                                      className="h-5 w-5"
+                                      fill="none"
+                                      viewBox="0 0 24 24"
+                                      stroke="currentColor"
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                                      />
+                                    </svg>
+                                  </a>
+                                </div>
+                              </div>
+                            )}
                           </td>
                         </tr>
                       ))

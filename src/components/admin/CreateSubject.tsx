@@ -5,6 +5,7 @@ import axios from "axios";
 interface SubjectForm {
   name: string;
   subject_code: string;
+  nptel_course_code: string;
 }
 
 type subject = {
@@ -38,7 +39,8 @@ const CreateSubject = () => {
 
   const [subjects, setSubjects] = useState<SubjectForm[]>([{
     name: '',
-    subject_code: ''
+    subject_code: '',
+    nptel_course_code : '',
   }]);
   
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -66,7 +68,7 @@ const CreateSubject = () => {
       });
 
     
-      setSubjects([{ name: '', subject_code: '' }]);
+      setSubjects([{ name: '', subject_code: '' , nptel_course_code: ''}]);
       setIsSubmitting(false);
     },
     onError: () => {
@@ -78,7 +80,7 @@ const CreateSubject = () => {
   const handleAddSubject = () => {
     setSubjects([
       ...subjects,
-      { name: '', subject_code: '' }
+      { name: '', subject_code: '', nptel_course_code: '' }
     ]);
   };
 
@@ -101,7 +103,8 @@ const CreateSubject = () => {
     // Validate form
     const isValid = subjects.every(subject => 
       subject.name.trim() !== '' && 
-      subject.subject_code.trim() !== ''
+      subject.subject_code.trim() !== '' &&
+      subject.nptel_course_code.trim() !== ''
     );
     
     if (!isValid) {
@@ -135,7 +138,7 @@ const CreateSubject = () => {
         const subject: any = {};
         headers.forEach((header, i) => {
           // Only include name and subject_code fields
-          if (header === 'name' || header === 'subject_code') {
+          if (header === 'name' || header === 'subject_code' || header=='nptel_course_code') {
             subject[header] = values[i];
           }
         });
@@ -254,7 +257,7 @@ const CreateSubject = () => {
         </form>
 
         <p className="mt-3 text-xs text-gray-500">
-          CSV should include columns with headings as name and subject_code
+          CSV should include columns with headings as name ,subject_code and nptel_course_code
         </p>
       </div>
 
@@ -274,7 +277,7 @@ const CreateSubject = () => {
               )}
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Subject Name</label>
                 <input
@@ -292,6 +295,17 @@ const CreateSubject = () => {
                   type="text"
                   value={subject.subject_code}
                   onChange={(e) => handleChange(index, 'subject_code', e.target.value)}
+                  className="w-full p-2 border border-gray-300 rounded"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">NPTEL Course Code</label>
+                <input
+                  type="text"
+                  value={subject.nptel_course_code}
+                  onChange={(e) => handleChange(index, 'nptel_course_code', e.target.value)}
                   className="w-full p-2 border border-gray-300 rounded"
                   required
                 />

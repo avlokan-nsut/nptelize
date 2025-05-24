@@ -4,7 +4,7 @@ import { useMutation } from '@tanstack/react-query';
 
 interface EnrollmentData {
   email: string;
-  subject_code: string;
+  course_code: string;
 }
 
 
@@ -94,7 +94,7 @@ const EnrollStudents = () => {
       try {        const text = event.target?.result as string;
         const lines = text.split('\n').filter(Boolean);
         const headers = lines[0].split(',').map((h) => h.trim().toLowerCase());
-        const requiredHeaders = ['email', 'subject_code'];
+        const requiredHeaders = ['email', 'course_code'];
         const missingHeaders = requiredHeaders.filter(
           (header) => !headers.includes(header)
         );
@@ -249,7 +249,7 @@ const EnrollStudents = () => {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"                required
               />
               <p className="mt-1 text-sm text-gray-500">
-                CSV must include headers: email, subject_code
+                CSV must include headers: email, course_code
               </p>
             </div>
 
