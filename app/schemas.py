@@ -1,5 +1,7 @@
-from pydantic import BaseModel
+from datetime import datetime
+from pydantic import BaseModel, EmailStr
 
+from app.models import UserRole, RequestStatus
 
 class TokenData(BaseModel):
     user_id: str
@@ -8,20 +10,39 @@ class TokenData(BaseModel):
 class GenericResponse(BaseModel):
     message: str
 
-class Student(BaseModel):
-    pass
+class User(BaseModel):
+    id: str
+    name: str
+    email: EmailStr
+    role: UserRole
+        
+class Student(User):
+    roll_number: str
 
 class Teacher(BaseModel):
-    pass
+    employee_id: str
 
 class Admin(BaseModel):
-    pass
+    employee_id: str
 
 class Subject(BaseModel):
-    pass
+    id: str
+    name: str
+    subject_code: str
+    nptel_course_code: str
+    teacher_id: str
 
 class Request(BaseModel):
-    pass
+    id: str
+    subject_id: str
+    student_id: str
+    teacher_id: str
+    status: RequestStatus
+    due_date: datetime
 
 class Certificate(BaseModel):
-    pass
+    id: str
+    request_id: str
+    file_url: str
+    verification_file_url: str
+    verified_total_marks: str
