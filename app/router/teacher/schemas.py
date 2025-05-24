@@ -10,8 +10,6 @@ class TeacherLoginRequest(BaseModel):
     email: str
     password: str
 
-
-
 class CreateCertificateRequestFields(BaseModel):
     student_id: str
     subject_id: str
@@ -41,6 +39,7 @@ class EnrolledStudentResponse(BaseModel):
     enrolled_students: List[EnrolledStudent]
 
 class StudentCertificateRequest(BaseModel):
+    id: str
     student: EnrolledStudent
     subject: Subject
     verified_total_marks: Optional[int] = None

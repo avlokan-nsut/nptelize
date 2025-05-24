@@ -46,7 +46,7 @@ def get_student_requests_for_a_subject(subject_id: str, db: Session = Depends(ge
                     'nptel_course_code': request.subject.nptel_course_code,
                     'teacher_id': request.subject.teacher_id,
                 },
-                'veriried_total_marks': request.certificate.verified_total_marks if request.certificate else None,
+                'verified_total_marks': request.certificate.verified_total_marks if request.certificate else None,
                 'status': request.status,
                 'created_at': request.created_at,
                 'updated_at': request.updated_at,

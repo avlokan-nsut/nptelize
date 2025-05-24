@@ -47,6 +47,7 @@ def get_certificate_requests(
                             'name': request.teacher.name,
                         },
                     },
+                    'verified_total_marks': request.certificate.verified_total_marks if request.certificate else None,
                     'status': request.status,
                     'due_date': request.due_date,
                     'certificate_uploaded_at': request.certificate.uploaded_at if request.certificate else None,

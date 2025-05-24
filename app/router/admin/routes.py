@@ -263,6 +263,7 @@ def create_subjects(
             'results': [
                 {
                     "subject_code": subject.subject_code,
+                    "nptel_course_code": subject.nptel_course_code,
                     "success": False,
                     "message": "No coordinator exists"
                 } 
@@ -275,13 +276,15 @@ def create_subjects(
             db_subject = Subject(
                 name=subject.name,
                 subject_code=subject.subject_code,
-                teacher_id=coordinator.id
+                teacher_id=coordinator.id,
+                nptel_course_code=subject.nptel_course_code,
             )
 
             db.add(db_subject)
             db.commit()
             results.append({
                 "subject_code": subject.subject_code,
+                "nptel_course_code": subject.nptel_course_code,
                 "success": True,
                 "message": "Subject created successfully"
             })
@@ -290,6 +293,7 @@ def create_subjects(
             print(e)
             results.append({
                 "subject_code": subject.subject_code,
+                "nptel_course_code": subject.nptel_course_code,
                 "success": False,
                 "message": "Failed to create subject"
             })
