@@ -35,7 +35,7 @@ const HeroIllustration: React.FC = () => {
           </div>
           <div>
             <p className="text-xs text-gray-500 mb-1">Grade</p>
-            <p className="text-sm font-medium text-gray-800">Elite + Gold</p>
+            <p className="text-sm font-medium text-gray-800">Elite</p>
           </div>
         </div>
         

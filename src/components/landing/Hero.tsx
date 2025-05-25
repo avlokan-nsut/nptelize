@@ -27,7 +27,7 @@ const Hero: React.FC = () => {
         <section className="relative min-h-[90vh] w-full flex items-center overflow-hidden">
             <HeroBackground />
 
-            <div className="container mx-auto px-6 py-16 relative z-10">
+            <div className="container mx-auto px-8 py-16 relative z-10 md:px-6">
                 <div className="grid lg:grid-cols-2 gap-12 lg:gap-8 items-center">
                     <HeroContent
                         title="Simplify Your NPTEL Certificate Submission"
