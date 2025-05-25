@@ -7,8 +7,9 @@ const Footer: React.FC = () => {
       <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-10 w-full">
         <div className="flex justify-between items-center h-full">
           {/* Copyright */}
-          <div className="text-gray-700 text-sm font-light tracking-wide">
-            © {new Date().getFullYear()} <span className="font-medium">Avlokan</span>. All rights reserved.
+          <div className="text-gray-700 text-sm font-light tracking-wide flex-col ">
+            © {new Date().getFullYear()} <span className="font-medium">Avlokan</span>. 
+            <div>All rights reserved.</div>
           </div>
           
           {/* Navigation Links */}

@@ -39,11 +39,11 @@ const Navbar = () => {
         <div className="md:hidden">
           <button
             onClick={toggleMenu}
-            className="flex items-center p-2 rounded-md text-gray-700 hover:bg-gray-200 focus:outline-none "
+            className="flex items-center p-2 rounded-md text-gray-700 hover:bg-gray-200 focus:outline-none"
           >
             <svg 
               xmlns="http://www.w3.org/2000/svg" 
-              className="h-6 w-6" 
+              className="h-6 w-6 transition-transform duration-500" 
               fill="none" 
               viewBox="0 0 24 24" 
               stroke="currentColor"
@@ -93,7 +93,11 @@ const Navbar = () => {
       </div>
       
       {/* Mobile menu dropdown */}
-      <div className={`md:hidden ${isMenuOpen ? 'block' : 'hidden'} mt-3 pt-3 border-t border-gray-200 `}>
+      <div 
+        className={`md:hidden mt-3 pt-3 border-t border-gray-200 transform transition-all duration-300 ease-in-out ${
+          isMenuOpen ? 'opacity-100 max-h-96 scale-y-100' : 'opacity-0 max-h-0 scale-y-95 origin-top overflow-hidden'
+        }`}
+      >
         {user ? (
           <div className="flex flex-col space-y-3">
             <div className="flex items-center gap-2">

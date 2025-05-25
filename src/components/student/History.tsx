@@ -73,6 +73,29 @@ function formatDateOnly(isoString: string): string {
   return date.toLocaleDateString("en-US", options);
 }
 
+ const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "completed":
+        return (
+          <span className="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+            Completed
+          </span>
+        );
+      case "rejected":
+        return (
+          <span className="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
+            Rejected
+          </span>
+        );
+      default:
+        return (
+          <span className="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
+            Pending
+          </span>
+        );
+    }
+  };
+
 const RequestedTable = () => {
   const { data, error, isLoading } = useQuery({
     queryKey: ["myDataHistory"],
@@ -121,9 +144,7 @@ const RequestedTable = () => {
                 <td className="px-6 py-4 font-medium">{row.subject.code}</td>
                 <td className="px-6 py-4">{row.subject.name}</td>
                 <td className="px-6 py-4">{row.subject.teacher.name}</td>
-                <td className="px-6 py-4">{`${row.status?.[0]?.toUpperCase()}${row.status?.slice(
-                  1
-                )}`}</td>
+                <td className="px-6 py-4">{getStatusBadge(row.status)}</td>
                 {/* <td className="px-6 py-4">{row.submitted_date || 'N/A'}</td> */}
                 <td className="px-6 py-4">
                   {formatDateOnly(row.certificate_uploaded_at) || "N/A"}
