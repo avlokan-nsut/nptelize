@@ -6,4 +6,7 @@ repos:
         additional_dependencies: 
         - "pydantic>=2.11.3"
         - "sqlalchemy[mypy]>=2.0.40"
+        args: 
+          - "--config-file=backend/pyproject.toml"
+        files: ^backend/
 
