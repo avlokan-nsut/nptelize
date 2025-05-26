@@ -22,5 +22,5 @@ def check_config() -> None:
         if var not in config:
             raise ValueError(f"{var} is required")
         
-    if config['ENV'] != 'DEVELOPMENT' and 'FRONTEND_URL' not in required_env_vars:
+    if config['ENV'] != 'DEVELOPMENT' and 'FRONTEND_URL' not in config:
         raise ValueError("FRONTEND_URL is required")
