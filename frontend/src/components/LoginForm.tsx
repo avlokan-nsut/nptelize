@@ -2,6 +2,7 @@ import { useState, ChangeEvent, FC, useEffect } from "react";
 import * as z from "zod";
 import { useAuthStore } from "../store/useAuthStore";
 import { useNavigate } from "react-router-dom";
+import { InfoIcon } from "lucide-react";
 
 const loginSchema = z.object({
     email: z
@@ -128,7 +129,7 @@ const LoginForm: FC = () => {
     };
 
     return (
-        <div className="p-4 flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="p-4 flex items-center justify-center min-h-[85vh] bg-gray-50">
             {toastMessage && (
                 <div
                     className={`absolute top-[70px] right-4 px-4 py-3 rounded border ${
@@ -233,6 +234,18 @@ const LoginForm: FC = () => {
                             </p>
                         )}
                     </div>
+
+                    {role=='student' && (<div className="mb-0 text-gray-400 text-xs flex flex-row">
+                        <span className="mr-2 mt-1">
+                            <InfoIcon className="w-4 h-4"/>
+                        </span>
+
+                        First time password is last 6 characters of your roll number + year of birth.
+                        <br/>
+                        Eg. 2023UCS2390 + 15/09/2005 = CS23902005
+
+                    </div>
+                    )}
 
                     {/* Submit Button */}
                     <button

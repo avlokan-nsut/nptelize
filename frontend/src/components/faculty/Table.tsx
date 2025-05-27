@@ -101,7 +101,7 @@ const Table = function () {
               <td className="px-6 py-4">
                 <Link 
                   to={`/faculty/students/requests/${subject.subject_code}`} 
-                  state={{ subjectId: subject.id }}
+                  state={{ subjectId: subject.id , subjectName : subject.name }}
                   className="inline-flex items-center px-4 py-2 bg-slate-600 hover:bg-black text-white text-sm font-medium rounded-md shadow-sm transition-colors duration-200"
                 >
                   Request Status

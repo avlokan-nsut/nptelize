@@ -87,10 +87,17 @@ function formatDateOnly(isoString: string): string {
             Rejected
           </span>
         );
-      default:
+
+      case "error":
+        return (
+          <span className="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
+            Rejected
+          </span>
+        );
+      case "processing":
         return (
           <span className="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
-            Pending
+            Processing
           </span>
         );
     }
