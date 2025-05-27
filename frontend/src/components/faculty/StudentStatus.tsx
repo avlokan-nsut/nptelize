@@ -34,7 +34,7 @@ export type Request = {
   id: string;
   student: Student;
   subject: Subject;
-  status: "pending" | "completed" | "rejected";
+  status: "pending" | "completed" | "rejected" | "no_certificate";
   verified_total_marks: string;
   created_at: string;
   due_date: string;
@@ -59,7 +59,7 @@ const StudentStatus = function () {
 
   // Filter state
   const [statusFilter, setStatusFilter] = useState<
-    "all" | "pending" | "completed" | "rejected" | "duplicate"
+    "all" | "pending" | "completed" | "rejected" | "duplicate" | "no_certificate"
   >("all");
 
   const fetchData = async () => {
@@ -96,6 +96,7 @@ const StudentStatus = function () {
         pendingCount: 0,
         rejectedCount: 0,
         duplicateNamesCount: 0,
+        noCertificateCount: 0,
       };
     }
 
@@ -111,6 +112,9 @@ const StudentStatus = function () {
     ).length;
     const rejectedCount = requests.filter(
       (req) => req.status === "rejected"
+    ).length;
+    const noCertificateCount = requests.filter(
+      (req) => req.status === "no_certificate"
     ).length;
 
     // Calculate duplicate names
@@ -143,6 +147,7 @@ const StudentStatus = function () {
       pendingCount,
       rejectedCount,
       duplicateNamesCount,
+      noCertificateCount,
     };
   }, [apiData?.requests, statusFilter]);
 
@@ -178,7 +183,7 @@ const StudentStatus = function () {
 
   // Handle filter change
   const handleFilterChange = (
-    filter: "all" | "pending" | "completed" | "rejected" | "duplicate"
+    filter: "all" | "pending" | "completed" | "rejected" | "duplicate" | "no_certificate"
   ) => {
     setStatusFilter(filter);
     setCurrentPage(1); // Reset to first page when filter changes
@@ -214,6 +219,7 @@ const StudentStatus = function () {
       "Marks",
       "Subject Name",
       "Subject Code",
+      'Status'
     ];
 
     const escapeCSV = (value: string) => {
@@ -240,6 +246,7 @@ const StudentStatus = function () {
           escapeCSV(request.verified_total_marks),
           escapeCSV(subjectName),
           escapeCSV(request.subject.subject_code),
+          escapeCSV(request.status)
         ].join(",")
       ),
     ];
@@ -287,6 +294,15 @@ const StudentStatus = function () {
             Rejected
           </span>
         );
+        
+      case "no_certificate":
+        return (
+          <span className="px-2 py-1 text-xs font-semibold rounded-full bg-sky-100 text-fuchsia-800">
+  No Certificate
+</span>
+
+
+        );
       default:
         return (
           <span className="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
@@ -330,7 +346,7 @@ const StudentStatus = function () {
 
           {/* Statistics Section */}
           <div className="p-4 bg-blue-50 border-b">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
               <div className="text-center">
                 <div className="text-2xl font-bold text-blue-600">
                   {statisticsAndFilteredData.completedCount}
@@ -348,6 +364,12 @@ const StudentStatus = function () {
                   {statisticsAndFilteredData.rejectedCount}
                 </div>
                 <div className="text-sm text-gray-600">Rejected</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-fuchsia-600">
+                  {statisticsAndFilteredData.noCertificateCount}
+                </div>
+                <div className="text-sm text-gray-600">No Certificate</div>
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-purple-600">
@@ -401,7 +423,16 @@ const StudentStatus = function () {
               >
                 Rejected ({statisticsAndFilteredData.rejectedCount})
               </button>
-
+              <button
+                onClick={() => handleFilterChange("no_certificate")}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  statusFilter === "no_certificate"
+                    ? "bg-fuchsia-600 text-white"
+                    : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
+                }`}
+              >
+                No Certificate ({statisticsAndFilteredData.noCertificateCount})
+              </button>
               <button
                 onClick={() => handleFilterChange("duplicate")}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
