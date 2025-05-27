@@ -18,8 +18,6 @@ origins = (
     if config['ENV'] == 'DEVELOPMENT' else [config['FRONTEND_URL']]
 )
 
-print(origins)
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,

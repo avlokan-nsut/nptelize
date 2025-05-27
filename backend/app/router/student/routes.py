@@ -116,7 +116,6 @@ def get_certificate(
         'updated_at': db_certificate.updated_at,
     }
 
-
 @router.post('/certificate/upload', response_model=GenericResponse)
 async def upload_certificate(
     request_id: str,
@@ -170,3 +169,34 @@ async def upload_certificate(
     await verifier.start_verification()
 
     return {'message': 'Certificate uploaded successfully'}
+
+@router.put('/update/request-status/no-certificate', response_model=GenericResponse)
+def upload_reqeust_status_to_no_certificate(
+    request_id: str,
+    db: Session = Depends(get_db),
+    current_student: TokenData = Depends(get_current_student)
+):
+    # the request must exist (and belong to the student)
+    db_request = db.query(Request).filter(
+        Request.id == request_id,
+        Request.student_id == current_student.user_id,
+    ).first()
+
+    if not db_request:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, 
+            detail="The given request does not exist or does not belong to the student"
+        )
+    
+    # the request must not be completed
+    if db_request.status == RequestStatus.completed:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, 
+            detail="The request has already been fulfilled"
+        )
+
+    # update the status
+    db_request.status = RequestStatus.no_certificate
+    db.commit()
+    
+    return {'message': 'successfull'}
