@@ -50,7 +50,8 @@ const StudentStatus = function () {
   const { subjectCode: urlSubjectCode } = useParams<{ subjectCode: string }>();
   const location = useLocation();
   const subjectCode = urlSubjectCode;
-  const subjectId = location.state?.subjectId;
+  const subjectId = location.state?.subjectId; 
+  const subjectName = location.state?.subjectName;
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
@@ -210,9 +211,8 @@ const StudentStatus = function () {
     const headers = [
       "Student Name",
       "NSUT Roll No.",
-      "Email",
       "Marks",
-      "NPTEL Course Code",
+      "Subject Name",
       "Subject Code",
     ];
 
@@ -237,9 +237,8 @@ const StudentStatus = function () {
         [
           escapeCSV(request.student.name),
           escapeCSV(request.student.roll_number),
-          escapeCSV(request.student.email),
           escapeCSV(request.verified_total_marks),
-          escapeCSV(request.subject.nptel_course_code),
+          escapeCSV(subjectName),
           escapeCSV(request.subject.subject_code),
         ].join(",")
       ),

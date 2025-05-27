@@ -19,6 +19,7 @@ interface AuthState {
   loading: boolean;
   error: string | null;
   login: (credentials: Credentials) => Promise<void>;
+  checkSession: () => Promise<void>; 
   logout: () => void;
 }
 
@@ -78,6 +79,26 @@ export const useAuthStore = create<AuthState>()(
           console.error("Logout failed", err);
         } finally {
           set({ user: null });
+        }
+      },
+
+      checkSession: async () => {
+        set({ loading: true, error: null });
+        try {
+          const response = await fetch(`${apiUrl}/user/me`, {
+            method: "GET",
+            credentials: "include",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          });
+          if (!response.ok) {
+            throw new Error("Session invalid");
+          }
+          const data = await response.json();
+          set({ user: { user_id: data.user_id, name: data.name, role: data.role }, loading: false });
+        } catch (error: any) {
+          set({ user: null, error: error.message, loading: false });
         }
       },
     }),
