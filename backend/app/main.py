@@ -13,7 +13,10 @@ check_config()
 
 local_ports = ['3000', '5173', '8000', '8080']
 
-origins = ['http://localhost:' + port for port in local_ports] if config['ENV'] == 'DEVELOPMENT' else config['FRONTEND_URL']
+origins = (
+    ['http://localhost:' + port for port in local_ports] 
+    if config['ENV'] == 'DEVELOPMENT' else [config['FRONTEND_URL']]
+)
 
 print(origins)
 

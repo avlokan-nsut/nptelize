@@ -60,3 +60,7 @@ dist-ssr
 
 
 .env
+temp.*
+
+# postgres
+postgres_data
