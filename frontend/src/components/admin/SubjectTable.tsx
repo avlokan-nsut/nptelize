@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import SubjectStudentsTable from './SubjectStudentsTable';
 import Pagination from '../faculty/Pagination';
+import SearchBar from '../student/SearchBar';
 
 interface Subject {
   id: string;
@@ -25,6 +26,7 @@ const SubjectTable = () => {
   const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10); 
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -51,14 +53,25 @@ const SubjectTable = () => {
     fetchData();
   }, []);
 
+  useEffect(() => {
+    setCurrentPage(1);
+}, [searchTerm]);
+
+  const filteredSubjects = useMemo(() => {
+    return subjects.filter(subject =>
+      subject.name.toLowerCase().includes(searchTerm.toLowerCase())
+      || subject.subject_code.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [subjects, searchTerm]);
+
   // Calculate paginated data and total pages
-  const totalPages = Math.ceil(subjects.length / itemsPerPage);
+  const totalPages = Math.ceil(filteredSubjects.length / itemsPerPage);
   
   const paginatedSubjects = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
-    return subjects.slice(startIndex, endIndex);
-  }, [subjects, currentPage, itemsPerPage]);
+    return filteredSubjects.slice(startIndex, endIndex);
+  }, [filteredSubjects, currentPage, itemsPerPage]);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -89,7 +102,15 @@ const SubjectTable = () => {
   return (
     <div>
       <h2 className="text-xl font-semibold mb-4">Subject List</h2>
-      
+      {!selectedSubject && (
+        <div className="mb-4">
+          <SearchBar 
+            value={searchTerm} 
+            onChange={setSearchTerm} 
+            placeholder="Search subjects..."
+          />
+        </div>
+      )}
       {selectedSubject ? (
         <div className="mb-6">
           <button 
@@ -149,7 +170,7 @@ const SubjectTable = () => {
             totalPages={totalPages}
             onPageChange={handlePageChange}
             itemsPerPage={itemsPerPage}
-            totalItems={subjects.length}
+            totalItems={filteredSubjects.length}
           />
         </div>
       )}
