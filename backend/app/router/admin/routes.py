@@ -7,6 +7,7 @@ from app.router.admin.schemas import StudentCreate, TeacherCreate, AdminCreate, 
 from app.schemas import TokenData, GenericResponse
 from app.services.utils.hashing import generate_password_hash
 
+import multiprocessing
 from sqlalchemy.orm import Session
 
 from typing import List, Literal
@@ -128,10 +129,12 @@ def create_students(
     db_students = []
     
     # TODO: Find a faster approach
-    # First attempt batch processing
+    # Generate password hashes in parallel
+    with multiprocessing.Pool() as pool:
+        student_password_hashes = pool.map(generate_password_hash, [student.password for student in students]) 
     try:
-        for student in students:
-            student_password_hash = generate_password_hash(student.password)
+        for i, student in enumerate(students):
+            student_password_hash = student_password_hashes[i]
             db_students.append(
                 User(
                     name=student.name,
@@ -158,9 +161,9 @@ def create_students(
         print(f"Batch processing failed: {batch_error}")
         
         # If batch fails, try individual processing to identify problematic records
-        for student in students:
+        for i, student in enumerate(students):
             try:
-                student_password_hash = generate_password_hash(student.password)
+                student_password_hash = student_password_hashes[i]
                 db_student = User(
                     name=student.name,
                     email=student.email,
