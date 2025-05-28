@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import axios from 'axios';
 import { useMutation } from '@tanstack/react-query';
+import Papa from 'papaparse';
 
 interface EnrollmentData {
   email: string;
@@ -82,55 +83,49 @@ const EnrollStudents = () => {
   //   mutation.mutate(data);
   // };
 
-  const handleCSVUpload = (e: React.FormEvent) => {
+
+
+const handleCSVUpload = (e: React.FormEvent) => {
     e.preventDefault();
     if (!csvFile) {
       setError('Please select a CSV file');
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      try {        const text = event.target?.result as string;
-        const lines = text.split('\n').filter(Boolean);
-        const headers = lines[0].split(',').map((h) => h.trim().toLowerCase());
+    Papa.parse<EnrollmentData>(csvFile, {
+      header: true,
+      skipEmptyLines: true,
+      complete: (result) => {
+        const { data, errors, meta } = result;
+
+        if (errors.length > 0) {
+          setError(`Error parsing CSV: ${errors[0].message}`);
+          return;
+        }
+
+        const headers = (meta.fields || []).map(field => field.trim().toLowerCase());
         const requiredHeaders = ['email', 'course_code'];
-        const missingHeaders = requiredHeaders.filter(
-          (header) => !headers.includes(header)
-        );
+        const missingHeaders = requiredHeaders.filter(header => !headers.includes(header));
 
         if (missingHeaders.length > 0) {
           setError(`CSV is missing required headers: ${missingHeaders.join(', ')}`);
           return;
         }
 
-        const dataFromCSV = lines.slice(1).map((line) => {
-          const values = line.split(',').map((v) => v.trim());
-          const item: any = {};
-          headers.forEach((header, i) => {
-            item[header] = values[i];
-          });
-          return item as EnrollmentData;
-        });
-
-        if (dataFromCSV.length === 0) {
+        if (data.length === 0) {
           setError('CSV file has no data rows');
           return;
         }
 
         setError(null);
-        mutation.mutate(dataFromCSV);
-      } catch (error: any) {
-        setError(`Error parsing CSV: ${error.message}`);
+        mutation.mutate(data);
+      },
+      error: (error) => {
+        setError(`Error reading the CSV file: ${error.message}`);
       }
-    };
+    });
+};
 
-    reader.onerror = () => {
-      setError('Error reading the CSV file');
-    };
-
-    reader.readAsText(csvFile);
-  };
 
   return (
     <div className="my-6">
@@ -249,7 +244,7 @@ const EnrollStudents = () => {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"                required
               />
               <p className="mt-1 text-sm text-gray-500">
-                CSV must include headers: email, course_code
+                CSV must include headers: email, course_code(NSUT code).
               </p>
             </div>
 
