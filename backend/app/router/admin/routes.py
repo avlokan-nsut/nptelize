@@ -308,13 +308,12 @@ def create_subjects(
 @router.post('/add/students')
 def add_students_to_subject(
     students: List[AddStudentToSubjectSchema],
-    mode: Literal['nptel', 'nsut'] = Query('nptel'), 
     db: Session = Depends(get_db),
     current_teacher: TokenData = Depends(get_current_admin)
 ):
     add_status = []
     for student in students:
-        subject_condition = Subject.nptel_course_code == student.course_code if mode == 'nptel' else Subject.subject_code == student.course_code
+        subject_condition = Subject.subject_code == student.course_code
         # check if student exists
         try:
             db_student = db.query(User).filter(User.email == student.email, User.role == UserRole.student).first()
