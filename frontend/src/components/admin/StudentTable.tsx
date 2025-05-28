@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import StudentSubjectsTable from './StudentSubjectsTable';
 import Pagination from '../faculty/Pagination';
+import SearchBar from '../student/SearchBar';
 
 interface Student {
   id: string;
@@ -17,6 +18,7 @@ const StudentTable = () => {
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     const fetchStudents = async () => {
@@ -39,13 +41,25 @@ const StudentTable = () => {
     fetchStudents();
   }, []);
 
-  const totalPages = Math.ceil(students.length / itemsPerPage);
+  useEffect(() => {
+    setCurrentPage(1);
+}, [searchTerm]);
+
+  const filteredStudents = useMemo(() => {
+    return students.filter(student =>
+      student.name.toLowerCase().includes(searchTerm.toLowerCase())
+      || student.email.toLowerCase().includes(searchTerm.toLowerCase())
+      || student.roll_number.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [students, searchTerm]);
+
+  const totalPages = Math.ceil(filteredStudents.length / itemsPerPage);
   
   const paginatedStudents = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
-    return students.slice(startIndex, endIndex);
-  }, [students, currentPage, itemsPerPage]);
+    return filteredStudents.slice(startIndex, endIndex);
+  }, [filteredStudents, currentPage, itemsPerPage]);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -71,7 +85,15 @@ const StudentTable = () => {
   return (
     <div>
       <h2 className="text-xl font-semibold mb-4">Student List</h2>
-      
+      {!selectedStudent && (
+        <div className="mb-4">
+          <SearchBar 
+            value={searchTerm} 
+            onChange={setSearchTerm} 
+            placeholder="Search students..."
+          />
+        </div>
+      )}
       {selectedStudent ? (
         <div className="mb-6">
           <button 
@@ -131,7 +153,7 @@ const StudentTable = () => {
             totalPages={totalPages}
             onPageChange={handlePageChange}
             itemsPerPage={itemsPerPage}
-            totalItems={students.length}
+            totalItems={filteredStudents.length}
           />
         </div>
       )}
