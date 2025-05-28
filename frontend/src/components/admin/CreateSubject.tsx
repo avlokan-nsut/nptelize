@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { useMutation } from "@tanstack/react-query";
 import axios from "axios";
+import Papa from "papaparse";
 
 interface SubjectForm {
   name: string;
@@ -125,31 +126,25 @@ const CreateSubject = () => {
   };
 
   const handleCSVUpload = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!csvFile) return;
+  e.preventDefault();
+  if (!csvFile) return;
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const text = event.target?.result as string;
-      const lines = text.split("\n").filter(Boolean);
-      const headers = lines[0].split(",").map((h) => h.trim());
-      const subjectsFromCSV = lines.slice(1).map((line) => {
-        const values = line.split(",").map((v) => v.trim());
-        const subject: any = {};
-        headers.forEach((header, i) => {
-          // Only include name and subject_code fields
-          if (header === 'name' || header === 'subject_code' || header=='nptel_course_code') {
-            subject[header] = values[i];
-          }
-        });
-        return subject;
-      });
-      setIsSubmitting(true);
-      setError(null);
-      mutation.mutate(subjectsFromCSV);
-    };
-    reader.readAsText(csvFile);
+  const reader = new FileReader();
+  reader.onload = (event) => {
+    const text = event.target?.result as string;
+    const parsed = Papa.parse(text, { header: true, skipEmptyLines: true });
+    // Only keep relevant fields
+    const subjectsFromCSV = (parsed.data as any[]).map((row) => ({
+      name: row.name,
+      subject_code: row.subject_code,
+      nptel_course_code: row.nptel_course_code,
+    }));
+    setIsSubmitting(true);
+    setError(null);
+    mutation.mutate(subjectsFromCSV);
   };
+  reader.readAsText(csvFile);
+};
 
   return (
     <div>
