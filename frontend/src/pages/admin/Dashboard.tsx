@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import CreateStudent from '../../components/admin/CreateStudent';
-import CreateFaculty from '../../components/admin/CreateFaculty';
-import CreateAdmin from '../../components/admin/CreateAdmin';
+// import CreateFaculty from '../../components/admin/CreateFaculty';
+// import CreateAdmin from '../../components/admin/CreateAdmin';
 import CreateSubject from '../../components/admin/CreateSubject';
 import EnrollStudents from '../../components/admin/EnrollStudents';
 import StudentTable from '../../components/admin/StudentTable';
@@ -25,10 +25,10 @@ const Dashboard = () => {
     switch (activeTab) {
       case 'createStudents':
         return <CreateStudent />;
-      case 'createFaculty':
-        return <CreateFaculty />;
-      case 'createAdmins':
-        return <CreateAdmin />;
+      // case 'createFaculty':
+      //   return <CreateFaculty />;
+      // case 'createAdmins':
+      //   return <CreateAdmin />;
       case 'createSubjects':
         return <CreateSubject />;
       case 'enrollStudents':
@@ -148,7 +148,7 @@ const Dashboard = () => {
                 >
                   Students
                 </button>
-                <button
+                {/* <button
                   className={`px-3 py-2 text-sm rounded-md ${
                     activeTab === 'createFaculty' 
                     ? 'bg-blue-50 text-blue-700 font-medium' 
@@ -167,7 +167,7 @@ const Dashboard = () => {
                   onClick={() => setActiveTab('createAdmins')}
                 >
                   Admins
-                </button>
+                </button> */}
                 <button
                   className={`px-3 py-2 text-sm rounded-md ${
                     activeTab === 'createSubjects' 
