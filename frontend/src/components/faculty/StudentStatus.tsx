@@ -71,7 +71,7 @@ const StudentStatus = function () {
         withCredentials: true,
       }
     );
-    console.log(data);
+    // console.log(data);
 
     return data;
   };

@@ -20,6 +20,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import PublicRoute from "./components/PublicRoutes";
 import StudentStatus from "./components/faculty/StudentStatus";
 import Developers from "./components/Developers";
+import ReportSection from "./components/faculty/ReportSection";
 
 const queryClient = new QueryClient();
 
@@ -54,6 +55,7 @@ const routes = createBrowserRouter(
                     element={<StudentTable />}
                 />
                 <Route path="faculty/students/requests/:subjectCode" element={<StudentStatus />} />
+                <Route  path ="faculty/report-section" element={<ReportSection/>}/>
             </Route>
 
             {/* Admin routes */}
