@@ -6,56 +6,49 @@ import SearchBar from "../student/SearchBar";
 import { useEffect, useState } from "react";
 import Pagination from "./Pagination";
 
-const headings = [
-  "Subject Code",
-  "Subject Name",
-  "Actions",
-  "Request Status",
-];
+const headings = ["Subject Code", "Subject Name", "Actions", "Request Status"];
 
-export type Subject ={
-  "id": string;
-  "name" : string;
-  "subject_code" : string;
-  "teacher_id" : string;
-}
+export type Subject = {
+  id: string;
+  name: string;
+  subject_code: string;
+  teacher_id: string;
+};
 
 export type ApiResponse = {
   subjects: Subject[];
-}
+};
 
-const fetchData = async ()=>{
+const fetchData = async () => {
   const apiUrl = import.meta.env.VITE_API_URL;
-  
-  const {data} = await axios.get<ApiResponse>(
-    `${apiUrl}/teacher/subjects`,
-    {
-      withCredentials: true,
-    }
-  )
+
+  const { data } = await axios.get<ApiResponse>(`${apiUrl}/teacher/subjects`, {
+    withCredentials: true,
+  });
 
   // console.log(data);
 
   return data;
- 
-}
+};
 
 const Table = function () {
-  const { data: apiData, error, isLoading } = useQuery({
+  const {
+    data: apiData,
+    error,
+    isLoading,
+  } = useQuery({
     queryKey: ["teacherRequests"],
     queryFn: fetchData,
     refetchOnWindowFocus: false,
   });
 
-
-
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-    useEffect(() => {
+  useEffect(() => {
     setCurrentPage(1);
-}, [searchTerm]);
+  }, [searchTerm]);
 
   if (isLoading) {
     return (
@@ -81,28 +74,41 @@ const Table = function () {
     );
   }
 
-  const filteredSubjects = apiData.subjects.filter((subject) =>
-    subject.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    subject.subject_code.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredSubjects = apiData.subjects.filter(
+    (subject) =>
+      subject.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      subject.subject_code.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const totalItems = filteredSubjects.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedSubjects = filteredSubjects.slice(startIndex, startIndex + itemsPerPage);
+  const paginatedSubjects = filteredSubjects.slice(
+    startIndex,
+    startIndex + itemsPerPage
+  );
 
   return (
     <div className="max-w-7xl mx-auto">
+      <div className="w-full flex flex-col justify-end space-x-2 mt-10 md:flex-row md:mt-0">
+        <Link to="/faculty/report-section">
+          <button className="p-3 text-sm rounded-2xl my-4 transition-colors duration-200 md:p-4 md:text-md bg-black text-white cursor-pointer hover:bg-gray-500">
+            Report Section
+          </button>
+        </Link>
+      </div>
+
       <div className="mb-4">
-        <SearchBar 
-          value={searchTerm} 
+        <SearchBar
+          value={searchTerm}
           onChange={(value) => {
             setSearchTerm(value);
             setCurrentPage(1);
-          }} 
-          placeholder="Search by subject name or code" 
+          }}
+          placeholder="Search by subject name or code"
         />
       </div>
+
       <div className="overflow-x-scroll rounded-lg shadow-sm border border-gray-100 bg-white">
         <table className="w-full">
           <thead className="bg-gray-50">
@@ -123,8 +129,8 @@ const Table = function () {
                 <td className="px-6 py-4">{subject.subject_code}</td>
                 <td className="px-6 py-4">{subject.name}</td>
                 <td className="px-6 py-4">
-                  <Link 
-                    to={`/faculty/students/${subject.subject_code}`} 
+                  <Link
+                    to={`/faculty/students/${subject.subject_code}`}
                     state={{ subjectId: subject.id }}
                     className="inline-flex items-center px-4 py-2 bg-black text-white text-sm font-medium rounded-md shadow-sm transition-colors duration-200"
                   >
@@ -133,9 +139,9 @@ const Table = function () {
                   </Link>
                 </td>
                 <td className="px-6 py-4">
-                  <Link 
-                    to={`/faculty/students/requests/${subject.subject_code}`} 
-                    state={{ subjectId: subject.id , subjectName: subject.name }}
+                  <Link
+                    to={`/faculty/students/requests/${subject.subject_code}`}
+                    state={{ subjectId: subject.id, subjectName: subject.name }}
                     className="inline-flex items-center px-4 py-2 bg-slate-600 hover:bg-black text-white text-sm font-medium rounded-md shadow-sm transition-colors duration-200"
                   >
                     Request Status

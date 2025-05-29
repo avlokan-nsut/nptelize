@@ -12,6 +12,20 @@ interface Developer {
 const developers: Developer[] = [
     {
         id: 1,
+        name: "Ankur Gupta",
+        linkedinUrl: "https://www.linkedin.com/in/ankursynon/",
+        imageUrl:
+            "https://media.licdn.com/dms/image/v2/D5603AQGTVaLHVAl1Gw/profile-displayphoto-shrink_400_400/B56ZVVlktHHEAg-/0/1740897669114?e=1753920000&v=beta&t=ovk1hny48YhHBibZ-oTQRA6aijVaRtPaOGA556RO8cA",
+    },
+    {
+        id: 2,
+        name: "Md Imran Hussain",
+        linkedinUrl: "https://www.linkedin.com/in/md-imran-hussain-8139a48b/",
+        imageUrl:
+            "https://media.licdn.com/dms/image/v2/C4D03AQHja-1Kn514ZA/profile-displayphoto-shrink_400_400/profile-displayphoto-shrink_400_400/0/1585737988234?e=1753920000&v=beta&t=E9tDkBUqH2-U5Z4-hcK6S4Fc2FPkSZKyq3excCfPp1E",
+    },
+    {
+        id: 3,
         name: "Ocean Lakra",
         linkedinUrl: "https://www.linkedin.com/in/ocean-lakra-6014b0253/",
         imageUrl:
@@ -19,7 +33,7 @@ const developers: Developer[] = [
     },
 
     {
-        id: 2,
+        id: 4,
         name: "Madhav Arora",
         linkedinUrl: "https://www.linkedin.com/in/madhavarora03/",
         imageUrl:
@@ -27,7 +41,7 @@ const developers: Developer[] = [
     },
 
     {
-        id: 3,
+        id: 5,
         name: "Lakshay Gupta",
         linkedinUrl: "https://www.linkedin.com/in/lakshay-gupta-529a1428a/",
         imageUrl:
@@ -35,7 +49,7 @@ const developers: Developer[] = [
     },
 
     {
-        id: 4,
+        id: 6,
         name: "Shrey Singh",
         linkedinUrl: "https://www.linkedin.com/in/shrey-singh7/",
 
@@ -44,7 +58,7 @@ const developers: Developer[] = [
     },
 
     {
-        id: 5,
+        id: 7,
         name: "Shivam Mishra",
         linkedinUrl: "https://www.linkedin.com/in/shivam-mishra-67671a17a/",
         imageUrl:
@@ -52,7 +66,7 @@ const developers: Developer[] = [
     },
 
     {
-        id: 6,
+        id: 8,
         name: "Dheeraj Kumar",
         linkedinUrl: "https://www.linkedin.com/in/greatnerve",
         imageUrl:
@@ -60,14 +74,14 @@ const developers: Developer[] = [
     },
 
     {
-        id: 7,
+        id: 9,
         name: "Sujal Chaudhary",
         linkedinUrl: "https://www.linkedin.com/in/sujal-info/",
         imageUrl:
             "https://media.licdn.com/dms/image/v2/D5603AQE90HSvqYkvJg/profile-displayphoto-shrink_400_400/B56ZQz3riQHQAk-/0/1736037022825?e=1753315200&v=beta&t=U8h7HnphgNZH1ceztfer94cagbbR1RAMGdanqt5xSwg",
     },
     {
-        id: 8,
+        id: 10,
         name: "Pradeep Yadav",
         linkedinUrl: "https://www.linkedin.com/in/me-pradeep-yadav/",
         imageUrl:
@@ -75,7 +89,7 @@ const developers: Developer[] = [
     },
 
     {
-        id: 9,
+        id: 11,
         name: "Aditya Chouksey",
         linkedinUrl: "https://www.linkedin.com/in/aditya-chouksey-0b6b70239/",
         imageUrl:
@@ -88,7 +102,7 @@ const Developers: React.FC = () => {
         <div className="developers-container">
             <h1 className="developers-title">Meet Our Team</h1>
             <p className="developers-subtitle">
-                The creative minds and brilliant engineers behind Avlokan.
+                The creative minds and brilliant engineers behind AVLOKAN.
             </p>
 
             <div className="developers-grid">
@@ -98,6 +112,7 @@ const Developers: React.FC = () => {
                             <h2 className="developer-name">{developer.name}</h2>
                             <a
                                 href={developer.linkedinUrl}
+                                target="_blank"
                                 className="linkedin-link"
                                 aria-label={`${developer.name}'s LinkedIn profile`}
                             >
