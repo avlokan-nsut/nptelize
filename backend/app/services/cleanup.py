@@ -18,19 +18,19 @@ class CleanupService:
     def __init__(self, session_factory: async_sessionmaker[AsyncSession]):
         self.session_factory = session_factory
         self.running = False
-        self.cleanup_task: asyncio.Task | None = None
+        self.periodic_cleanup_task: asyncio.Task | None = None
     
-    def start_cleanup(self) -> None:
+    def start_periodic_cleanup(self) -> None:
         if not self.running:
             self.running = True
-            self.cleanup_task = asyncio.create_task(self.periodic_cleanup())     
+            self.periodic_cleanup_task = asyncio.create_task(self.periodic_cleanup())     
             logger.info("Background cleanup service started")
     
-    def stop_cleanup(self) -> None:
+    def stop_periodic_cleanup(self) -> None:
         self.running = False
-        if self.cleanup_task:
-            self.cleanup_task.cancel()
-            self.cleanup_task = None
+        if self.periodic_cleanup_task:
+            self.periodic_cleanup_task.cancel()
+            self.periodic_cleanup_task = None
             logger.info("Background cleanup service stopped")
         
     async def periodic_cleanup(self) -> None:

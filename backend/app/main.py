@@ -21,12 +21,13 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     logger.info("Starting up FastAPI application")
 
     cleanup_service = CleanupService(AsyncSessionLocal)
-    cleanup_service.start_cleanup()
+    cleanup_service.start_periodic_cleanup()
 
     yield
 
     logger.info("Shutting down FastAPI application")
-    cleanup_service.stop_cleanup()
+    cleanup_service.stop_periodic_cleanup()
+    await cleanup_service.execute_cleanup()
 
 app = FastAPI(
     title="NPTEL Automation API",
