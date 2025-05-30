@@ -4,7 +4,7 @@ import SearchBar from "../student/SearchBar";
 import { useEffect, useState } from "react";
 import Pagination from "./Pagination";
 
-const headings = ["Subject Code", "Subject Name", "Actions"];
+const headings = ["Subject Code", "Subject Name", "Actions" ,"Pending" , "Completed" , "Rejected" , "No Certificate"];
 
 export type Subject = {
   id: string;
@@ -38,17 +38,82 @@ export type ApiResponseCSV = {
   requests: Request[];
 };
 
+
+
 const apiUrl = import.meta.env.VITE_API_URL;
 
 const fetchData = async () => {
+  // Fetch subjects data
   const { data } = await axios.get<ApiResponse>(`${apiUrl}/teacher/subjects`, {
     withCredentials: true,
   });
 
-  // console.log(data);
+  // Fetch all requests data in parallel and create a Map for O(1) lookups
+  const requestPromises = data.subjects.map(async (subject) => {
+    const { data: requestData } = await axios.get<ApiResponseCSV>(
+      `${apiUrl}/teacher/subject/requests/${subject.id}`,
+      { withCredentials: true }
+    );
+    return {
+      subjectId: subject.id,
+      requests: requestData.requests
+    };
+  });
 
-  return data;
+  // Wait for all requests to complete
+  const requestsData = await Promise.all(requestPromises);
+
+  // Create optimized stats object using single-pass processing
+  const stats: Record<string, { 
+    completed: number; 
+    pending: number; 
+    rejected: number; 
+    no_certificate: number; 
+  }> = {};
+
+   const totals = {
+    completed: 0,
+    pending: 0,
+    rejected: 0,
+    no_certificate: 0
+  };
+
+  // Process each subject's requests in a single pass
+  requestsData.forEach(({ subjectId, requests }) => {
+    // Single reduce operation instead of 4 separate filter operations
+    const statusCounts = requests.reduce((acc, req) => {
+      const status = req.status;
+      acc[status] = (acc[status] || 0) + 1;
+      return acc;
+    }, {
+      completed: 0,
+      pending: 0,
+      rejected: 0,
+      no_certificate: 0
+    });
+
+    stats[subjectId] = {
+      completed: statusCounts.completed,
+      pending: statusCounts.pending,
+      rejected: statusCounts.rejected,
+      no_certificate: statusCounts.no_certificate
+
+      
+    };
+
+    totals.completed += statusCounts.completed;
+    totals.pending += statusCounts.pending;
+    totals.rejected += statusCounts.rejected;
+    totals.no_certificate += statusCounts.no_certificate;
+  });
+
+  return {
+    subjects: data.subjects,
+    stats: stats,
+    totals : totals
+  };
 };
+
 
 const ReportSection = function () {
   const {
@@ -56,7 +121,7 @@ const ReportSection = function () {
     error,
     isLoading,
   } = useQuery({
-    queryKey: ["teacherRequests"],
+    queryKey: ["teacherRequestsStats"],
     queryFn: fetchData,
     refetchOnWindowFocus: false,
   });
@@ -195,7 +260,7 @@ const ReportSection = function () {
     );
   }
 
-  if (!apiData || apiData.subjects.length === 0) {
+    if (!apiData ||!apiData.stats || !apiData.subjects || !apiData.totals || apiData.subjects.length === 0) {
     return (
       <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6 text-center">
         <p className="text-gray-500">No subjects found</p>
@@ -229,7 +294,7 @@ const ReportSection = function () {
             htmlFor="status-filter"
             className="text-sm font-medium text-gray-700 mb-1 "
           >
-            Filter by Status:
+            Download by Status:
           </label>
           <select
             id="status-filter"
@@ -280,6 +345,35 @@ const ReportSection = function () {
         />
       </div>
 
+      <div className="p-4 bg-blue-50 border-b">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-blue-600">
+                  {apiData?.totals?.completed || '0'}
+                </div>
+                <div className="text-sm text-gray-600">Completed</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-yellow-600">
+                  {apiData?.totals?.pending || '0'}
+                </div>
+                <div className="text-sm text-gray-600">Pending</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-red-600">
+                  {apiData?.totals?.rejected || '0'}
+                </div>
+                <div className="text-sm text-gray-600">Rejected</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-fuchsia-600">
+                  {apiData?.totals?.no_certificate || '0'}
+                </div>
+                <div className="text-sm text-gray-600">No Certificate</div>
+              </div>
+            </div>
+          </div>
+
       <div className="overflow-x-scroll rounded-lg shadow-sm border border-gray-100 bg-white">
         <table className="w-full">
           <thead className="bg-gray-50">
@@ -299,6 +393,7 @@ const ReportSection = function () {
               >
                 <td className="px-6 py-4 ">{subject.subject_code}</td>
                 <td className="px-6 py-4">{subject.name}</td>
+                
                 <td className="px-6 py-4 text-center whitespace-nowrap text-gray-700">
                   <div>
                     <button
@@ -327,8 +422,14 @@ const ReportSection = function () {
                     </button>
                   </div>
                 </td>
+                 <td className="px-6 py-4">{apiData?.stats?.[subject.id]?.pending || '0'}</td>
+                <td className="px-6 py-4">{apiData?.stats?.[subject.id]?.completed || '0'}</td>
+                <td className="px-6 py-4">{apiData?.stats?.[subject.id]?.rejected || '0'}</td>
+                <td className="px-6 py-4">{apiData?.stats?.[subject.id]?.no_certificate || '0'}</td>
               </tr>
             ))}
+
+            
           </tbody>
         </table>
       </div>
