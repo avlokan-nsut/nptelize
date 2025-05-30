@@ -15,7 +15,7 @@ const developers: Developer[] = [
     {
         id: 1,
         name: "Ankur Gupta",
-        role: "Professor",
+        role: "Convenor AoAA, NSUT",
         category: "professor",
         linkedinUrl: "https://www.linkedin.com/in/ankursynon/",
         imageUrl:
