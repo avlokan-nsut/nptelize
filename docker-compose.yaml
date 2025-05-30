@@ -27,7 +27,6 @@ services:
       - 3000:3000
     env_file:
       - ./frontend/.env
-    cpus: 1.0
     depends_on:
       - server
       
