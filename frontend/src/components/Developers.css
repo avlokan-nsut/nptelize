@@ -4,61 +4,77 @@
   margin-top: 50px;
   margin-bottom: 50px;
   padding: 2rem;
-  background-color: #f8f9fa;
+  background-color: white;
   min-height: 100vh;
-  
 }
 
 .developers-title {
   font-size: 3.5rem;
   text-align: center;
-  color: #343a40;
+  color: #333;
   margin-bottom: 0.5rem;
+  font-weight: 700;
 }
 
 .developers-subtitle {
   font-size: 1.2rem;
   text-align: center;
-  color: #6c757d;
+  color: #666;
+  margin-bottom: 3rem;
+  max-width: 700px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Removed filter tabs */
+
+/* Section titles */
+.team-section {
   margin-bottom: 3rem;
 }
 
+.section-title {
+  font-size: 1.75rem;
+  color: #333;
+  margin-bottom: 1.5rem;
+  font-weight: 600;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+/* Developer grid */
 .developers-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 2rem;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1.5rem;
 }
 
-.developer-card {
-  background-color: white;
-  border-radius: 10px;
-  overflow: hidden;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-  padding: 1.5rem;
-}
-
-.developer-info {
-  display: flex;
-  flex-direction: column;
+.leadership-grid {
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  max-width: 800px;
+  margin: 0 auto;
   justify-content: center;
 }
 
-.developer-name {
-  font-size: 1.5rem;
-  margin: 0 0 0.5rem 0;
-  color: #343a40;
+/* Developer cards */
+.developer-card {
+  background-color: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1.25rem;
+  text-align: center;
+  position: relative;
+  border: 1px solid #f0f0f0;
 }
 
-.linkedin-link {
-  color: #0077b5;
-  display: inline-block;
-}
-
-.linkedin-icon {
-  font-size: 1.5rem;
+.professor-card {
+  background-color: #fcfcff;
+  border: 1px solid #e8eaff;
+  box-shadow: 0 8px 30px rgba(67, 56, 202, 0.1);
 }
 
 .developer-image-container {
@@ -66,9 +82,16 @@
   height: 100px;
   overflow: hidden;
   border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  margin-bottom: 1rem;
+  position: relative;
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+  border: 3px solid white;
+}
+
+.professor .developer-image-container {
+  width: 120px;
+  height: 120px;
+  border: 3px solid #e8eaff;
 }
 
 .developer-image {
@@ -77,19 +100,113 @@
   object-fit: cover;
 }
 
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .developers-grid {
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  }
+.developer-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
 }
 
-@media (max-width: 576px) {
+.developer-name {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0 0 0.2rem 0;
+  color: #333;
+}
+
+.developer-role {
+  display: inline-block;
+  font-size: 0.8rem;
+  font-weight: 500;
+  padding: 0.25rem 0.8rem;
+  border-radius: 16px;
+  margin-bottom: 0.75rem;
+}
+
+.developer-role.professor {
+  background-color: #e8eaff;
+  color: #4338ca;
+}
+
+.developer-role.product_manager {
+  background-color: #e6f7ff;
+  color: #0284c7;
+}
+
+.developer-role.developer {
+  background-color: #ecfdf5;
+  color: #059669;
+}
+
+/* Social links */
+.social-links {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.social-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #0077b5;
+  font-size: 1.1rem;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background-color: #f7f7f7;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .developers-container {
+    padding: 1.5rem;
+  }
+
   .developers-title {
     font-size: 2.5rem;
   }
   
   .developers-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  }
+  .leadership-grid {
+    grid-template-columns: repeat(2, 1fr);
+    max-width: 450px;
+  }
+}
+
+@media (max-width: 576px) {
+  .developers-title {
+    font-size: 2rem;
+  }
+  
+  .developers-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+  
+  .leadership-grid {
+    grid-template-columns: repeat(2, 1fr);
+    max-width: 100%;
+  }
+  
+  .developer-card {
+    padding: 1rem;
+  }
+
+  .developer-image-container {
+    width: 80px;
+    height: 80px;
+    margin-bottom: 0.75rem;
+  }
+  
+  .developer-name {
+    font-size: 0.95rem;
+  }
+  
+  .developer-role {
+    font-size: 0.75rem;
+    padding: 0.2rem 0.6rem;
   }
 }
