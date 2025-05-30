@@ -11,6 +11,7 @@ config = {
 def check_config() -> None:
     required_env_vars = [
         'DB_URI',
+        'ASYNC_DB_URI',
         'JWT_SECRET_KEY',
         'ALGORITHM',
         'ACCESS_TOKEN_EXPIRE_MINUTES',

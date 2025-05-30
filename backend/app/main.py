@@ -1,12 +1,37 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+import logging
+
+from typing import AsyncGenerator
+
 from app.config import check_config, config
+from app.config.db import AsyncSessionLocal
 from app.router import router
+from app.services.cleanup import CleanupService
+
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+    logger.info("Starting up FastAPI application")
+
+    cleanup_service = CleanupService(AsyncSessionLocal)
+    cleanup_service.start_cleanup()
+
+    yield
+
+    logger.info("Shutting down FastAPI application")
+    cleanup_service.stop_cleanup()
 
 app = FastAPI(
     title="NPTEL Automation API",
     version="1.0.0",
+    lifespan=lifespan
 )
 
 check_config()

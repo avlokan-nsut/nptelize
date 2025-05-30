@@ -6,10 +6,12 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "alembic>=1.15.2",
+    "asyncpg>=0.30.0",
     "bcrypt>=4.3.0",
     "beautifulsoup4>=4.13.4",
     "cuid>=0.4",
     "fastapi[standard]>=0.115.12",
+    "gunicorn>=23.0.0",
     "libmagic>=1.0",
     "mypy>=1.15.0",
     "passlib>=1.7.4",
@@ -24,7 +26,7 @@ dependencies = [
     "python-multipart>=0.0.20",
     "pyzbar>=0.1.9",
     "requests>=2.32.3",
-    "sqlalchemy[mypy]>=2.0.40",
+    "sqlalchemy[asyncio,mypy]>=2.0.40",
     "types-requests>=2.32.0.20250328",
 ]
 

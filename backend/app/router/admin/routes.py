@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.config.db import get_db
 from app.models import UserRole, User, Subject, StudentSubject
@@ -10,7 +10,7 @@ from app.services.utils.hashing import generate_password_hash
 import multiprocessing
 from sqlalchemy.orm import Session
 
-from typing import List, Literal
+from typing import List
 
 
 router = APIRouter(prefix='/admin')

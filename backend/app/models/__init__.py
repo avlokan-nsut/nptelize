@@ -28,7 +28,7 @@ class User(Base):
     role = Column(Enum(UserRole), nullable=False)
     roll_number = Column(String, nullable=True)
     employee_id = Column(String, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow, server_default=text('now()'))
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow, server_default=text('now()'))
 
     # Relationships
     subjects: Mapped[List["Subject"]] = relationship("Subject", back_populates="teacher", cascade="all, delete")
@@ -77,9 +77,9 @@ class Request(Base):
     student_id = Column(String, ForeignKey("users.id"), primary_key=True, nullable=False)
     teacher_id = Column(String, ForeignKey("users.id"), nullable=False)
     status = Column(Enum(RequestStatus), default=RequestStatus.pending)
-    created_at = Column(DateTime, default=datetime.utcnow, server_default=text('now()'))
-    updated_at = Column(DateTime, default=datetime.utcnow, server_default=text('now()'), onupdate=datetime.utcnow)
-    due_date = Column(DateTime, nullable=True)
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow, server_default=text('now()'))
+    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, server_default=text('now()'), onupdate=datetime.utcnow)
+    due_date = Column(DateTime(timezone=True), nullable=True)
 
     subject: Mapped["Subject"] = relationship("Subject", back_populates="requests")
     teacher: Mapped["User"] = relationship("User", foreign_keys=[teacher_id], back_populates="requests_sent")
@@ -96,8 +96,8 @@ class Certificate(Base):
     file_url = Column(Text, nullable=False)
     verification_file_url = Column(Text, nullable=True)
     verified_total_marks = Column(Integer, nullable=True)
-    uploaded_at = Column(DateTime, default=datetime.utcnow, server_default=text('now()'))
-    updated_at = Column(DateTime, default=datetime.utcnow, server_default=text('now()'), onupdate=datetime.utcnow)
+    uploaded_at = Column(DateTime(timezone=True), default=datetime.utcnow, server_default=text('now()'))
+    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, server_default=text('now()'), onupdate=datetime.utcnow)
     verified = Column(Boolean, default=False)
     remark = Column(String, nullable=True)
 

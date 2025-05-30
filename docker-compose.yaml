@@ -11,18 +11,25 @@ services:
     environment:
       # these variables should be in top level .env
       - DB_URI=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:${DB_PORT}/${POSTGRES_DB}
+      - ASYNC_DB_URI=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:${DB_PORT}/${POSTGRES_DB}
     volumes:
       - /var/lib/avlokan/certificates:/server/certificates
+      - /var/log/avlokan:/server/logs
+    cpus: ${SERVER_CPUS}   # cpu limit -> only for deployments
     depends_on:
       - migrate
 
   frontend:
-    build: ./frontend
+    build: 
+      context: ./frontend
     container_name: avlokan-react-app
     ports:
       - 3000:3000
     env_file:
       - ./frontend/.env
+    cpus: 1.0
+    depends_on:
+      - server
       
   db:
     image: postgres:17-alpine
