@@ -121,7 +121,7 @@ const ReportSection = function () {
     error,
     isLoading,
   } = useQuery({
-    queryKey: ["teacherRequests"],
+    queryKey: ["teacherRequestsStats"],
     queryFn: fetchData,
     refetchOnWindowFocus: false,
   });
@@ -260,7 +260,7 @@ const ReportSection = function () {
     );
   }
 
-    if (!apiData || !apiData.subjects || !apiData.stats || !apiData.totals) {
+    if (!apiData ||!apiData.stats || !apiData.subjects || !apiData.totals || apiData.subjects.length === 0) {
     return (
       <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6 text-center">
         <p className="text-gray-500">No subjects found</p>
