@@ -41,7 +41,7 @@ export const useAuthStore = create<AuthState>()(
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                email : credentials.email,
+                email : credentials.email.toLowerCase(),
                 password : credentials.password
             }),
             credentials: 'include'
