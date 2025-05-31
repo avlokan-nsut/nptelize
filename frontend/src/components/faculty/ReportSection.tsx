@@ -3,8 +3,18 @@ import { useQuery } from "@tanstack/react-query";
 import SearchBar from "../student/SearchBar";
 import { useEffect, useState } from "react";
 import Pagination from "./Pagination";
+import { RefreshCw } from "lucide-react";
 
-const headings = ["Subject Code", "Subject Name", "Actions" ,"Pending" , "Completed" , "Rejected" , "No Certificate"];
+const headings = [
+  "Subject Code",
+  "Subject Name",
+  "Actions",
+  "Pending",
+  "Completed",
+  "Rejected",
+  "No Certificate",
+  "Refresh",
+];
 
 export type Subject = {
   id: string;
@@ -38,7 +48,16 @@ export type ApiResponseCSV = {
   requests: Request[];
 };
 
+interface StatusCounts {
+  completed: number;
+  pending: number;
+  rejected: number;
+  no_certificate: number;
+}
 
+interface Stats {
+  [subjectId: string]: StatusCounts;
+}
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -56,7 +75,7 @@ const fetchData = async () => {
     );
     return {
       subjectId: subject.id,
-      requests: requestData.requests
+      requests: requestData.requests,
     };
   });
 
@@ -64,41 +83,45 @@ const fetchData = async () => {
   const requestsData = await Promise.all(requestPromises);
 
   // Create optimized stats object using single-pass processing
-  const stats: Record<string, { 
-    completed: number; 
-    pending: number; 
-    rejected: number; 
-    no_certificate: number; 
-  }> = {};
+  const stats: Record<
+    string,
+    {
+      completed: number;
+      pending: number;
+      rejected: number;
+      no_certificate: number;
+    }
+  > = {};
 
-   const totals = {
+  const totals = {
     completed: 0,
     pending: 0,
     rejected: 0,
-    no_certificate: 0
+    no_certificate: 0,
   };
 
   // Process each subject's requests in a single pass
   requestsData.forEach(({ subjectId, requests }) => {
     // Single reduce operation instead of 4 separate filter operations
-    const statusCounts = requests.reduce((acc, req) => {
-      const status = req.status;
-      acc[status] = (acc[status] || 0) + 1;
-      return acc;
-    }, {
-      completed: 0,
-      pending: 0,
-      rejected: 0,
-      no_certificate: 0
-    });
+    const statusCounts = requests.reduce(
+      (acc, req) => {
+        const status = req.status;
+        acc[status] = (acc[status] || 0) + 1;
+        return acc;
+      },
+      {
+        completed: 0,
+        pending: 0,
+        rejected: 0,
+        no_certificate: 0,
+      }
+    );
 
     stats[subjectId] = {
       completed: statusCounts.completed,
       pending: statusCounts.pending,
       rejected: statusCounts.rejected,
-      no_certificate: statusCounts.no_certificate
-
-      
+      no_certificate: statusCounts.no_certificate,
     };
 
     totals.completed += statusCounts.completed;
@@ -110,12 +133,14 @@ const fetchData = async () => {
   return {
     subjects: data.subjects,
     stats: stats,
-    totals : totals
+    totals: totals,
   };
 };
 
-
 const ReportSection = function () {
+  const [stats, setStats] = useState<Stats>({});
+  
+
   const {
     data: apiData,
     error,
@@ -125,6 +150,12 @@ const ReportSection = function () {
     queryFn: fetchData,
     refetchOnWindowFocus: false,
   });
+
+  useEffect(() => {
+    if (apiData) {
+      setStats(apiData.stats);
+    }
+  }, [apiData]);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -244,6 +275,39 @@ const ReportSection = function () {
     }
   };
 
+  const handleRefresh = async (subjectId: string) => {
+    setDisabled(true);
+    const { data } = await axios.get<ApiResponseCSV>(
+      `${apiUrl}/teacher/subject/requests/${subjectId}`,
+      { withCredentials: true }
+    );
+
+    const statusCounts = data.requests.reduce(
+      (acc, req) => {
+        const status = req.status;
+        acc[status] = (acc[status] || 0) + 1;
+        return acc;
+      },
+      {
+        completed: 0,
+        pending: 0,
+        rejected: 0,
+        no_certificate: 0,
+      }
+    );
+
+    setStats((prevStats) => ({
+      ...prevStats,
+      [subjectId]: {
+        completed: statusCounts.completed,
+        pending: statusCounts.pending,
+        rejected: statusCounts.rejected,
+        no_certificate: statusCounts.no_certificate,
+      },
+    }));
+    setDisabled(false);
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -260,7 +324,13 @@ const ReportSection = function () {
     );
   }
 
-    if (!apiData ||!apiData.stats || !apiData.subjects || !apiData.totals || apiData.subjects.length === 0) {
+  if (
+    !apiData ||
+    !apiData.stats ||
+    !apiData.subjects ||
+    !apiData.totals ||
+    apiData.subjects.length === 0
+  ) {
     return (
       <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6 text-center">
         <p className="text-gray-500">No subjects found</p>
@@ -311,6 +381,7 @@ const ReportSection = function () {
             <option value="no_certificate">No Certificate</option>
             <option value="pending">Pending</option>
           </select>
+          
         </div>
 
         <button
@@ -346,33 +417,33 @@ const ReportSection = function () {
       </div>
 
       <div className="p-4 bg-blue-50 border-b">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600">
-                  {apiData?.totals?.completed || '0'}
-                </div>
-                <div className="text-sm text-gray-600">Completed</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-yellow-600">
-                  {apiData?.totals?.pending || '0'}
-                </div>
-                <div className="text-sm text-gray-600">Pending</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-red-600">
-                  {apiData?.totals?.rejected || '0'}
-                </div>
-                <div className="text-sm text-gray-600">Rejected</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-fuchsia-600">
-                  {apiData?.totals?.no_certificate || '0'}
-                </div>
-                <div className="text-sm text-gray-600">No Certificate</div>
-              </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="text-center">
+            <div className="text-2xl font-bold text-blue-600">
+              {apiData?.totals?.completed || "0"}
             </div>
+            <div className="text-sm text-gray-600">Completed</div>
           </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-yellow-600">
+              {apiData?.totals?.pending || "0"}
+            </div>
+            <div className="text-sm text-gray-600">Pending</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-red-600">
+              {apiData?.totals?.rejected || "0"}
+            </div>
+            <div className="text-sm text-gray-600">Rejected</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-fuchsia-600">
+              {apiData?.totals?.no_certificate || "0"}
+            </div>
+            <div className="text-sm text-gray-600">No Certificate</div>
+          </div>
+        </div>
+      </div>
 
       <div className="overflow-x-scroll rounded-lg shadow-sm border border-gray-100 bg-white">
         <table className="w-full">
@@ -393,7 +464,7 @@ const ReportSection = function () {
               >
                 <td className="px-6 py-4 ">{subject.subject_code}</td>
                 <td className="px-6 py-4">{subject.name}</td>
-                
+
                 <td className="px-6 py-4 text-center whitespace-nowrap text-gray-700">
                   <div>
                     <button
@@ -422,14 +493,32 @@ const ReportSection = function () {
                     </button>
                   </div>
                 </td>
-                 <td className="px-6 py-4">{apiData?.stats?.[subject.id]?.pending || '0'}</td>
-                <td className="px-6 py-4">{apiData?.stats?.[subject.id]?.completed || '0'}</td>
-                <td className="px-6 py-4">{apiData?.stats?.[subject.id]?.rejected || '0'}</td>
-                <td className="px-6 py-4">{apiData?.stats?.[subject.id]?.no_certificate || '0'}</td>
+                <td className="px-6 py-4">
+                  {stats[subject.id]?.pending || "0"}
+                </td>
+                <td className="px-6 py-4">
+                  {stats[subject.id]?.completed || "0"}
+                </td>
+                <td className="px-6 py-4">
+                  {stats[subject.id]?.rejected || "0"}
+                </td>
+                <td className="px-6 py-4">
+                  {stats[subject.id]?.no_certificate || "0"}
+                </td>
+                <td className="px-6 py-4">
+                  <button
+                  disabled = {disabled}
+                    onClick={() => handleRefresh(subject.id)}
+                    className={`inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 transition-all duration-200 group ${
+                      disabled ? "text-gray-400 bg-gray-100 cursor-not-allowed" : "cursor-pointer"
+                    }`}
+                  >
+                    <RefreshCw className="w-4 h-4 group-hover:rotate-180 transition-transform duration-300" />
+                    
+                  </button>
+                </td>
               </tr>
             ))}
-
-            
           </tbody>
         </table>
       </div>
