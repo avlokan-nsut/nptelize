@@ -134,6 +134,11 @@ const StudentStatus = function () {
         const name = req.student.name.toLowerCase().trim();
         return nameCount.get(name)! > 1;
       });
+
+       filteredRequests.sort((a, b) => 
+    a.student.name.toLowerCase().trim().localeCompare(b.student.name.toLowerCase().trim())
+      );
+
     } else if (statusFilter === "all") {
       filteredRequests = requests;
     } else {
