@@ -63,3 +63,21 @@ class MakeCertificateRequestResult(BaseModel):
 
 class MakeCertificateRequestResponse(BaseModel):
     results: List[MakeCertificateRequestResult]
+
+class CertificateDetails(BaseModel):
+    student_name: str
+    roll_no: str
+    marks: float
+    course_name: str
+    course_period: str
+    file_url: str
+
+class CertificateResponseData(BaseModel):
+    uploaded_certificate: CertificateDetails
+    verification_certificate: CertificateDetails
+    subject_name: str
+    remark: Optional[str] = None
+
+class CertificateResponse(BaseModel):
+    message: str
+    data: CertificateResponseData

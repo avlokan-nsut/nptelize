@@ -9,13 +9,17 @@ from app.config import config
 from app.config.db import get_db, get_async_db
 from app.oauth2 import get_current_teacher
 from app.schemas import TokenData, GenericResponse
-from app.router.teacher.schemas import SubjectResponse, EnrolledStudentResponse, CreateCertificateRequestFields, GetStudentRequestsResponse, GetRequestByIdResponse, MakeCertificateRequestResponse
+from app.router.teacher.schemas import SubjectResponse, EnrolledStudentResponse, CreateCertificateRequestFields, GetStudentRequestsResponse, GetRequestByIdResponse, MakeCertificateRequestResponse, CertificateDetails
 from app.models import User, UserRole, Subject, StudentSubject, Request, RequestStatus, Certificate
 
 from app.services.utils.limiter import process_upload
 from app.services.utils.file_storage import save_file_to_local_storage
 from app.services.utils.extractor import extract_student_info_from_pdf
 from app.services.utils.qr_extraction import extract_link
+from app.services.utils.downloader import download_verification_pdf
+
+import tempfile
+
 
 
 router = APIRouter(prefix="/teacher")
@@ -227,6 +231,7 @@ async def get_stray_certificates(
     cleanup_service = CleanupService(AsyncSessionLocal)
 
     return await cleanup_service.get_stale_processing_certificates(db)
+    
 
 @router.post('/verify/certificate/manual', response_model=GenericResponse)
 async def verify_certificate_manual(
@@ -296,3 +301,74 @@ async def verify_certificate_manual(
     db.commit()
 
     return {'message': 'Certificate verified successfully'}
+
+
+
+@router.get('/certificate/details/{request_id}', response_model=CertificateDetails)
+async def get_verified_certificate_details(
+    request_id: str,
+    current_teacher = Depends(get_current_teacher),
+    db: Session = Depends(get_db)
+):
+    db_request = db.query(Request).filter(
+        Request.id == request_id,
+        Request.teacher_id == current_teacher.user_id
+    ).first()
+
+    if not db_request:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Request not found")
+
+    db_certificate = db.query(Certificate).filter(
+        Certificate.request_id == request_id,
+    ).first()
+
+    if not db_certificate:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Verified certificate not found")
+
+    uploaded_file_path = f"{CERTIFICATES_FOLDER_PATH}/{db_certificate.file_url}"
+    try:
+        uploaded_course_name, uploaded_student_name, uploaded_total_marks, uploaded_roll_no, uploaded_course_period = extract_student_info_from_pdf(uploaded_file_path)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to parse uploaded certificate: {str(e)}")
+
+    if not db_certificate.verification_file_url:
+        raise HTTPException(status_code=500, detail="Verification file URL is missing")
+
+    try:
+        with tempfile.NamedTemporaryFile(mode='w+b', delete=True, suffix=".pdf") as temp_f:
+
+            success, _, _ = await download_verification_pdf(db_certificate.verification_file_url, temp_f.name)
+            if not success:
+                raise HTTPException(status_code=500, detail="Failed to download verification certificate")
+
+            verified_course_name, verified_student_name, verified_total_marks, verified_roll_no, verified_course_period = extract_student_info_from_pdf(temp_f.name)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to parse verification certificate: {str(e)}")
+
+    subject = db.query(Subject).filter(Subject.id == db_request.subject_id).first()
+    if not subject:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Subject not found")
+
+    return {
+        "message": "Certificate details fetched successfully",
+        "data": {
+            "uploaded_certificate": {
+                "student_name": uploaded_student_name,
+                "roll_no": uploaded_roll_no,
+                "marks": uploaded_total_marks,
+                "course_name": uploaded_course_name,
+                "course_period": uploaded_course_period,
+                "file_url": db_certificate.file_url
+            },
+            "verification_certificate": {
+                "student_name": verified_student_name,
+                "roll_no": verified_roll_no,
+                "marks": verified_total_marks,
+                "course_name": verified_course_name,
+                "course_period": verified_course_period,
+                "file_url": db_certificate.verification_file_url
+            },
+            "subject_name": subject.name,
+            "remark": db_certificate.remark
+        }
+    }
