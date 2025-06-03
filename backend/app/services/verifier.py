@@ -11,6 +11,8 @@ from .utils.extractor import extract_student_info_from_pdf
 
 import tempfile
 
+COURSE_NAME_SINGLE_LINE_CHARACTER_LIMIT = 57
+
 class Verifier:
     def __init__(self, uploaded_file_path_relative: str, uploaded_file_path: str, request_id: str, student_id: str, db: Session):
         self.uploaded_file_path_relative = uploaded_file_path_relative
@@ -93,6 +95,9 @@ class Verifier:
                 temp_f.name,
                 cast(str, db_request.subject.name),
                 cast(str, db_request.student.name),
+                is_subject_name_long=isinstance(db_request.subject.name, str) and (
+                    len(db_request.subject.name) > COURSE_NAME_SINGLE_LINE_CHARACTER_LIMIT
+                )
             )
 
             if not success:
@@ -110,7 +115,8 @@ class Verifier:
         self, 
         verification_file_path: str, 
         subject_name: str, 
-        student_name: str
+        student_name: str,
+        is_subject_name_long: bool = False
     )-> Tuple[bool, str, Optional[str], Optional[str]]:
         (
             uploaded_course_name,
@@ -118,7 +124,7 @@ class Verifier:
             uploaded_total_marks,
             uploaded_roll_number,
             uploaded_course_period,
-        ) = extract_student_info_from_pdf(self.uploaded_file_path)
+        ) = extract_student_info_from_pdf(self.uploaded_file_path, is_subject_name_long)
 
         (
             valid_course_name, 
@@ -126,7 +132,7 @@ class Verifier:
             valid_total_marks, 
             valid_roll_number ,
             valid_course_period
-        ) = extract_student_info_from_pdf(verification_file_path)
+        ) = extract_student_info_from_pdf(verification_file_path, is_subject_name_long)
 
 
         if (
