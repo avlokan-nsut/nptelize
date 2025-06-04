@@ -91,6 +91,11 @@ const Table = function () {
   return (
     <div className="max-w-7xl mx-auto">
       <div className="w-full flex flex-col justify-end space-x-2 mt-10 md:flex-row md:mt-0">
+      <Link to="/faculty/manual-verification">
+          <button className="p-3 text-sm rounded-2xl my-4 transition-colors duration-200 md:p-4 md:text-md bg-black text-white cursor-pointer hover:bg-gray-500">
+            Manual Verification
+          </button>
+        </Link>
         <Link to="/faculty/report-section">
           <button className="p-3 text-sm rounded-2xl my-4 transition-colors duration-200 md:p-4 md:text-md bg-black text-white cursor-pointer hover:bg-gray-500">
             Report Section
