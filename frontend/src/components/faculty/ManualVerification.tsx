@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { ChevronDown, Download } from "lucide-react";
 import Pagination from "./Pagination";
-import SearchBar from "../student/SearchBar";
+import SearchBar from "./SearchBar";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 const mockNptelData: NptelRecord[] = [
@@ -301,9 +301,9 @@ const ManualVerification = () => {
         const differences = [];
 
         if (
-            record.name.trim().toLowerCase() !==
-                record.certificate_name.trim().toLowerCase() ||
-            record.name.trim().toLowerCase() !==
+            record.certificate_name.trim().toLowerCase() !==
+                record.name.trim().toLowerCase() ||
+            record.certificate_name.trim().toLowerCase() !==
                 record.nsut_name.trim().toLowerCase()
         ) {
             differences.push("Student Name");
