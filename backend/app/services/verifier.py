@@ -1,7 +1,7 @@
 from fastapi import HTTPException, status
 from datetime import datetime, timezone
 from sqlalchemy.orm import Session
-from typing import Tuple, Optional, cast
+from typing import Tuple, Optional, cast, Dict
 
 from app.models import Request, RequestStatus, Certificate
 
@@ -214,3 +214,61 @@ class Verifier:
 
         self.db.commit()
         
+    async def manual_verification(
+        self,
+        course_name: str,
+    ) -> Dict:
+        is_subject_name_long = isinstance(self.uploaded_file_path, str) and (
+            len(course_name.strip()) > COURSE_NAME_SINGLE_LINE_CHARACTER_LIMIT
+        )
+
+        verification_link = extract_link(self.uploaded_file_path, 0)
+        if not verification_link:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Verification link / QR not found"
+            )
+
+        with tempfile.NamedTemporaryFile(mode='w+', delete=True, suffix=".pdf", prefix="certificate_") as temp_f:
+            print(f"Temporary file created at: {temp_f.name}")
+            success, pdf_url, output = await download_verification_pdf(verification_link, temp_f.name)
+
+            if not success:
+                remark =  "Could not download the verification pdf"
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=remark)
+
+            (
+                uploaded_course_name,
+                uploaded_student_name,
+                uploaded_total_marks,
+                uploaded_roll_number,
+                uploaded_course_period,
+            ) = extract_student_info_from_pdf(self.uploaded_file_path, is_subject_name_long)
+
+            (
+                valid_course_name, 
+                valid_student_name, 
+                valid_total_marks, 
+                valid_roll_number ,
+                valid_course_period
+            ) = extract_student_info_from_pdf(temp_f.name, is_subject_name_long)
+        
+        certificate_data = {
+            "uploaded_certificate": {
+                "student_name": uploaded_student_name,
+                "roll_no": uploaded_roll_number,
+                "marks": uploaded_total_marks,
+                "course_name": uploaded_course_name,
+                "course_period": uploaded_course_period,
+                "file_url": self.uploaded_file_path_relative,
+            },
+            "verification_certificate": {
+                "student_name": valid_student_name,
+                "roll_no": valid_roll_number,
+                "marks": valid_total_marks,
+                "course_name": valid_course_name,
+                "course_period": valid_course_period,
+                "file_url": pdf_url
+            },
+        }
+        return certificate_data

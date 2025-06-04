@@ -3,13 +3,13 @@ from fastapi import APIRouter, Depends, HTTPException, status, Body, Query, Uplo
 from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from typing import List
+from typing import List, cast
 
 from app.config import config
 from app.config.db import get_db, get_async_db
 from app.oauth2 import get_current_teacher
 from app.schemas import TokenData, GenericResponse
-from app.router.teacher.schemas import SubjectResponse, EnrolledStudentResponse, CreateCertificateRequestFields, GetStudentRequestsResponse, GetRequestByIdResponse, MakeCertificateRequestResponse, CertificateDetails
+from app.router.teacher.schemas import SubjectResponse, EnrolledStudentResponse, CreateCertificateRequestFields, GetStudentRequestsResponse, GetRequestByIdResponse, MakeCertificateRequestResponse, CertificateResponse
 from app.models import User, UserRole, Subject, StudentSubject, Request, RequestStatus, Certificate
 
 from app.services.utils.limiter import process_upload
@@ -17,6 +17,7 @@ from app.services.utils.file_storage import save_file_to_local_storage
 from app.services.utils.extractor import extract_student_info_from_pdf
 from app.services.utils.qr_extraction import extract_link
 from app.services.utils.downloader import download_verification_pdf
+from app.services.verifier import Verifier
 
 import tempfile
 
@@ -25,6 +26,7 @@ import tempfile
 router = APIRouter(prefix="/teacher")
 
 CERTIFICATES_FOLDER_PATH = config['CERTIFICATES_FOLDER_PATH']
+print(CERTIFICATES_FOLDER_PATH)
 
 @router.get('/subjects', response_model=SubjectResponse)
 def get_alloted_subjects(
@@ -304,7 +306,7 @@ async def verify_certificate_manual(
 
 
 
-@router.get('/certificate/details/{request_id}', response_model=CertificateDetails)
+@router.get('/certificate/details/{request_id}', response_model=CertificateResponse)
 async def get_verified_certificate_details(
     request_id: str,
     current_teacher = Depends(get_current_teacher),
@@ -315,60 +317,34 @@ async def get_verified_certificate_details(
         Request.teacher_id == current_teacher.user_id
     ).first()
 
-    if not db_request:
+    if db_request is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Request not found")
 
     db_certificate = db.query(Certificate).filter(
         Certificate.request_id == request_id,
     ).first()
 
-    if not db_certificate:
+    if db_certificate is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Verified certificate not found")
 
     uploaded_file_path = f"{CERTIFICATES_FOLDER_PATH}/{db_certificate.file_url}"
-    try:
-        uploaded_course_name, uploaded_student_name, uploaded_total_marks, uploaded_roll_no, uploaded_course_period = extract_student_info_from_pdf(uploaded_file_path)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to parse uploaded certificate: {str(e)}")
+    
+    verifier = Verifier(
+        cast(str, db_certificate.file_url), 
+        uploaded_file_path, 
+        request_id, 
+        cast(str,db_request.student_id), 
+        db,
+    )
 
-    if not db_certificate.verification_file_url:
-        raise HTTPException(status_code=500, detail="Verification file URL is missing")
+    certificate_data = await verifier.manual_verification(cast(str, db_request.subject.name))
 
-    try:
-        with tempfile.NamedTemporaryFile(mode='w+b', delete=True, suffix=".pdf") as temp_f:
-
-            success, _, _ = await download_verification_pdf(db_certificate.verification_file_url, temp_f.name)
-            if not success:
-                raise HTTPException(status_code=500, detail="Failed to download verification certificate")
-
-            verified_course_name, verified_student_name, verified_total_marks, verified_roll_no, verified_course_period = extract_student_info_from_pdf(temp_f.name)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to parse verification certificate: {str(e)}")
-
-    subject = db.query(Subject).filter(Subject.id == db_request.subject_id).first()
-    if not subject:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Subject not found")
-
-    return {
+    response =  {
         "message": "Certificate details fetched successfully",
         "data": {
-            "uploaded_certificate": {
-                "student_name": uploaded_student_name,
-                "roll_no": uploaded_roll_no,
-                "marks": uploaded_total_marks,
-                "course_name": uploaded_course_name,
-                "course_period": uploaded_course_period,
-                "file_url": db_certificate.file_url
-            },
-            "verification_certificate": {
-                "student_name": verified_student_name,
-                "roll_no": verified_roll_no,
-                "marks": verified_total_marks,
-                "course_name": verified_course_name,
-                "course_period": verified_course_period,
-                "file_url": db_certificate.verification_file_url
-            },
-            "subject_name": subject.name,
+            **certificate_data, 
+            "subject_name": db_request.subject.name,
             "remark": db_certificate.remark
         }
     }
+    return response
