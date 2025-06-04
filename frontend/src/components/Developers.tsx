@@ -28,7 +28,7 @@ const developers: Developer[] = [
         category: "product_manager",
         linkedinUrl: "https://www.linkedin.com/in/md-imran-hussain-8139a48b/",
         imageUrl:
-            "https://private-user-images.githubusercontent.com/67479789/451346228-b9d60bc8-e929-4c15-96dc-aae09fdb9cb2.jpg?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3NDkwMzU5MjEsIm5iZiI6MTc0OTAzNTYyMSwicGF0aCI6Ii82NzQ3OTc4OS80NTEzNDYyMjgtYjlkNjBiYzgtZTkyOS00YzE1LTk2ZGMtYWFlMDlmZGI5Y2IyLmpwZz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNTA2MDQlMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjUwNjA0VDExMTM0MVomWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPTU2YmY2MDNhZjYyMGQ4MTc4ZDgwNWVlYzgwY2Q3MTgwZGMxZjE1NzRmYTFmN2NmYzRkM2FkNmRjMTI5NTc1ZjMmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0In0.saKokWqyB87Rbq2i15qKTaiRZ4oMru6agS5q-LhbIH4",
+            "https://media.licdn.com/dms/image/v2/D5603AQGVogpN2lwcLg/profile-displayphoto-shrink_400_400/B56Zc2obN3HoAo-/0/1748968257954?e=1754524800&v=beta&t=mZ2ol26Fu2niv9t_CAAj8UwhyXd4hrurHxRvK5Kjh2w",
     },
     {
         id: 11,
