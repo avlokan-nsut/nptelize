@@ -37,6 +37,7 @@ export type ApiResponse = {
 
 const FILE_SIZE_LIMIT = 2097152;
 const apiUrl = import.meta.env.VITE_API_URL;
+const submissionEnabled = import.meta.env.VITE_SUBMISSION !== "disabled";
 
 function formatDateOnly(isoString: string): string {
   if (isoString === null || isoString === undefined) {
@@ -119,6 +120,16 @@ const RequestedTable = () => {
 
   // Handle certificate submission
   const handleSubmit = async (requestId: string) => {
+    if (!submissionEnabled) {
+      setUploadStatus((prev) => ({
+        ...prev,
+        [requestId]: {
+          success: false,
+          message: "Certificate submission is currently disabled",
+        },
+      }));
+      return;
+    }
     const file = fileUploads[requestId];
     if (!file) {
       setUploadStatus((prev) => ({
@@ -237,7 +248,19 @@ const RequestedTable = () => {
   };
 
   const handleAlertAction = async () => {
-    // Action when contact button is clicked
+    if (!submissionEnabled) {
+      setUploadStatus((prev) => ({
+        ...prev,
+        [selectedRequestId || ""]: {
+          success: false,
+          message: "This action is currently disabled",
+        },
+      }));
+      setAlertOpen(true);
+      setAlertLoading(false);
+      return;
+    }
+   
     if (selectedRequestId) {
       try {
         setAlertLoading(true);
@@ -372,12 +395,14 @@ const RequestedTable = () => {
                               e.target.files ? e.target.files[0] : null
                             )
                           }
-                          className="
+                          disabled={!submissionEnabled}
+                          className={`
                             file-input file-input-sm w-[65%] max-w-xs text-sm
                             file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0
                             file:text-sm file:bg-blue-50 file:text-blue-600
                             hover:file:bg-blue-100 cursor-pointer
-                          "
+                            ${!submissionEnabled ? 'opacity-50 cursor-not-allowed' : ''}
+                          `}
                         />
                         <button
                           className={`btn btn-sm ${
@@ -386,9 +411,10 @@ const RequestedTable = () => {
                             fileUploads[row.request_id]
                               ? "btn-primary"
                               : "btn-neutral"
-                          }`}
+                          } ${!submissionEnabled ? 'btn-disabled' : ''}`}
                           onClick={() => handleSubmit(row.request_id)}
                           disabled={
+                            !submissionEnabled ||
                             uploadLoading[row.request_id] ||
                             !fileUploads[row.request_id]
                           }
@@ -424,8 +450,12 @@ const RequestedTable = () => {
                       </div>
 
                       <div
-                        className="text-[12px] text-left text-gray-500 cursor-pointer hover:text-blue-600 hover:underline"
-                        onClick={() => handleCertificateRequest(row.request_id , row.subject.name)}
+                        className={`text-[12px] text-left text-gray-500 ${
+                          submissionEnabled 
+                            ? 'cursor-pointer hover:text-blue-600 hover:underline' 
+                            : 'opacity-50 cursor-not-allowed'
+                        }`}
+                        onClick={submissionEnabled ? () => handleCertificateRequest(row.request_id, row.subject.name) : undefined}
                       >
                         Didn't receive your certificate?
                       </div>
