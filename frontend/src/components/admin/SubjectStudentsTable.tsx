@@ -1,5 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
+import Pagination from '../faculty/Pagination';
+import SearchBar from '../faculty/SearchBar';
 
 interface Student {
   id: string;
@@ -17,6 +19,9 @@ const SubjectStudentsTable = ({ subjectId, subjectName }: SubjectStudentsTablePr
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     const fetchSubjectStudents = async () => {
@@ -45,6 +50,32 @@ const SubjectStudentsTable = ({ subjectId, subjectName }: SubjectStudentsTablePr
     fetchSubjectStudents();
   }, [subjectId]);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
+  const filteredStudents = useMemo(() => {
+    return students.filter(
+      (student) =>
+        student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        student.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        student.roll_number.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [students, searchTerm]);
+
+  // Calculate paginated data and total pages
+  const totalPages = Math.ceil(filteredStudents.length / itemsPerPage);
+
+  const paginatedStudents = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredStudents.slice(startIndex, endIndex);
+  }, [filteredStudents, currentPage, itemsPerPage]);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center py-8">
@@ -67,6 +98,15 @@ const SubjectStudentsTable = ({ subjectId, subjectName }: SubjectStudentsTablePr
       <h2 className="text-xl font-semibold mb-4">
         {subjectName ? `Students Enrolled in ${subjectName}` : 'Subject Students'}
       </h2>
+      
+      <div className="mb-4">
+        <SearchBar
+          value={searchTerm}
+          onChange={setSearchTerm}
+          placeholder="Search students..."
+        />
+      </div>
+
       <div className="overflow-x-auto">
         <table className="min-w-full bg-white rounded-lg overflow-hidden">
           <thead className="bg-gray-100">
@@ -77,8 +117,8 @@ const SubjectStudentsTable = ({ subjectId, subjectName }: SubjectStudentsTablePr
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {students.length > 0 ? (
-              students.map((student) => (
+            {paginatedStudents.length > 0 ? (
+              paginatedStudents.map((student) => (
                 <tr key={student.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{student.name}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{student.email}</td>
@@ -88,13 +128,22 @@ const SubjectStudentsTable = ({ subjectId, subjectName }: SubjectStudentsTablePr
             ) : (
               <tr>
                 <td colSpan={3} className="px-6 py-4 text-center text-sm text-gray-500">
-                  No students enrolled in this subject
+                  {searchTerm ? 'No students found matching your search' : 'No students enrolled in this subject'}
                 </td>
               </tr>
             )}
           </tbody>
         </table>
       </div>
+
+      {/* Pagination Component */}
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={handlePageChange}
+        itemsPerPage={itemsPerPage}
+        totalItems={filteredStudents.length}
+      />
     </div>
   );
 };

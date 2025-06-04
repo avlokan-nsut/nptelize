@@ -28,7 +28,7 @@ const developers: Developer[] = [
         category: "product_manager",
         linkedinUrl: "https://www.linkedin.com/in/md-imran-hussain-8139a48b/",
         imageUrl:
-            "https://media.licdn.com/dms/image/v2/C4D03AQHja-1Kn514ZA/profile-displayphoto-shrink_400_400/profile-displayphoto-shrink_400_400/0/1585737988234?e=1753920000&v=beta&t=E9tDkBUqH2-U5Z4-hcK6S4Fc2FPkSZKyq3excCfPp1E",
+            "https://private-user-images.githubusercontent.com/67479789/451346228-b9d60bc8-e929-4c15-96dc-aae09fdb9cb2.jpg?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3NDkwMzU5MjEsIm5iZiI6MTc0OTAzNTYyMSwicGF0aCI6Ii82NzQ3OTc4OS80NTEzNDYyMjgtYjlkNjBiYzgtZTkyOS00YzE1LTk2ZGMtYWFlMDlmZGI5Y2IyLmpwZz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNTA2MDQlMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjUwNjA0VDExMTM0MVomWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPTU2YmY2MDNhZjYyMGQ4MTc4ZDgwNWVlYzgwY2Q3MTgwZGMxZjE1NzRmYTFmN2NmYzRkM2FkNmRjMTI5NTc1ZjMmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0In0.saKokWqyB87Rbq2i15qKTaiRZ4oMru6agS5q-LhbIH4",
     },
     {
         id: 11,
@@ -38,7 +38,8 @@ const developers: Developer[] = [
         linkedinUrl: "https://www.linkedin.com/in/aditya-chouksey-0b6b70239/",
         imageUrl:
             "https://media.licdn.com/dms/image/v2/D4D03AQFocdd0jx8trw/profile-displayphoto-shrink_100_100/B4DZb2sTxEGwAU-/0/1747895533426?e=1753315200&v=beta&t=ZXCsTVqe9A7wHjmUJHEsWSYCFet9PRk9r1VaXA6NJ5c",
-    },    {
+    },
+    {
         id: 3,
         name: "Ocean Lakra",
         role: "Developer",
@@ -55,7 +56,8 @@ const developers: Developer[] = [
         linkedinUrl: "https://www.linkedin.com/in/madhavarora03/",
         imageUrl:
             "https://media.licdn.com/dms/image/v2/D5603AQGBQaOQjuS9oA/profile-displayphoto-shrink_400_400/profile-displayphoto-shrink_400_400/0/1666372458588?e=1753315200&v=beta&t=3mfw5lw9W5bUIlkqLz2VbU0E2HAa489RMx4vYrQ2_gs",
-    },    {
+    },
+    {
         id: 5,
         name: "Lakshay Gupta",
         role: "Developer",
@@ -72,14 +74,15 @@ const developers: Developer[] = [
         linkedinUrl: "https://www.linkedin.com/in/shrey-singh7/",
         imageUrl:
             "https://media.licdn.com/dms/image/v2/D5603AQE82U1GS8P5Lg/profile-displayphoto-shrink_400_400/profile-displayphoto-shrink_400_400/0/1723665573161?e=1753315200&v=beta&t=aGD7kL5A_17P5a3SMgO5lZZ4wdbeRaoqO8AVIHazFv8",
-    },    {
+    },
+    {
         id: 7,
         name: "Shivam Mishra",
         role: "Developer",
         category: "developer",
         linkedinUrl: "https://www.linkedin.com/in/shivam-mishra-67671a17a/",
         imageUrl:
-            "https://media.licdn.com/dms/image/v2/D4D03AQEg9GdcmqBDRA/profile-displayphoto-shrink_400_400/profile-displayphoto-shrink_400_400/0/1689218201934?e=1753315200&v=beta&t=zWBcuclP85rKKW31xeexRYpT1FVep8PhFD--qmWTc28",
+            "https://media.licdn.com/dms/image/v2/D5603AQGW76_XnWs0Cw/profile-displayphoto-shrink_400_400/B56Zc6ouyeHoAs-/0/1749035446441?e=1754524800&v=beta&t=4r8XV_NENI2E_FTr6tCQx6vN7PpUoUmIqeKlQm7rb0M",
     },
     {
         id: 8,
@@ -89,7 +92,8 @@ const developers: Developer[] = [
         linkedinUrl: "https://www.linkedin.com/in/greatnerve",
         imageUrl:
             "https://media.licdn.com/dms/image/v2/D4D03AQG9m4Sk5fNgUg/profile-displayphoto-shrink_400_400/profile-displayphoto-shrink_400_400/0/1701061814364?e=1753315200&v=beta&t=0jPdk2c9JCNLuu1KU9rDBhOkoY5iY4KjmLZMMCefjn0",
-    },    {
+    },
+    {
         id: 9,
         name: "Sujal Chaudhary",
         role: "Developer",
@@ -110,9 +114,13 @@ const developers: Developer[] = [
 ];
 
 const Developers: React.FC = () => {
-    const professorTeam = developers.filter(dev => dev.category === "professor");
-    const productManagers = developers.filter(dev => dev.category === "product_manager");
-    const devTeam = developers.filter(dev => dev.category === "developer");
+    const professorTeam = developers.filter(
+        (dev) => dev.category === "professor"
+    );
+    const productManagers = developers.filter(
+        (dev) => dev.category === "product_manager"
+    );
+    const devTeam = developers.filter((dev) => dev.category === "developer");
 
     return (
         <div className="developers-container">
@@ -127,10 +135,16 @@ const Developers: React.FC = () => {
                     <h2 className="section-title">Leadership Team</h2>
                     <div className="developers-grid leadership-grid">
                         {professorTeam.map((developer) => (
-                            <TeamMemberCard key={developer.id} developer={developer} />
+                            <TeamMemberCard
+                                key={developer.id}
+                                developer={developer}
+                            />
                         ))}
                         {productManagers.map((developer) => (
-                            <TeamMemberCard key={developer.id} developer={developer} />
+                            <TeamMemberCard
+                                key={developer.id}
+                                developer={developer}
+                            />
                         ))}
                     </div>
                 </div>
@@ -141,7 +155,10 @@ const Developers: React.FC = () => {
                     <h2 className="section-title">Developers</h2>
                     <div className="developers-grid">
                         {devTeam.map((developer) => (
-                            <TeamMemberCard key={developer.id} developer={developer} />
+                            <TeamMemberCard
+                                key={developer.id}
+                                developer={developer}
+                            />
                         ))}
                     </div>
                 </div>
@@ -156,7 +173,11 @@ interface TeamMemberCardProps {
 
 const TeamMemberCard: React.FC<TeamMemberCardProps> = ({ developer }) => {
     return (
-        <div className={`developer-card ${developer.category === "professor" ? "professor-card" : ""}`}>
+        <div
+            className={`developer-card ${
+                developer.category === "professor" ? "professor-card" : ""
+            }`}
+        >
             <div className="developer-image-container">
                 <img
                     src={developer.imageUrl}
@@ -165,16 +186,18 @@ const TeamMemberCard: React.FC<TeamMemberCardProps> = ({ developer }) => {
                     loading="lazy"
                 />
             </div>
-            
+
             <div className="developer-info">
                 <h3 className="developer-name">{developer.name}</h3>
-                <span className={`developer-role ${developer.category}`}>{developer.role}</span>
-                
+                <span className={`developer-role ${developer.category}`}>
+                    {developer.role}
+                </span>
+
                 <div className="social-links">
                     <a
                         href={developer.linkedinUrl}
                         target="_blank"
-                        rel="noopener noreferrer" 
+                        rel="noopener noreferrer"
                         className="social-link"
                         aria-label={`${developer.name}'s LinkedIn profile`}
                     >

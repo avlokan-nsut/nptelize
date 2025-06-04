@@ -21,6 +21,7 @@ import PublicRoute from "./components/PublicRoutes";
 import StudentStatus from "./components/faculty/StudentStatus";
 import Developers from "./components/Developers";
 import ReportSection from "./components/faculty/ReportSection";
+import ManualVerification from "./components/faculty/ManualVerification";
 
 const queryClient = new QueryClient();
 
@@ -54,8 +55,18 @@ const routes = createBrowserRouter(
                     path="faculty/students/:subjectCode"
                     element={<StudentTable />}
                 />
-                <Route path="faculty/students/requests/:subjectCode" element={<StudentStatus />} />
-                <Route  path ="faculty/report-section" element={<ReportSection/>}/>
+                <Route
+                    path="faculty/students/requests/:subjectCode"
+                    element={<StudentStatus />}
+                />
+                <Route
+                    path="faculty/report-section"
+                    element={<ReportSection />}
+                />
+                <Route
+                    path="faculty/manual-verification"
+                    element={<ManualVerification />}
+                />
             </Route>
 
             {/* Admin routes */}
@@ -70,14 +81,7 @@ const routes = createBrowserRouter(
                 />
             </Route>
 
-            <Route path ="developers" element = {
-                
-                        <Developers />
-                    
-            }
-            />
-                    
-            
+            <Route path="developers" element={<Developers />} />
         </Route>
     )
 );
