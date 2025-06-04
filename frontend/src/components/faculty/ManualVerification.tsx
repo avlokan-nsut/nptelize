@@ -379,25 +379,31 @@ const ManualVerification = () => {
     };
 
     const handleGlobalAcceptAll = () => {
-        const targetRecords =
-            selectedRecords.length > 0
-                ? selectedRecords
-                : filteredRecords
-                      .filter((record) => record.status === "pending")
-                      .map((r) => r.roll_number);
+        const targetRecords = selectedRecords.length > 0
+            ? selectedRecords.filter(rollNumber => {
+                const record = nptelRecords.find(r => r.roll_number === rollNumber);
+                return record && record.status === "pending";
+              })
+            : filteredRecords
+                  .filter((record) => record.status === "pending")
+                  .map((r) => r.roll_number);
 
         if (targetRecords.length > 0) {
             updateMultipleRecordsMutation.mutate({
                 rollNumbers: targetRecords,
                 status: "accepted",
             });
+        } else {
+            alert("No pending records to accept");
         }
     };
 
     const handleGlobalRejectAll = () => {
-        const targetRecords =
-            selectedRecords.length > 0
-            ? selectedRecords
+        const targetRecords = selectedRecords.length > 0
+            ? selectedRecords.filter(rollNumber => {
+                const record = nptelRecords.find(r => r.roll_number === rollNumber);
+                return record && record.status === "pending";
+              })
             : filteredRecords
                   .filter((record) => record.status === "pending")
                   .map((r) => r.roll_number);
@@ -407,6 +413,8 @@ const ManualVerification = () => {
                 rollNumbers: targetRecords,
                 status: "rejected",
             });
+        } else {
+            alert("No pending records to reject");
         }
     };
 
