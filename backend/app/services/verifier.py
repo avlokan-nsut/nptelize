@@ -96,7 +96,7 @@ class Verifier:
                 cast(str, db_request.subject.name),
                 cast(str, db_request.student.name),
                 is_subject_name_long=isinstance(db_request.subject.name, str) and (
-                    len(db_request.subject.name) > COURSE_NAME_SINGLE_LINE_CHARACTER_LIMIT
+                    len(db_request.subject.name.strip()) > COURSE_NAME_SINGLE_LINE_CHARACTER_LIMIT
                 )
             )
 
