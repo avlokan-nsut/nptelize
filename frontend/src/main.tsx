@@ -22,6 +22,7 @@ import StudentStatus from "./components/faculty/StudentStatus";
 import Developers from "./components/Developers";
 import ReportSection from "./components/faculty/ReportSection";
 import ManualVerification from "./components/faculty/ManualVerification";
+import RejectedVerification from "./components/faculty/RejectedVerification";
 
 const queryClient = new QueryClient();
 
@@ -66,6 +67,10 @@ const routes = createBrowserRouter(
                 <Route
                     path="faculty/manual-verification"
                     element={<ManualVerification />}
+                />
+                <Route
+                    path="faculty/verify-rejected"
+                    element={<RejectedVerification />}
                 />
             </Route>
 

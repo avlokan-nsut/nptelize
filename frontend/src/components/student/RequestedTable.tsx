@@ -237,7 +237,6 @@ const RequestedTable = () => {
   };
 
   const handleAlertAction = async () => {
-    // Action when contact button is clicked
     if (selectedRequestId) {
       try {
         setAlertLoading(true);
@@ -425,7 +424,7 @@ const RequestedTable = () => {
 
                       <div
                         className="text-[12px] text-left text-gray-500 cursor-pointer hover:text-blue-600 hover:underline"
-                        onClick={() => handleCertificateRequest(row.request_id , row.subject.name)}
+                        onClick={() => handleCertificateRequest(row.request_id, row.subject.name)}
                       >
                         Didn't receive your certificate?
                       </div>
