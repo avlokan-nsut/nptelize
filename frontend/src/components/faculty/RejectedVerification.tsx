@@ -1,6 +1,6 @@
 import axios from "axios";
 import { useQuery,useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import Pagination from "./Pagination";
 import { CheckCircle, Loader2 } from "lucide-react";
 
@@ -67,6 +67,7 @@ export type RejectedRequestWithDetails = {
   student: Student;
   subject: Subject;
   status: "rejected";
+  verified_total_marks: string;
   created_at: string;
   due_date: string;
   certificate_details: CertificateDetails;
@@ -116,6 +117,14 @@ const fetchAllRejectedRequests = async (): Promise<Request[]> => {
   return allRejectedArrays.flat();
 };
 
+const fetchCertificateDetails = async (requestId: string): Promise<CertificateDetails> => {
+  const { data: certificateData } = await axios.get<CertificateApiResponse>(
+    `${apiUrl}/teacher/certificate/details/${requestId}`,
+    { withCredentials: true }
+  );
+  return certificateData.data;
+};
+
 const RejectedVerification = () => {
 
   const queryClient = useQueryClient();
@@ -125,6 +134,12 @@ const RejectedVerification = () => {
   const itemsPerPage = 10;
   const [isAcceptingAll, setIsAcceptingAll] = useState(false);
   const [selectedRequests, setSelectedRequests] = useState<Set<string>>(new Set());
+  const [isLoadingCertificateDetails, setIsLoadingCertificateDetails] = useState(false);
+  const [certificateDetailsCache, setCertificateDetailsCache] = useState<Map<string, CertificateDetails>>(new Map());
+  
+  // Use ref to access latest cache value without causing re-renders
+  const cacheRef = useRef<Map<string, CertificateDetails>>(certificateDetailsCache);
+  cacheRef.current = certificateDetailsCache;
 
   const {
     data: rejectedRequestsData,
@@ -153,29 +168,73 @@ const RejectedVerification = () => {
 useEffect(() => {
   if (currentRequests.length === 0) {
     setRequestsWithDetails([]);
+    setIsLoadingCertificateDetails(false);
     return;
   }
+  
+  setIsLoadingCertificateDetails(true);
+  
+  // Check which requests need certificate details fetched using current cache
+  const currentCache = cacheRef.current;
+  const requestsNeedingDetails = currentRequests.filter(
+    request => !currentCache.has(request.id)
+  );
+  
+  // If all requests are already cached, use cached data immediately
+  if (requestsNeedingDetails.length === 0) {
+    const cachedRequestsWithDetails = currentRequests.map(request => ({
+      ...request,
+      status: "rejected" as const,
+      certificate_details: currentCache.get(request.id)!,
+    }));
+    setRequestsWithDetails(cachedRequestsWithDetails);
+    setIsLoadingCertificateDetails(false);
+    return;
+  }
+  
+  // Fetch only the missing certificate details
   Promise.all(
-    currentRequests.map(async (request): Promise<RejectedRequestWithDetails | null> => {
+    requestsNeedingDetails.map(async (request): Promise<{ requestId: string; details: CertificateDetails | null }> => {
       try {
-        const { data: certificateData } = await axios.get<CertificateApiResponse>(
-          `${apiUrl}/teacher/certificate/details/${request.id}`,
-          { withCredentials: true }
-        );
-        return {
-          ...request,
-          status: "rejected" as const,
-          certificate_details: certificateData.data,
-        };
+        const details = await fetchCertificateDetails(request.id);
+        return { requestId: request.id, details };
       } catch (error) {
         console.error(`Failed to fetch certificate details for request ${request.id}:`, error);
-        return null;
+        return { requestId: request.id, details: null };
       }
     })
   ).then(results => {
-    setRequestsWithDetails(results.filter((r): r is RejectedRequestWithDetails => r !== null));
+    // Update cache with new certificate details
+    setCertificateDetailsCache(prevCache => {
+      const newCache = new Map(prevCache);
+      results.forEach(({ requestId, details }) => {
+        if (details) {
+          newCache.set(requestId, details);
+        }
+      });
+      return newCache;
+    });
+    
+    // Build the complete requests with details using both cached and newly fetched data
+    const completeRequestsWithDetails = currentRequests.map(request => {
+      const cachedDetails = currentCache.get(request.id);
+      const newDetails = results.find(r => r.requestId === request.id)?.details;
+      const details = newDetails || cachedDetails;
+      
+      return details ? {
+        ...request,
+        status: "rejected" as const,
+        certificate_details: details,
+      } : null;
+    }).filter((r): r is RejectedRequestWithDetails => r !== null);
+    
+    setRequestsWithDetails(completeRequestsWithDetails);
+    setIsLoadingCertificateDetails(false);
+  }).catch((error) => {
+    console.error('Error fetching certificate details:', error);
+    setIsLoadingCertificateDetails(false);
   });
-}, [currentRequests]);
+}, [currentRequests]); // Removed certificateDetailsCache from dependencies
 
   useEffect(() => {
     setCurrentPage(1);
@@ -279,6 +338,13 @@ useEffect(() => {
       return oldData.filter(request => request.id !== request_id);
     });
     
+    // Clear certificate details cache for accepted request
+    setCertificateDetailsCache(prevCache => {
+      const newCache = new Map(prevCache);
+      newCache.delete(request_id);
+      return newCache;
+    });
+    
     // Clear selection for accepted request
     setSelectedRequests(prev => {
       const newSelected = new Set(prev);
@@ -302,7 +368,6 @@ useEffect(() => {
     });
   }
 };
-
 
   const acceptSelectedCertificates = async (): Promise<void> => {
     const selectedRequestsData = getSelectedRequestsData();
@@ -366,6 +431,13 @@ useEffect(() => {
         }
       }
       
+      // Clear certificate details cache for accepted requests
+      setCertificateDetailsCache(prevCache => {
+        const newCache = new Map(prevCache);
+        successfulRequestIds.forEach(id => newCache.delete(id));
+        return newCache;
+      });
+      
       // Clear selected requests for successful ones
       setSelectedRequests(prev => {
         const newSelected = new Set(prev);
@@ -415,9 +487,9 @@ useEffect(() => {
           <div className="flex gap-2">
             <button
               onClick={acceptSelectedCertificates}
-              disabled={isAcceptingAll || loadingRequests.size > 0 || selectedRequests.size === 0}
+              disabled={isAcceptingAll || loadingRequests.size > 0 || selectedRequests.size === 0 || isLoadingCertificateDetails}
               className={`inline-flex items-center px-6 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
-                isAcceptingAll || loadingRequests.size > 0 || selectedRequests.size === 0
+                isAcceptingAll || loadingRequests.size > 0 || selectedRequests.size === 0 || isLoadingCertificateDetails
                   ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                   : 'bg-green-600 text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2'
               }`}
@@ -441,37 +513,45 @@ useEffect(() => {
       </div>
 
       <div className="overflow-x-scroll rounded-lg shadow-sm border border-gray-100 bg-white">
-        <table className="w-full">
-          <thead className="bg-gray-50">
-            <tr className="text-sm font-medium text-gray-700">
-              <th className="px-4 py-3 text-center whitespace-nowrap">
-                <input
-                  type="checkbox"
-                  checked={isAllSelected}
-                  ref={(el) => {
-                    if (el) el.indeterminate = isIndeterminate;
-                  }}
-                  onChange={(e) => handleSelectAll(e.target.checked)}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-              </th>
-              {headings.map((heading, idx) => (
-                <th key={idx} className="px-4 py-3 text-center whitespace-nowrap">
-                  {heading}
+        {isLoadingCertificateDetails ? (
+          <div className="flex justify-center items-center h-64">
+            <div className="flex flex-col items-center space-y-4">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-500"></div>
+              <p className="text-gray-600">Loading certificate details...</p>
+            </div>
+          </div>
+        ) : (
+          <table className="w-full">
+            <thead className="bg-gray-50">
+              <tr className="text-sm font-medium text-gray-700">
+                <th className="px-4 py-3 text-center whitespace-nowrap">
+                  <input
+                    type="checkbox"
+                    checked={isAllSelected}
+                    ref={(el) => {
+                      if (el) el.indeterminate = isIndeterminate;
+                    }}
+                    onChange={(e) => handleSelectAll(e.target.checked)}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
                 </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {requestsWithDetails.map((request) => {
-              const uploadedCert = request.certificate_details.uploaded_certificate;
-              const verificationCert = request.certificate_details.verification_certificate;
+                {headings.map((heading, idx) => (
+                  <th key={idx} className="px-4 py-3 text-center whitespace-nowrap">
+                    {heading}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {requestsWithDetails.map((request) => {
+                const uploadedCert = request.certificate_details.uploaded_certificate;
+                const verificationCert = request.certificate_details.verification_certificate;
 
-              return (
-                <tr
-                  key={request.id}
-                  className="hover:bg-gray-50 transition-colors duration-200"
-                >
+                return (
+                  <tr
+                    key={request.id}
+                    className="hover:bg-gray-50 transition-colors duration-200"
+                  >
                   {/* Checkbox */}
                   <td className="px-4 py-3 text-center">
                     <input
@@ -556,9 +636,9 @@ useEffect(() => {
                         request.subject.id,
                         request.student.id
                       )}
-                      disabled={loadingRequests.has(request.id)}
+                      disabled={loadingRequests.has(request.id) || isLoadingCertificateDetails}
                       className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
-                        loadingRequests.has(request.id)
+                        loadingRequests.has(request.id) || isLoadingCertificateDetails
                           ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                           : 'bg-green-600 text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2'
                       }`}
@@ -582,6 +662,7 @@ useEffect(() => {
             })}
           </tbody>
         </table>
+        )}
       </div>
 
       {totalPages > 1 && (
