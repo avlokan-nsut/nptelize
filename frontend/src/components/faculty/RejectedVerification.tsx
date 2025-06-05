@@ -1,7 +1,6 @@
 import axios from "axios";
 import { useQuery,useQueryClient } from "@tanstack/react-query";
-import SearchBar from "./SearchBar";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import Pagination from "./Pagination";
 import { CheckCircle, Loader2 } from "lucide-react";
 
@@ -92,34 +91,77 @@ const headings = [
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
-const fetchRejectedRequests = async (): Promise<RejectedRequestWithDetails[]> => {
-  // Fetch subjects data
+const fetchAllRejectedRequests = async (): Promise<Request[]> => {
+  // Fetch subjects data once
   const { data: subjectsData } = await axios.get<ApiResponse>(`${apiUrl}/teacher/subjects`, {
     withCredentials: true,
   });
 
-  // Fetch all requests for each subject and filter rejected ones
+  // For each subject, loop once to filter rejected requests
   const requestPromises = subjectsData.subjects.map(async (subject) => {
     const { data: requestData } = await axios.get<ApiResponseCSV>(
       `${apiUrl}/teacher/subject/requests/${subject.id}`,
       { withCredentials: true }
     );
-    return requestData.requests.filter(request => request.status === 'rejected');
+    return requestData.requests.reduce<Request[]>((acc, request) => {
+      if (request.status === 'rejected') {
+        acc.push(request);
+      }
+      return acc;
+    }, []);
   });
 
-  // Wait for all requests to complete and flatten the array
-  const allRequestsArrays = await Promise.all(requestPromises);
-  const rejectedRequests = allRequestsArrays.flat();
+  // Combine results from all subjects
+  const allRejectedArrays = await Promise.all(requestPromises);
+  return allRejectedArrays.flat();
+};
 
-  // Fetch certificate details for each rejected request
-  const requestsWithDetails: (RejectedRequestWithDetails | null)[] = await Promise.all(
-    rejectedRequests.map(async (request): Promise<RejectedRequestWithDetails | null> => {
+const RejectedVerification = () => {
+
+  const queryClient = useQueryClient();
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const [loadingRequests, setLoadingRequests] = useState<Set<string>>(new Set());
+  const itemsPerPage = 10;
+  const [isAcceptingAll, setIsAcceptingAll] = useState(false);
+  const [selectedRequests, setSelectedRequests] = useState<Set<string>>(new Set());
+
+  const {
+    data: rejectedRequestsData,
+    error,
+    isLoading,
+    refetch,
+  } = useQuery({
+    queryKey: ["allRejectedRequests"],
+  queryFn: fetchAllRejectedRequests,
+  staleTime: 60000,
+  refetchOnWindowFocus: false,
+  });
+
+  const totalCount = rejectedRequestsData?.length || 0;
+  const totalPages = Math.ceil(totalCount / itemsPerPage);
+
+  const currentRequests = useMemo(() => {
+    if (!rejectedRequestsData) return [];
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return rejectedRequestsData.slice(startIndex, startIndex + itemsPerPage);
+  }, [rejectedRequestsData, currentPage]);
+
+
+  const [requestsWithDetails, setRequestsWithDetails] = useState<RejectedRequestWithDetails[]>([]);
+  
+useEffect(() => {
+  if (currentRequests.length === 0) {
+    setRequestsWithDetails([]);
+    return;
+  }
+  Promise.all(
+    currentRequests.map(async (request): Promise<RejectedRequestWithDetails | null> => {
       try {
         const { data: certificateData } = await axios.get<CertificateApiResponse>(
           `${apiUrl}/teacher/certificate/details/${request.id}`,
           { withCredentials: true }
         );
-        
         return {
           ...request,
           status: "rejected" as const,
@@ -130,39 +172,15 @@ const fetchRejectedRequests = async (): Promise<RejectedRequestWithDetails[]> =>
         return null;
       }
     })
-  );
-
-  // Filter out null values and return properly typed array
-  return requestsWithDetails.filter((request): request is RejectedRequestWithDetails => request !== null);
-};
-
-const RejectedVerification = () => {
-
-  const queryClient = useQueryClient();
-
-  const [searchTerm, setSearchTerm] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [loadingRequests, setLoadingRequests] = useState<Set<string>>(new Set());
-  const itemsPerPage = 10;
-  const [isAcceptingAll, setIsAcceptingAll] = useState(false);
-  const [selectedRequests, setSelectedRequests] = useState<Set<string>>(new Set());
-
-
-  const {
-    data: rejectedRequests,
-    error,
-    isLoading,
-    refetch,
-  } = useQuery({
-    queryKey: ["rejectedRequests"],
-    queryFn: fetchRejectedRequests,
-    staleTime: 60000 ,
-    refetchOnWindowFocus: false,
+  ).then(results => {
+    setRequestsWithDetails(results.filter((r): r is RejectedRequestWithDetails => r !== null));
   });
+}, [currentRequests]);
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm]);
+    setSelectedRequests(new Set()); 
+  }, []);
 
   if (isLoading) {
     return (
@@ -180,7 +198,7 @@ const RejectedVerification = () => {
     );
   }
 
-  if (!rejectedRequests || rejectedRequests.length === 0) {
+  if (!rejectedRequestsData || rejectedRequestsData.length === 0) {
     return (
       <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6 text-center">
         <p className="text-gray-500">No rejected requests found</p>
@@ -188,28 +206,10 @@ const RejectedVerification = () => {
     );
   }
 
-  const filteredRequests = rejectedRequests.filter(
-    (request) =>
-      request.student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      request.student.roll_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      request.subject.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      request.subject.subject_code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      request.certificate_details.uploaded_certificate.student_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      request.certificate_details.verification_certificate.student_name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const totalItems = filteredRequests.length;
-  const totalPages = Math.ceil(totalItems / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedRequests = filteredRequests.slice(
-    startIndex,
-    startIndex + itemsPerPage
-  );
-
   // Handle select all checkbox
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      const allRequestIds = new Set(paginatedRequests.map(request => request.id));
+      const allRequestIds = new Set(requestsWithDetails.map(request => request.id));
       setSelectedRequests(allRequestIds);
     } else {
       setSelectedRequests(new Set());
@@ -228,16 +228,16 @@ const RejectedVerification = () => {
   };
 
   // Check if all current page requests are selected
-  const isAllSelected = paginatedRequests.length > 0 && 
-    paginatedRequests.every(request => selectedRequests.has(request.id));
+  const isAllSelected = requestsWithDetails.length > 0 && 
+    requestsWithDetails.every(request => selectedRequests.has(request.id));
 
   // Check if some (but not all) are selected
-  const isIndeterminate = paginatedRequests.some(request => selectedRequests.has(request.id)) && 
+  const isIndeterminate = requestsWithDetails.some(request => selectedRequests.has(request.id)) && 
     !isAllSelected;
 
   // Get selected requests from current data
   const getSelectedRequestsData = () => {
-    return rejectedRequests?.filter(request => selectedRequests.has(request.id)) || [];
+    return requestsWithDetails?.filter(request => selectedRequests.has(request.id)) || [];
   };
 
   const acceptCertificate = async (
@@ -273,12 +273,17 @@ const RejectedVerification = () => {
       }
     );
 
-    
-    
     // Optimistic update: Remove the accepted request from the UI immediately
-    queryClient.setQueryData(['rejectedRequests'], (oldData: RejectedRequestWithDetails[] | undefined) => {
-      if (!oldData) return [];
+    queryClient.setQueryData(['allRejectedRequests'], (oldData: Request[] | undefined) => {
+      if (!oldData) return oldData;
       return oldData.filter(request => request.id !== request_id);
+    });
+    
+    // Clear selection for accepted request
+    setSelectedRequests(prev => {
+      const newSelected = new Set(prev);
+      newSelected.delete(request_id);
+      return newSelected;
     });
     
   }
@@ -350,8 +355,8 @@ const RejectedVerification = () => {
 
         // Update UI for successful requests in this batch
         if (successfulRequestIds.size > 0) {
-          queryClient.setQueryData(['rejectedRequests'], (oldData: RejectedRequestWithDetails[] | undefined) => {
-            if (!oldData) return [];
+          queryClient.setQueryData(['allRejectedRequests'], (oldData: Request[] | undefined) => {
+            if (!oldData) return oldData;
             return oldData.filter(request => !successfulRequestIds.has(request.id));
           });
         }
@@ -367,6 +372,9 @@ const RejectedVerification = () => {
         successfulRequestIds.forEach(id => newSelected.delete(id));
         return newSelected;
       });
+      
+      // Refetch data instead of optimistic updates
+      await refetch();
       
       // Only show summary message, no refetch needed
       if (successfulRequestIds.size === selectedRequestsData.length) {
@@ -391,22 +399,10 @@ const RejectedVerification = () => {
         Rejected Verification Requests
       </h1>
 
-      <div className="mb-4 mt-8">
-        <SearchBar
-          value={searchTerm}
-          onChange={(value) => {
-            setSearchTerm(value);
-            setCurrentPage(1);
-            setSelectedRequests(new Set()); // Clear selections when searching
-          }}
-          placeholder="Search by student name, roll number, subject name or code"
-        />
-      </div>
-
-      <div className="p-4 bg-red-50 border-b mb-4">
+      <div className="p-4 bg-red-50 border-b mb-4 mt-8">
         <div className="text-center">
           <div className="text-2xl font-bold text-red-600">
-            {rejectedRequests.length}
+            {totalCount}
           </div>
           <div className="text-sm text-gray-600">Total Rejected Requests</div>
         </div>
@@ -467,7 +463,7 @@ const RejectedVerification = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {paginatedRequests.map((request) => {
+            {requestsWithDetails.map((request) => {
               const uploadedCert = request.certificate_details.uploaded_certificate;
               const verificationCert = request.certificate_details.verification_certificate;
 
@@ -552,23 +548,6 @@ const RejectedVerification = () => {
                     <div className="text-sm">{request.certificate_details.remark}</div>
                   </td>
                   
-                  {/* Differences
-                  <td className="px-4 py-3 text-center">
-                    <div className="text-xs">
-                      {differences.length > 0 ? (
-                        <div className="space-y-1">
-                          {differences.map((diff, idx) => (
-                            <div key={idx} className="bg-red-100 text-red-700 px-2 py-1 rounded">
-                              {diff}
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <span className="text-gray-500">{request.certificate_details.remark}</span>
-                      )}
-                    </div>
-                  </td> */}
-
                   <td className="px-4 py-3 text-center">
                     <button 
                       onClick={() => acceptCertificate(
@@ -614,7 +593,7 @@ const RejectedVerification = () => {
             setSelectedRequests(new Set()); // Clear selections when changing pages
           }}
           itemsPerPage={itemsPerPage}
-          totalItems={totalItems}
+          totalItems={totalCount}
         />
       )}
     </div>
