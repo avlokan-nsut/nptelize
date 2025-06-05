@@ -4,12 +4,15 @@ from sqlalchemy.orm import Session
 from typing import Tuple, Optional, cast, Dict
 
 from app.models import Request, RequestStatus, Certificate
+from app.services.log_service import setup_logger
 
 from .utils.qr_extraction import extract_link
 from .utils.downloader import download_verification_pdf
 from .utils.extractor import extract_student_info_from_pdf
 
 import tempfile
+
+logger = setup_logger(__name__)
 
 COURSE_NAME_SINGLE_LINE_CHARACTER_LIMIT = 57
 
@@ -36,7 +39,7 @@ class Verifier:
             ) 
         
         offset_aware_due_date = db_request.due_date.replace(tzinfo=timezone.utc) if db_request.due_date else None
-        print(f"Offset aware due date: {offset_aware_due_date}")
+        logger.info(f"Offset aware due date: {offset_aware_due_date}")
 
         if offset_aware_due_date and datetime.now(timezone.utc) > offset_aware_due_date: 
             raise HTTPException(
@@ -76,7 +79,7 @@ class Verifier:
             return
 
         with tempfile.NamedTemporaryFile(mode='w+', delete=True, suffix=".pdf", prefix="certificate_") as temp_f:
-            print(f"Temporary file created at: {temp_f.name}")
+            logger.info(f"Temporary file created at: {temp_f.name}")
             success, pdf_url, output = await download_verification_pdf(verification_link, temp_f.name)
 
             if not success:
@@ -153,10 +156,10 @@ class Verifier:
         ):
             return False, "Invalid details in the verification file", None, None
 
-        print(
+        logger.info(
             f"Uploaded: {uploaded_course_name}, {uploaded_student_name}, {uploaded_total_marks}, {uploaded_roll_number}, {uploaded_course_period}"
         )
-        print(
+        logger.info(
             f"Valid: {valid_course_name}, {valid_student_name}, {valid_total_marks}, {valid_roll_number}, {valid_course_period}"
         )
 
@@ -230,7 +233,7 @@ class Verifier:
             )
 
         with tempfile.NamedTemporaryFile(mode='w+', delete=True, suffix=".pdf", prefix="certificate_") as temp_f:
-            print(f"Temporary file created at: {temp_f.name}")
+            logger.info(f"Temporary file created at: {temp_f.name}")
             success, pdf_url, output = await download_verification_pdf(verification_link, temp_f.name)
 
             if not success:

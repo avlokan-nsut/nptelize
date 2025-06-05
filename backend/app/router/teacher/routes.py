@@ -20,6 +20,7 @@ from app.router.teacher.schemas import (
     UnsafeManualVerificationRequest
 )
 from app.models import User, UserRole, Subject, StudentSubject, Request, RequestStatus, Certificate
+from app.services.log_service import setup_logger
 
 from app.services.utils.limiter import process_upload
 from app.services.utils.file_storage import save_file_to_local_storage
@@ -27,11 +28,12 @@ from app.services.utils.extractor import extract_student_info_from_pdf
 from app.services.utils.qr_extraction import extract_link
 from app.services.verifier import Verifier, COURSE_NAME_SINGLE_LINE_CHARACTER_LIMIT
 
+logger = setup_logger(__name__)
 
 router = APIRouter(prefix="/teacher")
 
 CERTIFICATES_FOLDER_PATH = config['CERTIFICATES_FOLDER_PATH']
-print(CERTIFICATES_FOLDER_PATH)
+logger.info(f"Certificates folder path: {CERTIFICATES_FOLDER_PATH}")
 
 @router.get('/subjects', response_model=SubjectResponse)
 def get_alloted_subjects(

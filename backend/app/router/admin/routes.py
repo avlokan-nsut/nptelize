@@ -6,12 +6,14 @@ from app.oauth2 import get_current_admin
 from app.router.admin.schemas import StudentCreate, TeacherCreate, AdminCreate, CreateUserResponse, SubjectCreate, CreateSubjectResponse, AddStudentToSubjectSchema
 from app.schemas import TokenData, GenericResponse
 from app.services.utils.hashing import generate_password_hash
+from app.services.log_service import setup_logger
 
 import multiprocessing
 from sqlalchemy.orm import Session
 
 from typing import List
 
+logger = setup_logger(__name__)
 
 router = APIRouter(prefix='/admin')
 
@@ -158,7 +160,7 @@ def create_students(
                 
     except Exception as batch_error:
         db.rollback()
-        print(f"Batch processing failed: {batch_error}")
+        logger.error(f"Batch processing failed: {batch_error}")
         
         # If batch fails, try individual processing to identify problematic records
         for i, student in enumerate(students):
@@ -293,7 +295,7 @@ def create_subjects(
             })
         except Exception as e:
             db.rollback()
-            print(e)
+            logger.error(f"Subject creation error: {e}")
             results.append({
                 "subject_code": subject.subject_code,
                 "nptel_course_code": subject.nptel_course_code,
@@ -369,7 +371,7 @@ def add_students_to_subject(
                 'course_code': student.course_code,
             })
         except Exception as e:
-            print(e)
+            logger.error(f"Error adding student to subject: {e}")
             db.rollback()
             add_status.append({
                 'email': student.email,

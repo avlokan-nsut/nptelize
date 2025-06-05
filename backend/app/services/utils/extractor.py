@@ -1,6 +1,9 @@
 from typing import Tuple
 
 import fitz
+from app.services.log_service import setup_logger
+
+logger = setup_logger(__name__)
 
 
 def extract_text_from_first_page(pdf_path: str) -> str:
@@ -20,12 +23,12 @@ def extract_student_info_from_pdf(
     offset = 1 if is_subject_name_long else 0
 
     if len(lines) != 12 + offset:
-        print("PDF is invalid / has been tampered with")
+        logger.warning("PDF is invalid / has been tampered with")
         return None, None, None, None, None
 
-    print("Extracted lines:")
+    logger.info("Extracted lines:")
     for i, line in enumerate(lines):
-        print(f"Line {i}: {line}")
+        logger.info(f"Line {i}: {line}")
 
     course_period = lines[3].strip()
 
@@ -38,8 +41,8 @@ def extract_student_info_from_pdf(
     roll_no = lines[11 + offset].strip()
 
     # print all info
-    print(
-       course_period, course_name, student_name, assignment_marks, exam_marks, total_marks, roll_no 
+    logger.info(
+       f"{course_period}, {course_name}, {student_name}, {assignment_marks}, {exam_marks}, {total_marks}, {roll_no}"
     )
 
     return (

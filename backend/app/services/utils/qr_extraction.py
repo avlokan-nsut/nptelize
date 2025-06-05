@@ -2,7 +2,9 @@ import pdfplumber
 from PIL import Image
 from pyzbar.pyzbar import decode
 import tempfile
+from app.services.log_service import setup_logger
 
+logger = setup_logger(__name__)
 
 def extract_qr_code(pdf_path: str, page_number: int, output_image_path: str) -> None:
     with pdfplumber.open(pdf_path) as pdf:
@@ -28,7 +30,7 @@ def extract_link(pdf_path: str, page_number: int) -> str | None:
         qr_code_data = decode_qr_code(output_image_path)
 
         if qr_code_data and qr_code_data.startswith("https://nptel.ac.in/"):
-            print("Decoded QR Code Data:", qr_code_data)
+            logger.info("Decoded QR Code Data: %s", qr_code_data)
             return qr_code_data
-        print("| Not Valid QR CODE DATA |")
+        logger.warning("| Not Valid QR CODE DATA |")
         return None

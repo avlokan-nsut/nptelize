@@ -11,9 +11,11 @@ from app.schemas import TokenData, GenericResponse
 from app.services.verifier import Verifier
 from app.services.utils.limiter import process_upload
 from app.services.utils.file_storage import save_file_to_local_storage
+from app.services.log_service import setup_logger
 
 from app.oauth2 import get_current_student
 
+logger = setup_logger(__name__)
 
 router = APIRouter(prefix="/student")
 
@@ -57,7 +59,7 @@ def get_certificate_requests(
         } 
     except Exception as e:
         db.rollback()
-        print(e)
+        logger.error(f"Error getting certificate requests: {e}")
         raise e
 
 @router.get('/subjects', response_model=StudentSubjectsResponse)
@@ -88,7 +90,7 @@ def get_student_subjects(
         }
     except Exception as e:
         db.rollback()
-        print(e)
+        logger.error(f"Error getting student subjects: {e}")
         raise e
 
 @router.get('/certificate/{request_id}', response_model=CertificateResponse | None)
