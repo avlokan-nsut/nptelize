@@ -16,11 +16,7 @@ from app.services.utils.limiter import process_upload
 from app.services.utils.file_storage import save_file_to_local_storage
 from app.services.utils.extractor import extract_student_info_from_pdf
 from app.services.utils.qr_extraction import extract_link
-from app.services.utils.downloader import download_verification_pdf
-from app.services.verifier import Verifier
-
-import tempfile
-
+from app.services.verifier import Verifier, COURSE_NAME_SINGLE_LINE_CHARACTER_LIMIT
 
 
 router = APIRouter(prefix="/teacher")
@@ -272,7 +268,12 @@ async def verify_certificate_manual(
         total_marks, 
         roll_no, 
         course_period 
-    ) = extract_student_info_from_pdf(file_path) 
+    ) = extract_student_info_from_pdf(
+        file_path, 
+        is_subject_name_long=isinstance(db_request.subject.name, str) and (
+            len(db_request.subject.name.strip()) > COURSE_NAME_SINGLE_LINE_CHARACTER_LIMIT
+        )
+    ) 
 
     # check for missing details
     if not course_name or not student_name or not total_marks or not roll_no or not course_period:
