@@ -1,6 +1,5 @@
 import axios from "axios";
 import { useQuery,useQueryClient } from "@tanstack/react-query";
-import SearchBar from "./SearchBar";
 import { useEffect, useState } from "react";
 import Pagination from "./Pagination";
 import { CheckCircle, Loader2 } from "lucide-react";
@@ -92,7 +91,7 @@ const headings = [
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
-const fetchRejectedRequests = async (): Promise<RejectedRequestWithDetails[]> => {
+const fetchRejectedRequests = async (page: number, itemsPerPage: number): Promise<{ requests: RejectedRequestWithDetails[], totalCount: number }> => {
   // Fetch subjects data
   const { data: subjectsData } = await axios.get<ApiResponse>(`${apiUrl}/teacher/subjects`, {
     withCredentials: true,
@@ -111,9 +110,15 @@ const fetchRejectedRequests = async (): Promise<RejectedRequestWithDetails[]> =>
   const allRequestsArrays = await Promise.all(requestPromises);
   const rejectedRequests = allRequestsArrays.flat();
 
-  // Fetch certificate details for each rejected request
+  const totalCount = rejectedRequests.length;
+  
+  // Apply pagination
+  const startIndex = (page - 1) * itemsPerPage;
+  const paginatedRequests = rejectedRequests.slice(startIndex, startIndex + itemsPerPage);
+
+  // Fetch certificate details only for paginated requests
   const requestsWithDetails: (RejectedRequestWithDetails | null)[] = await Promise.all(
-    rejectedRequests.map(async (request): Promise<RejectedRequestWithDetails | null> => {
+    paginatedRequests.map(async (request): Promise<RejectedRequestWithDetails | null> => {
       try {
         const { data: certificateData } = await axios.get<CertificateApiResponse>(
           `${apiUrl}/teacher/certificate/details/${request.id}`,
@@ -133,36 +138,44 @@ const fetchRejectedRequests = async (): Promise<RejectedRequestWithDetails[]> =>
   );
 
   // Filter out null values and return properly typed array
-  return requestsWithDetails.filter((request): request is RejectedRequestWithDetails => request !== null);
+  const validRequests = requestsWithDetails.filter((request): request is RejectedRequestWithDetails => request !== null);
+  
+  return {
+    requests: validRequests,
+    totalCount: totalCount
+  };
 };
 
 const RejectedVerification = () => {
 
   const queryClient = useQueryClient();
 
-  const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [loadingRequests, setLoadingRequests] = useState<Set<string>>(new Set());
   const itemsPerPage = 10;
   const [isAcceptingAll, setIsAcceptingAll] = useState(false);
   const [selectedRequests, setSelectedRequests] = useState<Set<string>>(new Set());
 
-
   const {
-    data: rejectedRequests,
+    data: rejectedRequestsData,
     error,
     isLoading,
     refetch,
   } = useQuery({
-    queryKey: ["rejectedRequests"],
-    queryFn: fetchRejectedRequests,
-    staleTime: 60000 ,
+    queryKey: ["rejectedRequests", currentPage],
+    queryFn: () => fetchRejectedRequests(currentPage, itemsPerPage),
+    staleTime: 60000,
     refetchOnWindowFocus: false,
   });
 
+  const rejectedRequests = rejectedRequestsData?.requests || [];
+  const totalItems = rejectedRequestsData?.totalCount || 0;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm]);
+    setSelectedRequests(new Set()); // Clear selections when searching
+  }, []);
 
   if (isLoading) {
     return (
@@ -188,23 +201,8 @@ const RejectedVerification = () => {
     );
   }
 
-  const filteredRequests = rejectedRequests.filter(
-    (request) =>
-      request.student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      request.student.roll_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      request.subject.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      request.subject.subject_code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      request.certificate_details.uploaded_certificate.student_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      request.certificate_details.verification_certificate.student_name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const totalItems = filteredRequests.length;
-  const totalPages = Math.ceil(totalItems / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedRequests = filteredRequests.slice(
-    startIndex,
-    startIndex + itemsPerPage
-  );
+  // Remove filtering logic since it's now handled in the fetch function
+  const paginatedRequests = rejectedRequests;
 
   // Handle select all checkbox
   const handleSelectAll = (checked: boolean) => {
@@ -273,12 +271,22 @@ const RejectedVerification = () => {
       }
     );
 
-    
-    
     // Optimistic update: Remove the accepted request from the UI immediately
-    queryClient.setQueryData(['rejectedRequests'], (oldData: RejectedRequestWithDetails[] | undefined) => {
-      if (!oldData) return [];
-      return oldData.filter(request => request.id !== request_id);
+    queryClient.setQueryData(['rejectedRequests', currentPage], (oldData: { requests: RejectedRequestWithDetails[], totalCount: number } | undefined) => {
+      if (!oldData) return oldData;
+      
+      const updatedRequests = oldData.requests.filter(request => request.id !== request_id);
+      return {
+        requests: updatedRequests,
+        totalCount: Math.max(0, oldData.totalCount - 1)
+      };
+    });
+    
+    // Clear selection for accepted request
+    setSelectedRequests(prev => {
+      const newSelected = new Set(prev);
+      newSelected.delete(request_id);
+      return newSelected;
     });
     
   }
@@ -350,9 +358,14 @@ const RejectedVerification = () => {
 
         // Update UI for successful requests in this batch
         if (successfulRequestIds.size > 0) {
-          queryClient.setQueryData(['rejectedRequests'], (oldData: RejectedRequestWithDetails[] | undefined) => {
-            if (!oldData) return [];
-            return oldData.filter(request => !successfulRequestIds.has(request.id));
+          queryClient.setQueryData(['rejectedRequests', currentPage], (oldData: { requests: RejectedRequestWithDetails[], totalCount: number } | undefined) => {
+            if (!oldData) return oldData;
+            
+            const updatedRequests = oldData.requests.filter(request => !successfulRequestIds.has(request.id));
+            return {
+              requests: updatedRequests,
+              totalCount: Math.max(0, oldData.totalCount - successfulRequestIds.size)
+            };
           });
         }
         
@@ -367,6 +380,9 @@ const RejectedVerification = () => {
         successfulRequestIds.forEach(id => newSelected.delete(id));
         return newSelected;
       });
+      
+      // Refetch data instead of optimistic updates
+      await refetch();
       
       // Only show summary message, no refetch needed
       if (successfulRequestIds.size === selectedRequestsData.length) {
@@ -391,22 +407,10 @@ const RejectedVerification = () => {
         Rejected Verification Requests
       </h1>
 
-      <div className="mb-4 mt-8">
-        <SearchBar
-          value={searchTerm}
-          onChange={(value) => {
-            setSearchTerm(value);
-            setCurrentPage(1);
-            setSelectedRequests(new Set()); // Clear selections when searching
-          }}
-          placeholder="Search by student name, roll number, subject name or code"
-        />
-      </div>
-
-      <div className="p-4 bg-red-50 border-b mb-4">
+      <div className="p-4 bg-red-50 border-b mb-4 mt-8">
         <div className="text-center">
           <div className="text-2xl font-bold text-red-600">
-            {rejectedRequests.length}
+            {totalItems}
           </div>
           <div className="text-sm text-gray-600">Total Rejected Requests</div>
         </div>
@@ -552,23 +556,6 @@ const RejectedVerification = () => {
                     <div className="text-sm">{request.certificate_details.remark}</div>
                   </td>
                   
-                  {/* Differences
-                  <td className="px-4 py-3 text-center">
-                    <div className="text-xs">
-                      {differences.length > 0 ? (
-                        <div className="space-y-1">
-                          {differences.map((diff, idx) => (
-                            <div key={idx} className="bg-red-100 text-red-700 px-2 py-1 rounded">
-                              {diff}
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <span className="text-gray-500">{request.certificate_details.remark}</span>
-                      )}
-                    </div>
-                  </td> */}
-
                   <td className="px-4 py-3 text-center">
                     <button 
                       onClick={() => acceptCertificate(
