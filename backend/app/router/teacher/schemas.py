@@ -15,6 +15,12 @@ class CreateCertificateRequestFields(BaseModel):
     subject_id: str
     due_date: Optional[datetime] = None
 
+class UnsafeManualVerificationRequest:
+    request_id: str
+    subject_id: str
+    student_id: str
+    marks: int
+
 # -----------------------------------------------------------------------
 # Response Schemas
 # -----------------------------------------------------------------------

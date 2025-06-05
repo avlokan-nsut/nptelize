@@ -9,7 +9,16 @@ from app.config import config
 from app.config.db import get_db, get_async_db
 from app.oauth2 import get_current_teacher
 from app.schemas import TokenData, GenericResponse
-from app.router.teacher.schemas import SubjectResponse, EnrolledStudentResponse, CreateCertificateRequestFields, GetStudentRequestsResponse, GetRequestByIdResponse, MakeCertificateRequestResponse, CertificateResponse
+from app.router.teacher.schemas import (
+    SubjectResponse, 
+    EnrolledStudentResponse, 
+    CreateCertificateRequestFields, 
+    GetStudentRequestsResponse, 
+    GetRequestByIdResponse, 
+    MakeCertificateRequestResponse, 
+    CertificateResponse,
+    UnsafeManualVerificationRequest
+)
 from app.models import User, UserRole, Subject, StudentSubject, Request, RequestStatus, Certificate
 
 from app.services.utils.limiter import process_upload
@@ -306,6 +315,49 @@ async def verify_certificate_manual(
     return {'message': 'Certificate verified successfully'}
 
 
+@router.post('/verify/certificate/manual/unsafe', response_model=GenericResponse)
+def verify_certificate_manual_unsafe(
+    verification_data: UnsafeManualVerificationRequest,
+    db: Session = Depends(get_db),
+    current_teacher = Depends(get_current_teacher)
+):
+    request_id = verification_data.request_id
+    student_id = verification_data.student_id
+    subject_id = verification_data.subject_id
+    total_marks = verification_data.marks
+    
+    db_request = db.query(Request).filter(
+        Request.id == request_id,
+        Request.student_id == student_id,
+        Request.subject_id == subject_id,
+        Request.teacher_id == current_teacher.user_id
+    ).first()
+
+    if not db_request:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Request not found")
+    
+    db_certificate = db.query(Certificate).filter(
+       Certificate.request_id == request_id, 
+    ).first()
+
+    if not db_certificate:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="The student's certificate was not found")
+
+    relative_file_path = db_certificate.file_url
+    file_path = f"{CERTIFICATES_FOLDER_PATH}/{relative_file_path}"
+
+    verification_link = extract_link(file_path, 0)
+
+    db_certificate.file_url = relative_file_path
+    db_certificate.verification_file_url = verification_link
+    db_certificate.verified_total_marks = total_marks
+    db_certificate.verified = True
+    db_certificate.remark = "Manual verification by teacher"
+
+    db_request.status = RequestStatus.completed
+    db.commit()
+
+    return {'message': 'Certificate verified successfully'}
 
 @router.get('/certificate/details/{request_id}', response_model=CertificateResponse)
 async def get_verified_certificate_details(
