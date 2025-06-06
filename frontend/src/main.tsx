@@ -1,10 +1,10 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import {
-    Route,
-    createBrowserRouter,
-    createRoutesFromElements,
-    RouterProvider,
+  Route,
+  createBrowserRouter,
+  createRoutesFromElements,
+  RouterProvider,
 } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import App from "./App";
@@ -23,78 +23,86 @@ import Developers from "./components/Developers";
 import ReportSection from "./components/faculty/ReportSection";
 import ManualVerification from "./components/faculty/ManualVerification";
 import RejectedVerification from "./components/faculty/RejectedVerification";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const queryClient = new QueryClient();
 
 const routes = createBrowserRouter(
-    createRoutesFromElements(
-        <Route path="/" element={<Layout />}>
-            <Route
-                path="login"
-                element={
-                    <PublicRoute>
-                        <LoginForm />
-                    </PublicRoute>
-                }
-            />
-            <Route
-                path="admin/login"
-                element={
-                    <PublicRoute>
-                        <AdminLoginForm />
-                    </PublicRoute>
-                }
-            />
-            <Route index element={<App />} />
+  createRoutesFromElements(
+    <Route path="/" element={<Layout />}>
+      <Route
+        path="login"
+        element={
+          <PublicRoute>
+            <LoginForm />
+          </PublicRoute>
+        }
+      />
+      <Route
+        path="admin/login"
+        element={
+          <PublicRoute>
+            <AdminLoginForm />
+          </PublicRoute>
+        }
+      />
+      <Route index element={<App />} />
 
-            {/* Protected Routes */}
+      {/* Protected Routes */}
 
-            {/* Faculty routes */}
-            <Route element={<ProtectedRoute allowedRoles={["teacher"]} />}>
-                <Route path="faculty/dashboard" element={<Dashboard />} />
-                <Route
-                    path="faculty/students/:subjectCode"
-                    element={<StudentTable />}
-                />
-                <Route
-                    path="faculty/students/requests/:subjectCode"
-                    element={<StudentStatus />}
-                />
-                <Route
-                    path="faculty/report-section"
-                    element={<ReportSection />}
-                />
-                <Route
-                    path="faculty/manual-verification"
-                    element={<ManualVerification />}
-                />
-                <Route
-                    path="faculty/verify-rejected"
-                    element={<RejectedVerification />}
-                />
-            </Route>
+      {/* Faculty routes */}
+      <Route element={<ProtectedRoute allowedRoles={["teacher"]} />}>
+        <Route path="faculty/dashboard" element={<Dashboard />} />
+        <Route
+          path="faculty/students/:subjectCode"
+          element={<StudentTable />}
+        />
+        <Route
+          path="faculty/students/requests/:subjectCode"
+          element={<StudentStatus />}
+        />
+        <Route path="faculty/report-section" element={<ReportSection />} />
+        <Route
+          path="faculty/manual-verification"
+          element={<ManualVerification />}
+        />
+        <Route
+          path="faculty/verify-rejected"
+          element={<RejectedVerification />}
+        />
+      </Route>
 
-            {/* Admin routes */}
-            <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
-                <Route path="admin/dashboard" element={<AdminDashboard />} />
-            </Route>
+      {/* Admin routes */}
+      <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
+        <Route path="admin/dashboard" element={<AdminDashboard />} />
+      </Route>
 
-            <Route element={<ProtectedRoute allowedRoles={["student"]} />}>
-                <Route
-                    path="student/dashboard"
-                    element={<StudentDashboard />}
-                />
-            </Route>
+      <Route element={<ProtectedRoute allowedRoles={["student"]} />}>
+        <Route path="student/dashboard" element={<StudentDashboard />} />
+      </Route>
 
-            <Route path="developers" element={<Developers />} />
-        </Route>
-    )
+      <Route path="developers" element={<Developers />} />
+    </Route>
+  )
 );
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
-    <React.StrictMode>
-        <QueryClientProvider client={queryClient}>
-            <RouterProvider router={routes} />
-        </QueryClientProvider>
-    </React.StrictMode>
+  <React.StrictMode>
+    <QueryClientProvider client={queryClient}>
+      <RouterProvider router={routes} />
+      <ToastContainer
+        position="bottom-right"
+        autoClose={2000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick={false}
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="dark"
+      />
+    </QueryClientProvider>
+  </React.StrictMode>
 );
