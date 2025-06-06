@@ -1,8 +1,9 @@
 import axios from "axios";
-import { useQuery,useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState, useMemo, useRef } from "react";
 import Pagination from "./Pagination";
 import { CheckCircle, Loader2 } from "lucide-react";
+import MannualAlert from "./MannualAlert";
 
 export type Subject = {
   id: string;
@@ -70,33 +71,37 @@ export type RejectedRequestWithDetails = {
   verified_total_marks: string;
   created_at: string;
   due_date: string;
-  certificate_details: CertificateDetails;
+  certificate_details: CertificateDetails | null;
 };
 
 const headings = [
-            "Roll Number",
-            "NSUT Name",
-            "Uploaded Student Name",
-            "NPTEL Certificate Student Name",
-            "Requested Course",
-            "Uploaded Certificate Course Name",
-            "NPTEL Certificate Course Name",
-            "Certificate Marks",
-            "NPTEL Verified Marks",
-            "Year",
-            "Certificate Year",
-            "Status",
-            "Differences",
-            "Actions"
-        ];
+  "Roll Number",
+  "NSUT Name",
+  "Uploaded Student Name",
+  "NPTEL Certificate Student Name",
+  "Requested Course",
+  "Uploaded Certificate Course Name",
+  "NPTEL Certificate Course Name",
+  "Certificate Marks",
+  "NPTEL Verified Marks",
+  "Year",
+  "Certificate Year",
+  "Status",
+  "Differences",
+  "File URL",
+  "Actions",
+];
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
 const fetchAllRejectedRequests = async (): Promise<Request[]> => {
   // Fetch subjects data once
-  const { data: subjectsData } = await axios.get<ApiResponse>(`${apiUrl}/teacher/subjects`, {
-    withCredentials: true,
-  });
+  const { data: subjectsData } = await axios.get<ApiResponse>(
+    `${apiUrl}/teacher/subjects`,
+    {
+      withCredentials: true,
+    }
+  );
 
   // For each subject, loop once to filter rejected requests
   const requestPromises = subjectsData.subjects.map(async (subject) => {
@@ -105,7 +110,7 @@ const fetchAllRejectedRequests = async (): Promise<Request[]> => {
       { withCredentials: true }
     );
     return requestData.requests.reduce<Request[]>((acc, request) => {
-      if (request.status === 'rejected') {
+      if (request.status === "rejected") {
         acc.push(request);
       }
       return acc;
@@ -117,7 +122,9 @@ const fetchAllRejectedRequests = async (): Promise<Request[]> => {
   return allRejectedArrays.flat();
 };
 
-const fetchCertificateDetails = async (requestId: string): Promise<CertificateDetails> => {
+const fetchCertificateDetails = async (
+  requestId: string
+): Promise<CertificateDetails> => {
   const { data: certificateData } = await axios.get<CertificateApiResponse>(
     `${apiUrl}/teacher/certificate/details/${requestId}`,
     { withCredentials: true }
@@ -126,19 +133,28 @@ const fetchCertificateDetails = async (requestId: string): Promise<CertificateDe
 };
 
 const RejectedVerification = () => {
-
   const queryClient = useQueryClient();
 
   const [currentPage, setCurrentPage] = useState(1);
-  const [loadingRequests, setLoadingRequests] = useState<Set<string>>(new Set());
+  const [loadingRequests, setLoadingRequests] = useState<Set<string>>(
+    new Set()
+  );
   const itemsPerPage = 10;
   const [isAcceptingAll, setIsAcceptingAll] = useState(false);
-  const [selectedRequests, setSelectedRequests] = useState<Set<string>>(new Set());
-  const [isLoadingCertificateDetails, setIsLoadingCertificateDetails] = useState(false);
-  const [certificateDetailsCache, setCertificateDetailsCache] = useState<Map<string, CertificateDetails>>(new Map());
-  
+  const [selectedRequests, setSelectedRequests] = useState<Set<string>>(
+    new Set()
+  );
+  const [isLoadingCertificateDetails, setIsLoadingCertificateDetails] =
+    useState(false);
+  const [certificateDetailsCache, setCertificateDetailsCache] = useState<
+    Map<string, CertificateDetails>
+  >(new Map());
+  const [visibleModalId, setVisibleModalId] = useState<string | null>(null);
+
   // Use ref to access latest cache value without causing re-renders
-  const cacheRef = useRef<Map<string, CertificateDetails>>(certificateDetailsCache);
+  const cacheRef = useRef<Map<string, CertificateDetails>>(
+    certificateDetailsCache
+  );
   cacheRef.current = certificateDetailsCache;
 
   const {
@@ -148,9 +164,9 @@ const RejectedVerification = () => {
     refetch,
   } = useQuery({
     queryKey: ["allRejectedRequests"],
-  queryFn: fetchAllRejectedRequests,
-  staleTime: 60000,
-  refetchOnWindowFocus: false,
+    queryFn: fetchAllRejectedRequests,
+    staleTime: 60000,
+    refetchOnWindowFocus: false,
   });
 
   const totalCount = rejectedRequestsData?.length || 0;
@@ -162,83 +178,98 @@ const RejectedVerification = () => {
     return rejectedRequestsData.slice(startIndex, startIndex + itemsPerPage);
   }, [rejectedRequestsData, currentPage]);
 
+  const [requestsWithDetails, setRequestsWithDetails] = useState<
+    RejectedRequestWithDetails[]
+  >([]);
 
-  const [requestsWithDetails, setRequestsWithDetails] = useState<RejectedRequestWithDetails[]>([]);
-  
-useEffect(() => {
-  if (currentRequests.length === 0) {
-    setRequestsWithDetails([]);
-    setIsLoadingCertificateDetails(false);
-    return;
-  }
-  
-  setIsLoadingCertificateDetails(true);
-  
-  // Check which requests need certificate details fetched using current cache
-  const currentCache = cacheRef.current;
-  const requestsNeedingDetails = currentRequests.filter(
-    request => !currentCache.has(request.id)
-  );
-  
-  // If all requests are already cached, use cached data immediately
-  if (requestsNeedingDetails.length === 0) {
-    const cachedRequestsWithDetails = currentRequests.map(request => ({
-      ...request,
-      status: "rejected" as const,
-      certificate_details: currentCache.get(request.id)!,
-    }));
-    setRequestsWithDetails(cachedRequestsWithDetails);
-    setIsLoadingCertificateDetails(false);
-    return;
-  }
-  
-  // Fetch only the missing certificate details
-  Promise.all(
-    requestsNeedingDetails.map(async (request): Promise<{ requestId: string; details: CertificateDetails | null }> => {
-      try {
-        const details = await fetchCertificateDetails(request.id);
-        return { requestId: request.id, details };
-      } catch (error) {
-        console.error(`Failed to fetch certificate details for request ${request.id}:`, error);
-        return { requestId: request.id, details: null };
-      }
-    })
-  ).then(results => {
-    // Update cache with new certificate details
-    setCertificateDetailsCache(prevCache => {
-      const newCache = new Map(prevCache);
-      results.forEach(({ requestId, details }) => {
-        if (details) {
-          newCache.set(requestId, details);
-        }
-      });
-      return newCache;
-    });
-    
-    // Build the complete requests with details using both cached and newly fetched data
-    const completeRequestsWithDetails = currentRequests.map(request => {
-      const cachedDetails = currentCache.get(request.id);
-      const newDetails = results.find(r => r.requestId === request.id)?.details;
-      const details = newDetails || cachedDetails;
-      
-      return details ? {
+  useEffect(() => {
+    if (currentRequests.length === 0) {
+      setRequestsWithDetails([]);
+      setIsLoadingCertificateDetails(false);
+      return;
+    }
+
+    setIsLoadingCertificateDetails(true);
+
+    // Check which requests need certificate details fetched using current cache
+    const currentCache = cacheRef.current;
+    const requestsNeedingDetails = currentRequests.filter(
+      (request) => !currentCache.has(request.id)
+    );
+
+    // If all requests are already cached, use cached data immediately
+    if (requestsNeedingDetails.length === 0) {
+      const cachedRequestsWithDetails = currentRequests.map((request) => ({
         ...request,
         status: "rejected" as const,
-        certificate_details: details,
-      } : null;
-    }).filter((r): r is RejectedRequestWithDetails => r !== null);
-    
-    setRequestsWithDetails(completeRequestsWithDetails);
-    setIsLoadingCertificateDetails(false);
-  }).catch((error) => {
-    console.error('Error fetching certificate details:', error);
-    setIsLoadingCertificateDetails(false);
-  });
-}, [currentRequests]); // Removed certificateDetailsCache from dependencies
+        certificate_details: currentCache.get(request.id)!,
+      }));
+      setRequestsWithDetails(cachedRequestsWithDetails);
+      setIsLoadingCertificateDetails(false);
+      return;
+    }
+
+    // Fetch only the missing certificate details
+    Promise.all(
+      requestsNeedingDetails.map(
+        async (
+          request
+        ): Promise<{
+          requestId: string;
+          details: CertificateDetails | null;
+        }> => {
+          try {
+            const details = await fetchCertificateDetails(request.id);
+            return { requestId: request.id, details };
+          } catch (error) {
+            console.error(
+              `Failed to fetch certificate details for request ${request.id}:`,
+              error
+            );
+            return { requestId: request.id, details: null };
+          }
+        }
+      )
+    )
+      .then((results) => {
+        // Update cache with new certificate details
+        setCertificateDetailsCache((prevCache) => {
+          const newCache = new Map(prevCache);
+          results.forEach(({ requestId, details }) => {
+            if (details) {
+              newCache.set(requestId, details);
+            }
+          });
+          return newCache;
+        });
+
+        // Build the complete requests with details using both cached and newly fetched data
+        const completeRequestsWithDetails = currentRequests.map((request) => {
+          const cachedDetails = currentCache.get(request.id);
+          const newDetails = results.find(
+            (r) => r.requestId === request.id
+          )?.details;
+          const details = newDetails || cachedDetails;
+
+          return {
+            ...request,
+            status: "rejected" as const,
+            certificate_details: details || null,
+          };
+        });
+
+        setRequestsWithDetails(completeRequestsWithDetails);
+        setIsLoadingCertificateDetails(false);
+      })
+      .catch((error) => {
+        console.error("Error fetching certificate details:", error);
+        setIsLoadingCertificateDetails(false);
+      });
+  }, [currentRequests]); // Removed certificateDetailsCache from dependencies
 
   useEffect(() => {
     setCurrentPage(1);
-    setSelectedRequests(new Set()); 
+    setSelectedRequests(new Set());
   }, []);
 
   if (isLoading) {
@@ -268,7 +299,9 @@ useEffect(() => {
   // Handle select all checkbox
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      const allRequestIds = new Set(requestsWithDetails.map(request => request.id));
+      const allRequestIds = new Set(
+        requestsWithDetails.map((request) => request.id)
+      );
       setSelectedRequests(allRequestIds);
     } else {
       setSelectedRequests(new Set());
@@ -287,116 +320,132 @@ useEffect(() => {
   };
 
   // Check if all current page requests are selected
-  const isAllSelected = requestsWithDetails.length > 0 && 
-    requestsWithDetails.every(request => selectedRequests.has(request.id));
+  const isAllSelected =
+    requestsWithDetails.length > 0 &&
+    requestsWithDetails.every((request) => selectedRequests.has(request.id));
 
   // Check if some (but not all) are selected
-  const isIndeterminate = requestsWithDetails.some(request => selectedRequests.has(request.id)) && 
+  const isIndeterminate =
+    requestsWithDetails.some((request) => selectedRequests.has(request.id)) &&
     !isAllSelected;
 
   // Get selected requests from current data
   const getSelectedRequestsData = () => {
-    return requestsWithDetails?.filter(request => selectedRequests.has(request.id)) || [];
+    return (
+      requestsWithDetails?.filter((request) =>
+        selectedRequests.has(request.id)
+      ) || []
+    );
   };
 
   const acceptCertificate = async (
-    fileId: string, 
+    fileId: string | undefined,
     request_id: string,
     subject_id: string,
-    student_id: string,
+    student_id: string
   ): Promise<void> => {
+    if (fileId === undefined) {
+      alert("No file");
+      return;
+    }
     // Set loading state for this specific request
-    setLoadingRequests(prev => new Set(prev).add(request_id));
-    
+    setLoadingRequests((prev) => new Set(prev).add(request_id));
+
     try {
-    // 1. Construct the file URL and fetch file
-    const fileUrl = `${apiUrl}/user/certificate/file/${fileId}?download=false`;
-    const fileResponse = await fetch(fileUrl, { credentials: 'include' });
-    if (!fileResponse.ok) throw new Error('Failed to fetch file');
+      // 1. Construct the file URL and fetch file
+      const fileUrl = `${apiUrl}/user/certificate/file/${fileId}?download=false`;
+      const fileResponse = await fetch(fileUrl, { credentials: "include" });
+      if (!fileResponse.ok) throw new Error("Failed to fetch file");
 
-    const blob = await fileResponse.blob();
-    const file = new File([blob], `${fileId}.pdf`, { type: blob.type });
+      const blob = await fileResponse.blob();
+      const file = new File([blob], `${fileId}.pdf`, { type: blob.type });
 
-    // FormData
-    const formData = new FormData();
-    formData.append('file', file);
+      // FormData
+      const formData = new FormData();
+      formData.append("file", file);
 
-    await axios.post(
-      `${apiUrl}/teacher/verify/certificate/manual?request_id=${request_id}&subject_id=${subject_id}&student_id=${student_id}`,
-      formData,
-      {
-        withCredentials: true,
-        headers: {
-          'Content-Type': 'multipart/form-data'
+      await axios.post(
+        `${apiUrl}/teacher/verify/certificate/manual?request_id=${request_id}&subject_id=${subject_id}&student_id=${student_id}`,
+        formData,
+        {
+          withCredentials: true,
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
         }
-      }
-    );
+      );
 
-    // Optimistic update: Remove the accepted request from the UI immediately
-    queryClient.setQueryData(['allRejectedRequests'], (oldData: Request[] | undefined) => {
-      if (!oldData) return oldData;
-      return oldData.filter(request => request.id !== request_id);
-    });
-    
-    // Clear certificate details cache for accepted request
-    setCertificateDetailsCache(prevCache => {
-      const newCache = new Map(prevCache);
-      newCache.delete(request_id);
-      return newCache;
-    });
-    
-    // Clear selection for accepted request
-    setSelectedRequests(prev => {
-      const newSelected = new Set(prev);
-      newSelected.delete(request_id);
-      return newSelected;
-    });
-    
-  }
+      // Optimistic update: Remove the accepted request from the UI immediately
+      queryClient.setQueryData(
+        ["allRejectedRequests"],
+        (oldData: Request[] | undefined) => {
+          if (!oldData) return oldData;
+          return oldData.filter((request) => request.id !== request_id);
+        }
+      );
 
-    catch (error) {
-    console.error('Error during certificate acceptance:', error);
-    alert('Failed to accept certificate. Please try again.');
-    // Only refetch on error to get the correct state
-    await refetch();
-  } finally {
-    // Remove loading state for this request
-    setLoadingRequests(prev => {
-      const newSet = new Set(prev);
-      newSet.delete(request_id);
-      return newSet;
-    });
-  }
-};
+      // Clear certificate details cache for accepted request
+      setCertificateDetailsCache((prevCache) => {
+        const newCache = new Map(prevCache);
+        newCache.delete(request_id);
+        return newCache;
+      });
+
+      // Clear selection for accepted request
+      setSelectedRequests((prev) => {
+        const newSelected = new Set(prev);
+        newSelected.delete(request_id);
+        return newSelected;
+      });
+    } catch (error) {
+      console.error("Error during certificate acceptance:", error);
+      alert("Failed to accept certificate. Please try again.");
+      // Only refetch on error to get the correct state
+      await refetch();
+    } finally {
+      // Remove loading state for this request
+      setLoadingRequests((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(request_id);
+        return newSet;
+      });
+    }
+  };
 
   const acceptSelectedCertificates = async (): Promise<void> => {
     const selectedRequestsData = getSelectedRequestsData();
     if (selectedRequestsData.length === 0) {
-      alert('Please select at least one request to accept.');
+      alert("Please select at least one request to accept.");
       return;
     }
 
     setIsAcceptingAll(true);
     const successfulRequestIds = new Set<string>();
-    
+
     try {
       // Process requests in batches to avoid overwhelming the server
       const batchSize = 3;
       for (let i = 0; i < selectedRequestsData.length; i += batchSize) {
         const batch = selectedRequestsData.slice(i, i + batchSize);
-        
+
         await Promise.allSettled(
           batch.map(async (request) => {
             try {
-              const fileUrl = `${apiUrl}/user/certificate/file/${request.certificate_details.uploaded_certificate.file_url}?download=false`;
-              const fileResponse = await fetch(fileUrl, { credentials: 'include' });
-              if (!fileResponse.ok) throw new Error('Failed to fetch file');
+              const fileUrl = `${apiUrl}/user/certificate/file/${request?.certificate_details?.uploaded_certificate.file_url}?download=false`;
+              const fileResponse = await fetch(fileUrl, {
+                credentials: "include",
+              });
+              if (!fileResponse.ok) throw new Error("Failed to fetch file");
 
               const blob = await fileResponse.blob();
-              const file = new File([blob], `${request.certificate_details.uploaded_certificate.file_url}.pdf`, { type: blob.type });
+              const file = new File(
+                [blob],
+                `${request?.certificate_details?.uploaded_certificate.file_url}.pdf`,
+                { type: blob.type }
+              );
 
               const formData = new FormData();
-              formData.append('file', file);
+              formData.append("file", file);
 
               await axios.post(
                 `${apiUrl}/teacher/verify/certificate/manual?request_id=${request.id}&subject_id=${request.subject.id}&student_id=${request.student.id}`,
@@ -404,15 +453,18 @@ useEffect(() => {
                 {
                   withCredentials: true,
                   headers: {
-                    'Content-Type': 'multipart/form-data'
-                  }
+                    "Content-Type": "multipart/form-data",
+                  },
                 }
               );
-              
+
               successfulRequestIds.add(request.id);
               return { success: true, requestId: request.id };
             } catch (error) {
-              console.error(`Failed to accept certificate for request ${request.id}:`, error);
+              console.error(
+                `Failed to accept certificate for request ${request.id}:`,
+                error
+              );
               return { success: false, requestId: request.id, error };
             }
           })
@@ -420,45 +472,55 @@ useEffect(() => {
 
         // Update UI for successful requests in this batch
         if (successfulRequestIds.size > 0) {
-          queryClient.setQueryData(['allRejectedRequests'], (oldData: Request[] | undefined) => {
-            if (!oldData) return oldData;
-            return oldData.filter(request => !successfulRequestIds.has(request.id));
-          });
+          queryClient.setQueryData(
+            ["allRejectedRequests"],
+            (oldData: Request[] | undefined) => {
+              if (!oldData) return oldData;
+              return oldData.filter(
+                (request) => !successfulRequestIds.has(request.id)
+              );
+            }
+          );
         }
-        
+
         if (i + batchSize < selectedRequestsData.length) {
-          await new Promise(resolve => setTimeout(resolve, 500));
+          await new Promise((resolve) => setTimeout(resolve, 500));
         }
       }
-      
+
       // Clear certificate details cache for accepted requests
-      setCertificateDetailsCache(prevCache => {
+      setCertificateDetailsCache((prevCache) => {
         const newCache = new Map(prevCache);
-        successfulRequestIds.forEach(id => newCache.delete(id));
+        successfulRequestIds.forEach((id) => newCache.delete(id));
         return newCache;
       });
-      
+
       // Clear selected requests for successful ones
-      setSelectedRequests(prev => {
+      setSelectedRequests((prev) => {
         const newSelected = new Set(prev);
-        successfulRequestIds.forEach(id => newSelected.delete(id));
+        successfulRequestIds.forEach((id) => newSelected.delete(id));
         return newSelected;
       });
-      
+
       // Refetch data instead of optimistic updates
       await refetch();
-      
+
       // Only show summary message, no refetch needed
       if (successfulRequestIds.size === selectedRequestsData.length) {
-        alert(`Successfully accepted all ${selectedRequestsData.length} selected certificates!`);
+        alert(
+          `Successfully accepted all ${selectedRequestsData.length} selected certificates!`
+        );
       } else {
-        alert(`Accepted ${successfulRequestIds.size} out of ${selectedRequestsData.length} selected certificates.`);
+        alert(
+          `Accepted ${successfulRequestIds.size} out of ${selectedRequestsData.length} selected certificates.`
+        );
       }
-      
     } catch (error) {
-      console.error('Error during bulk certificate acceptance:', error);
-      alert('Some certificates failed to be accepted. Please check individual results.');
-      
+      console.error("Error during bulk certificate acceptance:", error);
+      alert(
+        "Some certificates failed to be accepted. Please check individual results."
+      );
+
       await refetch();
     } finally {
       setIsAcceptingAll(false);
@@ -473,9 +535,7 @@ useEffect(() => {
 
       <div className="p-4 bg-red-50 border-b mb-4 mt-8">
         <div className="text-center">
-          <div className="text-2xl font-bold text-red-600">
-            {totalCount}
-          </div>
+          <div className="text-2xl font-bold text-red-600">{totalCount}</div>
           <div className="text-sm text-gray-600">Total Rejected Requests</div>
         </div>
         <div className="flex justify-between items-center mt-4">
@@ -487,11 +547,19 @@ useEffect(() => {
           <div className="flex gap-2">
             <button
               onClick={acceptSelectedCertificates}
-              disabled={isAcceptingAll || loadingRequests.size > 0 || selectedRequests.size === 0 || isLoadingCertificateDetails}
+              disabled={
+                isAcceptingAll ||
+                loadingRequests.size > 0 ||
+                selectedRequests.size === 0 ||
+                isLoadingCertificateDetails
+              }
               className={`inline-flex items-center px-6 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
-                isAcceptingAll || loadingRequests.size > 0 || selectedRequests.size === 0 || isLoadingCertificateDetails
-                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                  : 'bg-green-600 text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2'
+                isAcceptingAll ||
+                loadingRequests.size > 0 ||
+                selectedRequests.size === 0 ||
+                isLoadingCertificateDetails
+                  ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                  : "bg-green-600 text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
               }`}
             >
               {isAcceptingAll ? (
@@ -502,9 +570,7 @@ useEffect(() => {
               ) : (
                 <>
                   <CheckCircle className="w-4 h-4 mr-2" />
-                  <span>
-                    Accept Selected ({selectedRequests.size})
-                  </span>
+                  <span>Accept Selected ({selectedRequests.size})</span>
                 </>
               )}
             </button>
@@ -536,7 +602,10 @@ useEffect(() => {
                   />
                 </th>
                 {headings.map((heading, idx) => (
-                  <th key={idx} className="px-4 py-3 text-center whitespace-nowrap">
+                  <th
+                    key={idx}
+                    className="px-4 py-3 text-center whitespace-nowrap"
+                  >
                     {heading}
                   </th>
                 ))}
@@ -544,124 +613,196 @@ useEffect(() => {
             </thead>
             <tbody className="divide-y divide-gray-100">
               {requestsWithDetails.map((request) => {
-                const uploadedCert = request.certificate_details.uploaded_certificate;
-                const verificationCert = request.certificate_details.verification_certificate;
+                const uploadedCert =
+                  request?.certificate_details?.uploaded_certificate;
+                const verificationCert =
+                  request?.certificate_details?.verification_certificate;
 
                 return (
                   <tr
                     key={request.id}
                     className="hover:bg-gray-50 transition-colors duration-200"
                   >
-                  {/* Checkbox */}
-                  <td className="px-4 py-3 text-center">
-                    <input
-                      type="checkbox"
-                      checked={selectedRequests.has(request.id)}
-                      onChange={(e) => handleSelectRequest(request.id, e.target.checked)}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    />
-                  </td>
-                  
-                  {/* Roll Number */}
-                  <td className="px-4 py-3 text-center">
-                    <div className="text-sm">{request.student.roll_number}</div>
-                  </td>
-                  
-                  {/* NSUT Name */}
-                  <td className="px-4 py-3 text-center">
-                    <div className="text-sm">{request.student.name}</div>
-                  </td>
-                  
-                  {/* Student Name */}
-                  <td className="px-4 py-3 text-center">
-                    <div className="text-sm">{uploadedCert.student_name}</div>
-                  </td>
-                  
-                  {/* Certificate Name */}
-                  <td className="px-4 py-3 text-center">
-                    <div className="text-sm">{verificationCert.student_name}</div>
-                  </td>
+                    {/* Checkbox */}
+                    <td className="px-4 py-3 text-center">
+                      <input
+                        type="checkbox"
+                        checked={selectedRequests.has(request.id)}
+                        onChange={(e) =>
+                          handleSelectRequest(request.id, e.target.checked)
+                        }
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                    </td>
 
-                  <td className="px-4 py-3 text-center">
-                    <div className="text-sm">{request.subject.name}</div>
-                  </td>
-                  
-                  {/* NPTEL Course Code */}
-                  <td className="px-4 py-3 text-center">
-                    <div className="text-sm">{uploadedCert.course_name}</div>
-                  </td>
-                  
-                  {/* Certificate Course Code */}
-                  <td className="px-4 py-3 text-center">
-                    <div className="text-sm">{verificationCert.course_name}</div>
-                  </td>
-                  
-                  
-                  {/* Certificate Marks */}
-                  <td className="px-4 py-3 text-center">
-                    <div className="text-sm">{uploadedCert.marks}</div>
-                  </td>
+                    {/* Roll Number */}
+                    <td className="px-4 py-3 text-center">
+                      <div className="text-sm">
+                        {request.student.roll_number}
+                      </div>
+                    </td>
 
-                  {/* Verified Marks */}
-                  <td className="px-4 py-3 text-center">
-                    <div className="text-sm">{verificationCert.marks}</div>
-                  </td>
-                  
-                  {/* Year */}
-                  <td className="px-4 py-3 text-center">
-                    <div className="text-sm">{verificationCert.course_period}</div>
-                  </td>
-                  
-                  {/* Certificate Year */}
-                  <td className="px-4 py-3 text-center">
-                    <div className="text-sm">{uploadedCert.course_period}</div>
-                  </td>
-                  
-                  {/* Status */}
-                  <td className="px-4 py-3 text-center">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                      Rejected
-                    </span>
-                  </td>
+                    {/* NSUT Name */}
+                    <td className="px-4 py-3 text-center">
+                      <div className="text-sm">{request.student.name}</div>
+                    </td>
 
-                  <td className="px-4 py-3 text-center">
-                    <div className="text-sm">{request.certificate_details.remark}</div>
-                  </td>
-                  
-                  <td className="px-4 py-3 text-center">
-                    <button 
-                      onClick={() => acceptCertificate(
-                        request.certificate_details.uploaded_certificate.file_url,
-                        request.id,
-                        request.subject.id,
-                        request.student.id
+                    {/* Student Name */}
+                    <td className="px-4 py-3 text-center">
+                      <div className="text-sm">
+                        {uploadedCert?.student_name}
+                      </div>
+                    </td>
+
+                    {/* Certificate Name */}
+                    <td className="px-4 py-3 text-center">
+                      <div className="text-sm">
+                        {verificationCert?.student_name}
+                      </div>
+                    </td>
+
+                    <td className="px-4 py-3 text-center">
+                      <div className="text-sm">{request.subject.name}</div>
+                    </td>
+
+                    {/* NPTEL Course Code */}
+                    <td className="px-4 py-3 text-center">
+                      <div className="text-sm">{uploadedCert?.course_name}</div>
+                    </td>
+
+                    {/* Certificate Course Code */}
+                    <td className="px-4 py-3 text-center">
+                      <div className="text-sm">
+                        {verificationCert?.course_name}
+                      </div>
+                    </td>
+
+                    {/* Certificate Marks */}
+                    <td className="px-4 py-3 text-center">
+                      <div className="text-sm">{uploadedCert?.marks}</div>
+                    </td>
+
+                    {/* Verified Marks */}
+                    <td className="px-4 py-3 text-center">
+                      <div className="text-sm">{verificationCert?.marks}</div>
+                    </td>
+
+                    {/* Year */}
+                    <td className="px-4 py-3 text-center">
+                      <div className="text-sm">
+                        {verificationCert?.course_period}
+                      </div>
+                    </td>
+
+                    {/* Certificate Year */}
+                    <td className="px-4 py-3 text-center">
+                      <div className="text-sm">
+                        {uploadedCert?.course_period}
+                      </div>
+                    </td>
+
+                    {/* Status */}
+                    <td className="px-4 py-3 text-center">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                        Rejected
+                      </span>
+                    </td>
+
+                    <td className="px-4 py-3 text-center">
+                      <div className="text-sm">
+                        {request?.certificate_details?.remark}
+                      </div>
+                    </td>
+
+                    <td className="px-4 py-3 text-center">
+                      <div className=" text-black py-2 rounded-md shadow-md transition-all duration-300 transform hover:scale-105 hover:bg-black hover:text-white">
+                        <a
+                          href={`${apiUrl}/user/certificate/file/${request.id}.pdf?download=false`}
+                          target="_blank"
+                          className="flex items-center justify-center font-medium"
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-5 w-5"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                            />
+                          </svg>
+                        </a>
+                      </div>
+                    </td>
+
+                    <td className="px-4 py-3 text-center">
+                      {request.certificate_details?.uploaded_certificate
+                        ?.file_url && (
+                        <button
+                          onClick={() =>
+                            acceptCertificate(
+                              request?.certificate_details?.uploaded_certificate
+                                .file_url,
+                              request.id,
+                              request.subject.id,
+                              request.student.id
+                            )
+                          }
+                          disabled={
+                            loadingRequests.has(request.id) ||
+                            isLoadingCertificateDetails
+                          }
+                          className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
+                            loadingRequests.has(request.id) ||
+                            isLoadingCertificateDetails
+                              ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                              : "bg-green-600 text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+                          }`}
+                        >
+                          {loadingRequests.has(request.id) ? (
+                            <>
+                              <Loader2 className="animate-spin -ml-1 mr-2 h-4 w-4 text-gray-400" />
+                              Processing...
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle className="w-4 h-4 mr-2" />
+                              Accept
+                            </>
+                          )}
+                        </button>
                       )}
-                      disabled={loadingRequests.has(request.id) || isLoadingCertificateDetails}
-                      className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
-                        loadingRequests.has(request.id) || isLoadingCertificateDetails
-                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                          : 'bg-green-600 text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2'
-                      }`}
-                    >
-                      {loadingRequests.has(request.id) ? (
-                        <>
-                          <Loader2 className="animate-spin -ml-1 mr-2 h-4 w-4 text-gray-400" />
-                          Processing...
-                        </>
-                      ) : (
-                        <>
-                          <CheckCircle className="w-4 h-4 mr-2" />
-                          Accept
-                        </>
+                      {!request.certificate_details?.uploaded_certificate
+                        ?.file_url && (
+                        <div>
+                          <button
+                            onClick={() => setVisibleModalId(request.id)}
+                            className="px-4 py-2 rounded-lg bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors duration-200 shadow-sm text-sm"
+                          >
+                            Verify Manual
+                          </button>
+
+                          <MannualAlert
+                            request_id={request.id}
+                            subject_id={request.subject.id}
+                            student_id={request.student.id}
+                            isVisible={visibleModalId === request.id}
+                            onClose={() => setVisibleModalId(null)}
+                            student_name={request.student.name}
+                            subject_name={request.subject.name}
+                          />
+                        </div>
                       )}
-                    </button>
-                  </td>
-                </tr>
-                
-              );
-            })}
-          </tbody>
-        </table>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         )}
       </div>
 

@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@hookform/resolvers": "^5.0.1",
     "@tailwindcss/vite": "^4.1.4",
     "@tanstack/react-query": "^5.76.1",
     "@tanstack/react-table": "^8.21.3",
@@ -19,8 +20,10 @@
     "papaparse": "^5.5.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-hook-form": "^7.57.0",
     "react-icons": "^5.5.0",
     "react-router-dom": "^7.6.0",
+    "react-toastify": "^11.0.5",
     "styled-components": "^6.1.18",
     "tailwindcss": "^4.1.4",
     "zod": "^3.24.3",
