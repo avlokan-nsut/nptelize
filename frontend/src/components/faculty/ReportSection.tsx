@@ -150,6 +150,7 @@ const ReportSection = function () {
     } = useQuery({
         queryKey: ["teacherRequestsStats"],
         queryFn: fetchData,
+        staleTime : 60000,
         refetchOnWindowFocus: false,
     });
 
