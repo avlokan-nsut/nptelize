@@ -4,6 +4,7 @@ import axios from "axios";
 import { useQuery } from "@tanstack/react-query";
 import { useState, useMemo } from "react";
 import Pagination from "./Pagination";
+import SearchBar from "./SearchBar";
 
 const headings = [
   "Student Name",
@@ -52,6 +53,7 @@ const StudentStatus = function () {
   const subjectCode = urlSubjectCode;
   const subjectId = location.state?.subjectId; 
   const subjectName = location.state?.subjectName;
+  const [searchTerm, setSearchTerm] = useState("");
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
@@ -145,6 +147,14 @@ const StudentStatus = function () {
       filteredRequests = requests.filter((req) => req.status === statusFilter);
     }
 
+    if (searchTerm) {
+      filteredRequests = filteredRequests.filter((req) =>
+        req.student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        req.student.roll_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        req.student.email.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
     return {
       filteredRequests,
       totalRequests,
@@ -154,7 +164,7 @@ const StudentStatus = function () {
       duplicateNamesCount,
       noCertificateCount,
     };
-  }, [apiData?.requests, statusFilter]);
+  }, [apiData?.requests, statusFilter, searchTerm]);
 
   // Calculate pagination data
   const paginationData = useMemo(() => {
@@ -449,6 +459,17 @@ const StudentStatus = function () {
                 Duplicate ({statisticsAndFilteredData.duplicateNamesCount})
               </button>
             </div>
+          </div>
+
+          <div className="p-4 border-b bg-gray-50">
+            <SearchBar
+              value={searchTerm}
+              onChange={(value) => {
+                setSearchTerm(value);
+                setCurrentPage(1); // Reset to first page when searching
+              }}
+              placeholder="Search by name, roll number, or email"
+            />
           </div>
 
           {isLoading ? (
