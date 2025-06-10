@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 from typing import Tuple, Optional, cast, Dict
 
+from app.config import config
 from app.models import Request, RequestStatus, Certificate
 from app.services.log_service import setup_logger
 
@@ -15,6 +16,7 @@ import tempfile
 logger = setup_logger(__name__)
 
 COURSE_NAME_SINGLE_LINE_CHARACTER_LIMIT = 57
+COURSE_PERIOD_YEAR = config['COURSE_PERIOD_YEAR']
 
 class Verifier:
     def __init__(self, uploaded_file_path_relative: str, uploaded_file_path: str, request_id: str, student_id: str, db: Session):
@@ -95,9 +97,10 @@ class Verifier:
             
 
             success, output, verified_roll_no, verified_total_marks = self.verify_file(
-                temp_f.name,
-                cast(str, db_request.subject.name),
-                cast(str, db_request.student.name),
+                verification_file_path=temp_f.name,
+                subject_name=cast(str, db_request.subject.name),
+                student_name=cast(str, db_request.student.name),
+                course_period_year=COURSE_PERIOD_YEAR,
                 is_subject_name_long=isinstance(db_request.subject.name, str) and (
                     len(db_request.subject.name.strip()) > COURSE_NAME_SINGLE_LINE_CHARACTER_LIMIT
                 )
@@ -119,6 +122,7 @@ class Verifier:
         verification_file_path: str, 
         subject_name: str, 
         student_name: str,
+        course_period_year: int,
         is_subject_name_long: bool = False
     )-> Tuple[bool, str, Optional[str], Optional[str]]:
         (
@@ -179,7 +183,7 @@ class Verifier:
         if uploaded_roll_number != valid_roll_number:
             return False, "Roll number mismatch", None, None
         
-        if uploaded_course_period != valid_course_period:
+        if uploaded_course_period != valid_course_period or str(course_period_year) not in uploaded_course_period:
             return False, "Course period/year mismatch", None, None
 
 
