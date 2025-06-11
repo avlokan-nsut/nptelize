@@ -38,7 +38,7 @@ const apiUrl = import.meta.env.VITE_API_URL;
 
 const fetchData = async () => {
   const reqType = {
-    request_types: ["processing", "completed", "rejected", "error"],
+    request_types: ["processing", "completed", "rejected", "error" , "no_certificate"],
   };
 
   const { data } = await axios.post<ApiResponse>(
@@ -52,7 +52,6 @@ const fetchData = async () => {
     }
   );
 
-  console.log(data);
 
   return data;
 };
@@ -100,7 +99,13 @@ function formatDateOnly(isoString: string): string {
             Processing
           </span>
         );
-    }
+
+        case "no_certificate":
+        return (
+          <span className="px-2 py-1 text-xs font-semibold rounded-full bg-sky-100 text-fuchsia-800 whitespace-nowrap">
+  No Certificate
+</span>
+    )}
   };
 
 const RequestedTable = () => {

@@ -222,10 +222,6 @@ const RejectedVerification = () => {
             const details = await fetchCertificateDetails(request.id);
             return { requestId: request.id, details };
           } catch (error) {
-            console.error(
-              `Failed to fetch certificate details for request ${request.id}:`,
-              error
-            );
             return { requestId: request.id, details: null };
           }
         }

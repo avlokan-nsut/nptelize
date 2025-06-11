@@ -288,7 +288,7 @@ const RequestedTable = () => {
     switch (status) {
       case "no_certificate":
         return (
-          <span className="px-2 py-1 text-xs font-semibold rounded-full bg-sky-100 text-fuchsia-800">
+          <span className="px-2 py-1 text-xs font-semibold rounded-full bg-sky-100 text-fuchsia-800 whitespace-nowrap">
   No Certificate
 </span>
 
