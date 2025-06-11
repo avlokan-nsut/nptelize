@@ -4,6 +4,7 @@ import axios from "axios";
 import { useQuery } from "@tanstack/react-query";
 import { useState, useMemo } from "react";
 import Pagination from "./Pagination";
+import SearchBar from "./SearchBar";
 
 const headings = ["Select", "Student Name", "NSUT Roll No.", "Email"];
 
@@ -47,6 +48,7 @@ export default function StudentTable() {
         []
     );
     const [dueDate, setDueDate] = useState(getDefaultDueDate());
+    const [searchTerm, setSearchTerm] = useState("");
 
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage] = useState(10);
@@ -183,12 +185,19 @@ export default function StudentTable() {
                 totalItems: 0,
             };
         }
+        
+        const filteredStudents = apiData.enrolled_students.filter(
+            (student) =>
+                student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                student.roll_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                student.email.toLowerCase().includes(searchTerm.toLowerCase())
+        );
 
-        const totalItems = apiData.enrolled_students.length;
+        const totalItems = filteredStudents.length;
         const totalPages = Math.ceil(totalItems / itemsPerPage);
         const startIndex = (currentPage - 1) * itemsPerPage;
         const endIndex = startIndex + itemsPerPage;
-        const currentPageData = apiData.enrolled_students.slice(
+        const currentPageData = filteredStudents.slice(
             startIndex,
             endIndex
         );
@@ -197,8 +206,9 @@ export default function StudentTable() {
             currentPageData,
             totalPages,
             totalItems,
+            filteredStudents
         };
-    }, [apiData?.enrolled_students, currentPage, itemsPerPage]);
+    }, [apiData?.enrolled_students, currentPage, itemsPerPage,searchTerm]);
 
     // Check if all students on current page are selected
     const areAllCurrentPageSelected = useMemo(() => {
@@ -275,6 +285,17 @@ export default function StudentTable() {
                                 className="border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                             />
                         </div>
+                    </div>
+
+                    <div className="p-4 border-b bg-gray-50">
+                        <SearchBar
+                            value={searchTerm}
+                            onChange={(value) => {
+                                setSearchTerm(value);
+                                setCurrentPage(1);
+                            }}
+                            placeholder="Search by student name, roll number, or email"
+                        />
                     </div>
 
                     {isLoading ? (
