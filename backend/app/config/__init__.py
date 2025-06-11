@@ -17,6 +17,7 @@ def check_config() -> None:
         'ACCESS_TOKEN_EXPIRE_MINUTES',
         'ENV',
         'CERTIFICATES_FOLDER_PATH',
+        'COURSE_PERIOD_YEAR',
     ]
     
     for var in required_env_vars:
