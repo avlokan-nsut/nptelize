@@ -19,7 +19,7 @@ const developers: Developer[] = [
         category: "professor",
         linkedinUrl: "https://www.linkedin.com/in/ankursynon/",
         imageUrl:
-            "https://media.licdn.com/dms/image/v2/D5603AQGTVaLHVAl1Gw/profile-displayphoto-shrink_400_400/B56ZVVlktHHEAg-/0/1740897669114?e=1753920000&v=beta&t=ovk1hny48YhHBibZ-oTQRA6aijVaRtPaOGA556RO8cA",
+            "/Team/Ankur-sir.jpg",
     },
     {
         id: 2,
@@ -28,7 +28,7 @@ const developers: Developer[] = [
         category: "product_manager",
         linkedinUrl: "https://www.linkedin.com/in/md-imran-hussain-8139a48b/",
         imageUrl:
-            "https://media.licdn.com/dms/image/v2/D5603AQGVogpN2lwcLg/profile-displayphoto-shrink_400_400/B56Zc2obN3HoAo-/0/1748968257954?e=1754524800&v=beta&t=mZ2ol26Fu2niv9t_CAAj8UwhyXd4hrurHxRvK5Kjh2w",
+            "/Team/imran-sir.jpg"
     },
     {
         id: 11,
@@ -37,7 +37,7 @@ const developers: Developer[] = [
         category: "product_manager",
         linkedinUrl: "https://www.linkedin.com/in/aditya-chouksey-0b6b70239/",
         imageUrl:
-            "https://media.licdn.com/dms/image/v2/D4D03AQFocdd0jx8trw/profile-displayphoto-shrink_100_100/B4DZb2sTxEGwAU-/0/1747895533426?e=1753315200&v=beta&t=ZXCsTVqe9A7wHjmUJHEsWSYCFet9PRk9r1VaXA6NJ5c",
+            "/Team/Aditya-sir.jpg"
     },
     {
         id: 3,
@@ -46,7 +46,7 @@ const developers: Developer[] = [
         category: "developer",
         linkedinUrl: "https://www.linkedin.com/in/ocean-lakra-6014b0253/",
         imageUrl:
-            "https://media.licdn.com/dms/image/v2/D5603AQFHZdrTrtmZNw/profile-displayphoto-shrink_400_400/profile-displayphoto-shrink_400_400/0/1721204459159?e=1753315200&v=beta&t=maCyoqhIu0bKhIl_P9Yy7h1sBfPO5eB58zluzURAM-I",
+            "/Team/Ocean.jpg",
     },
     {
         id: 4,
@@ -55,7 +55,7 @@ const developers: Developer[] = [
         category: "developer",
         linkedinUrl: "https://www.linkedin.com/in/madhavarora03/",
         imageUrl:
-            "https://media.licdn.com/dms/image/v2/D5603AQGBQaOQjuS9oA/profile-displayphoto-shrink_400_400/profile-displayphoto-shrink_400_400/0/1666372458588?e=1753315200&v=beta&t=3mfw5lw9W5bUIlkqLz2VbU0E2HAa489RMx4vYrQ2_gs",
+            "/Team/madhav.jpg",
     },
     {
         id: 5,
@@ -64,7 +64,7 @@ const developers: Developer[] = [
         category: "developer",
         linkedinUrl: "https://www.linkedin.com/in/lakshay-gupta-529a1428a/",
         imageUrl:
-            "https://media.licdn.com/dms/image/v2/D5603AQFMh9epBhZfCw/profile-displayphoto-shrink_400_400/profile-displayphoto-shrink_400_400/0/1715603777484?e=1753315200&v=beta&t=BKXURGfWccxukCB6plESdN-9w4ARFOugobioihKdPBM",
+            "/Team/lakshay.jpg",
     },
     {
         id: 6,
@@ -73,26 +73,26 @@ const developers: Developer[] = [
         category: "developer",
         linkedinUrl: "https://www.linkedin.com/in/shrey-singh7/",
         imageUrl:
-            "https://media.licdn.com/dms/image/v2/D5603AQE82U1GS8P5Lg/profile-displayphoto-shrink_400_400/profile-displayphoto-shrink_400_400/0/1723665573161?e=1753315200&v=beta&t=aGD7kL5A_17P5a3SMgO5lZZ4wdbeRaoqO8AVIHazFv8",
+            "/Team/shray.jpg",
     },
-    {
-        id: 7,
-        name: "Shivam Mishra",
-        role: "Developer",
-        category: "developer",
-        linkedinUrl: "https://www.linkedin.com/in/shivam-mishra-67671a17a/",
-        imageUrl:
-            "https://media.licdn.com/dms/image/v2/D5603AQGW76_XnWs0Cw/profile-displayphoto-shrink_400_400/B56Zc6ouyeHoAs-/0/1749035446441?e=1754524800&v=beta&t=4r8XV_NENI2E_FTr6tCQx6vN7PpUoUmIqeKlQm7rb0M",
-    },
-    {
-        id: 8,
-        name: "Dheeraj Kumar",
-        role: "Developer",
-        category: "developer",
-        linkedinUrl: "https://www.linkedin.com/in/greatnerve",
-        imageUrl:
-            "https://media.licdn.com/dms/image/v2/D4D03AQG9m4Sk5fNgUg/profile-displayphoto-shrink_400_400/profile-displayphoto-shrink_400_400/0/1701061814364?e=1753315200&v=beta&t=0jPdk2c9JCNLuu1KU9rDBhOkoY5iY4KjmLZMMCefjn0",
-    },
+    // {
+    //     id: 7,
+    //     name: "Shivam Mishra",
+    //     role: "Developer",
+    //     category: "developer",
+    //     linkedinUrl: "https://www.linkedin.com/in/shivam-mishra-67671a17a/",
+    //     imageUrl:
+    //         "https://media.licdn.com/dms/image/v2/D5603AQGW76_XnWs0Cw/profile-displayphoto-shrink_400_400/B56Zc6ouyeHoAs-/0/1749035446441?e=1754524800&v=beta&t=4r8XV_NENI2E_FTr6tCQx6vN7PpUoUmIqeKlQm7rb0M",
+    // },
+    // {
+    //     id: 8,
+    //     name: "Dheeraj Kumar",
+    //     role: "Developer",
+    //     category: "developer",
+    //     linkedinUrl: "https://www.linkedin.com/in/greatnerve",
+    //     imageUrl:
+    //         "https://media.licdn.com/dms/image/v2/D4D03AQG9m4Sk5fNgUg/profile-displayphoto-shrink_400_400/profile-displayphoto-shrink_400_400/0/1701061814364?e=1753315200&v=beta&t=0jPdk2c9JCNLuu1KU9rDBhOkoY5iY4KjmLZMMCefjn0",
+    // },
     {
         id: 9,
         name: "Sujal Chaudhary",
@@ -100,7 +100,7 @@ const developers: Developer[] = [
         category: "developer",
         linkedinUrl: "https://www.linkedin.com/in/sujal-info/",
         imageUrl:
-            "https://media.licdn.com/dms/image/v2/D5603AQE90HSvqYkvJg/profile-displayphoto-shrink_400_400/B56ZQz3riQHQAk-/0/1736037022825?e=1753315200&v=beta&t=U8h7HnphgNZH1ceztfer94cagbbR1RAMGdanqt5xSwg",
+            "/Team/sujal.jpg",
     },
     {
         id: 10,
@@ -109,7 +109,7 @@ const developers: Developer[] = [
         category: "developer",
         linkedinUrl: "https://www.linkedin.com/in/me-pradeep-yadav/",
         imageUrl:
-            "https://media.licdn.com/dms/image/v2/D4E03AQHk1jG7H1sL4w/profile-displayphoto-shrink_400_400/B4EZPT4sLdHsAg-/0/1734426674787?e=1753315200&v=beta&t=yQjSDy73F3sL8vao0yQuFC0t4dnaibPBEy4H-NaJhFg",
+            "/Team/pradeep.jpg",
     },
 ];
 
