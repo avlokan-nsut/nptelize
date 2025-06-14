@@ -73,7 +73,7 @@ const developers: Developer[] = [
         category: "developer",
         linkedinUrl: "https://www.linkedin.com/in/shrey-singh7/",
         imageUrl:
-            "/Team/shray.jpg",
+            "/Team/shrey.jpg",
     },
     // {
     //     id: 7,
