@@ -107,7 +107,11 @@ class Verifier:
             )
 
             if not success:
-                self.update_status_to_rejected(db_request, db_certificate, output)
+                # Check if it's a name mismatch issue   
+                if "Student name mismatch - under review" in output:
+                    self.update_status_to_under_review(db_request, db_certificate, output)
+                else:
+                    self.update_status_to_rejected(db_request, db_certificate, output)
                 return
             
             # Now, since verification has been done, update the final status to all good
@@ -175,7 +179,7 @@ class Verifier:
         if (uploaded_student_name.lower().strip() != valid_student_name.lower().strip()) or (
             uploaded_student_name.lower().strip() != student_name.lower().strip()
         ):
-            return False, "Student name mismatch", None, None
+            return False, "Student name mismatch - under review", None, None
 
         if uploaded_total_marks != valid_total_marks:
             return False, "Total marks mismatch", None, None
@@ -220,6 +224,19 @@ class Verifier:
         db_certificate.remark = remark
 
         self.db.commit()
+    
+    def update_status_to_under_review(
+        self, 
+        db_request: Request, 
+        db_certificate: Certificate, 
+        remark: str
+    ) -> None:
+        db_request.status = RequestStatus.under_review
+        db_certificate.verified = False
+        db_certificate.remark = remark
+        self.db.commit()
+        
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=remark)
         
     async def manual_verification(
         self,
