@@ -1,8 +1,6 @@
 import { FaArrowLeft, FaDownload, FaChevronRight, FaTimes, FaCheck, FaInfoCircle } from "react-icons/fa";
-import { FaArrowLeft, FaDownload, FaChevronRight, FaTimes, FaCheck, FaInfoCircle } from "react-icons/fa";
 import { Link, useParams, useLocation } from "react-router-dom";
 import axios from "axios";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useMemo } from "react";
 import Pagination from "./Pagination";
@@ -172,7 +170,6 @@ const StudentStatus = function () {
       duplicateNamesCount,
       noCertificateCount,
       under_review
-      under_review
     };
   }, [apiData?.requests, statusFilter, searchTerm]);
 
@@ -208,7 +205,6 @@ const StudentStatus = function () {
 
   // Handle filter change
   const handleFilterChange = (
-    filter: "all" | "pending" | "completed" | "rejected" | "duplicate" | "no_certificate" | "under_review"
     filter: "all" | "pending" | "completed" | "rejected" | "duplicate" | "no_certificate" | "under_review"
   ) => {
     setStatusFilter(filter);
