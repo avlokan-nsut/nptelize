@@ -349,7 +349,6 @@ const StudentStatus = function () {
       console.log(res.data);
       return res.data;
     } catch (error: any) {
-      // If certificate doesn't exist (404), return null instead of throwing error
       if (error.response?.status === 404) {
         return null;
       }
@@ -376,8 +375,6 @@ const StudentStatus = function () {
         return;
       }
 
-      // Get marks from certificate data if available, otherwise use a default value
-      // For pending requests without certificates, you might want to prompt for manual entry
       const marks = certData?.data?.uploaded_certificate?.marks || 
                    certData?.data?.verification_certificate?.marks || 
                    parseInt(request.verified_total_marks) || 0;
