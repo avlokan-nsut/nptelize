@@ -67,6 +67,7 @@ class RequestStatus(enum.Enum):
     rejected = "rejected"
     error = "error"
     no_certificate = "no_certificate"
+    under_review = "under_review"
 
 
 class Request(Base):

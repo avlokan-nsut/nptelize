@@ -317,6 +317,76 @@ async def verify_certificate_manual(
     return {'message': 'Certificate verified successfully'}
 
 
+
+@router.put('/reject/certificate', response_model=GenericResponse)
+def reject_certificate_under_review(
+    request_id: str = Query(),
+    db: Session = Depends(get_db),
+    current_teacher: TokenData = Depends(get_current_teacher)
+):
+    """
+    Reject a certificate request that is currently under review.
+    Only teachers can reject requests assigned to them.
+    """
+
+    # Verify the request exists and belongs to the current teacher
+    db_request = db.query(Request).filter(
+        Request.id == request_id,
+        Request.teacher_id == current_teacher.user_id
+    ).first()
+
+    if not db_request:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, 
+            detail="Request not found or you are not authorized to access this request"
+        )
+
+    # Check if the request is in under_review status
+    if db_request.status != RequestStatus.under_review:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Cannot reject request with status. Only requests with 'under_review' status can be rejected."
+        )
+
+    # Get the associated certificate
+    db_certificate = db.query(Certificate).filter(
+        Certificate.request_id == request_id
+    ).first()
+
+    if not db_certificate:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Certificate not found for this request"
+        )
+
+    try:
+        # Update request status to rejected
+        db_request.status = RequestStatus.rejected
+        
+        # Update certificate details
+        db_certificate.verified = False
+        db_certificate.remark = "Manually rejected by teacher after review"
+        
+        # Commit the changes
+        db.commit()
+        
+        logger.info(f"Request {request_id} rejected by teacher {current_teacher.user_id}")
+        
+        return {
+            'message': f'Certificate request has been successfully rejected'
+        }
+        
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error rejecting certificate request {request_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An error occurred while rejecting the certificate request"
+        )
+
+
+
+
 @router.post('/verify/certificate/manual/unsafe', response_model=GenericResponse)
 def verify_certificate_manual_unsafe(
     verification_data: UnsafeManualVerificationRequest,

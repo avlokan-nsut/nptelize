@@ -59,7 +59,7 @@ function formatDateOnly(isoString: string): string {
 const fetchData = async () => {
   const apiUrl = import.meta.env.VITE_API_URL;
   const reqType = {
-    request_types: ["pending", "rejected", "error" ,"no_certificate"],
+    request_types: ["pending", "rejected", "error" ,"no_certificate" ],
   };
 
   const { data } = await axios.post<ApiResponse>(
@@ -72,7 +72,6 @@ const fetchData = async () => {
       },
     }
   );
-
   return data;
 };
 
@@ -292,7 +291,6 @@ const RequestedTable = () => {
   No Certificate
 </span>
 
-
         );
       case "rejected":
         return (
@@ -312,6 +310,8 @@ const RequestedTable = () => {
             Pending
           </span>
         );
+
+       
     }
   };
 
