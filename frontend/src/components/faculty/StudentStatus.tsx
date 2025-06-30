@@ -35,7 +35,7 @@ export type Request = {
   id: string;
   student: Student;
   subject: Subject;
-  status: "pending" | "completed" | "rejected" | "no_certificate";
+  status: "pending" | "completed" | "rejected" | "no_certificate" | "under_review";
   verified_total_marks: string;
   created_at: string;
   due_date: string;
@@ -54,6 +54,7 @@ const StudentStatus = function () {
   const subjectId = location.state?.subjectId; 
   const subjectName = location.state?.subjectName;
   const [searchTerm, setSearchTerm] = useState("");
+  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
@@ -61,7 +62,7 @@ const StudentStatus = function () {
 
   // Filter state
   const [statusFilter, setStatusFilter] = useState<
-    "all" | "pending" | "completed" | "rejected" | "duplicate" | "no_certificate"
+    "all" | "pending" | "completed" | "rejected" | "duplicate" | "no_certificate" | "under_review"
   >("all");
 
   const fetchData = async () => {
