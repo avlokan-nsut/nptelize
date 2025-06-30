@@ -1,7 +1,7 @@
-import { FaArrowLeft, FaDownload } from "react-icons/fa";
+import { FaArrowLeft, FaDownload, FaChevronRight, FaTimes, FaCheck, FaInfoCircle } from "react-icons/fa";
 import { Link, useParams, useLocation } from "react-router-dom";
 import axios from "axios";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useMemo } from "react";
 import Pagination from "./Pagination";
 import SearchBar from "./SearchBar";
@@ -48,6 +48,7 @@ export type ApiResponse = {
 const apiUrl = import.meta.env.VITE_API_URL;
 
 const StudentStatus = function () {
+  const queryClient = useQueryClient();
   const { subjectCode: urlSubjectCode } = useParams<{ subjectCode: string }>();
   const location = useLocation();
   const subjectCode = urlSubjectCode;
@@ -100,6 +101,7 @@ const StudentStatus = function () {
         rejectedCount: 0,
         duplicateNamesCount: 0,
         noCertificateCount: 0,
+        under_review: 0,
       };
     }
 
@@ -118,6 +120,9 @@ const StudentStatus = function () {
     ).length;
     const noCertificateCount = requests.filter(
       (req) => req.status === "no_certificate"
+    ).length;
+    const under_review = requests.filter(
+      (req) => req.status === "under_review"
     ).length;
 
     // Calculate duplicate names
@@ -164,6 +169,7 @@ const StudentStatus = function () {
       rejectedCount,
       duplicateNamesCount,
       noCertificateCount,
+      under_review
     };
   }, [apiData?.requests, statusFilter, searchTerm]);
 
@@ -199,7 +205,7 @@ const StudentStatus = function () {
 
   // Handle filter change
   const handleFilterChange = (
-    filter: "all" | "pending" | "completed" | "rejected" | "duplicate" | "no_certificate"
+    filter: "all" | "pending" | "completed" | "rejected" | "duplicate" | "no_certificate" | "under_review"
   ) => {
     setStatusFilter(filter);
     setCurrentPage(1); // Reset to first page when filter changes
@@ -314,17 +320,87 @@ const StudentStatus = function () {
       case "no_certificate":
         return (
           <span className="px-2 py-1 text-xs font-semibold rounded-full bg-sky-100 text-fuchsia-800">
-  No Certificate
-</span>
-
-
+            No Certificate
+          </span>
         );
+
+      case "under_review":
+        return (  
+          <span className="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
+            Under Review
+          </span>
+        );
+
       default:
         return (
           <span className="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
             Pending
           </span>
         );
+    }
+  };
+
+  // Fetch certificate info when dropdown opens
+  const fetchCertInfo = async (requestId: string) => {
+    try {
+      const res = await axios.get(`${apiUrl}/teacher/certificate/details/${requestId}`, { withCredentials: true });
+      console.log(res.data);
+      return res.data;
+    } catch (error: any) {
+      // If certificate doesn't exist (404), return null instead of throwing error
+      if (error.response?.status === 404) {
+        return null;
+      }
+      throw error;
+    }
+  };
+  
+  const certQueries = useMemo(
+    () => ({
+      queryKey: ["certInfo", openDropdownId],
+      queryFn: () => fetchCertInfo(openDropdownId!),
+      enabled: openDropdownId !== null,
+      retry: false,
+    }),
+    [openDropdownId]
+  );
+  const { data: certData, isFetching: certLoading } = useQuery(certQueries);
+
+  const handleAccept = async (requestId: string) => {
+    try {
+      // Find the request data
+      const request = statisticsAndFilteredData.filteredRequests.find(req => req.id === requestId);
+      if (!request) {
+        alert("Request not found");
+        return;
+      }
+
+      // Get marks from certificate data if available, otherwise use a default value
+      const marks = certData?.data?.uploaded_certificate?.marks || 
+                   certData?.data?.verification_certificate?.marks || 
+                   parseInt(request.verified_total_marks) || 0;
+
+      await axios.post(`${apiUrl}/teacher/verify/certificate/manual/unsafe`, {
+        request_id: requestId,
+        student_id: request.student.id,
+        subject_id: request.subject.id,
+        marks: marks
+      }, { withCredentials: true });
+      queryClient.invalidateQueries({ queryKey: ["teacherRequestsStudents", subjectId] });
+      setOpenDropdownId(null);
+    } catch (e) {
+      console.error('Accept failed:', e);
+      alert("Accept failed");
+    }
+  };
+
+  const handleReject = async (requestId: string) => {
+    try {
+      await axios.put(`${apiUrl}/teacher/reject/certificate?request_id=${requestId}`, {}, { withCredentials: true });
+      queryClient.invalidateQueries({ queryKey: ["teacherRequestsStudents", subjectId] });
+      setOpenDropdownId(null);
+    } catch (e) {
+      alert("Reject failed");
     }
   };
 
@@ -362,7 +438,7 @@ const StudentStatus = function () {
 
           {/* Statistics Section */}
           <div className="p-4 bg-blue-50 border-b">
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
               <div className="text-center">
                 <div className="text-2xl font-bold text-blue-600">
                   {statisticsAndFilteredData.completedCount}
@@ -392,6 +468,12 @@ const StudentStatus = function () {
                   {statisticsAndFilteredData.duplicateNamesCount}
                 </div>
                 <div className="text-sm text-gray-600">Duplicate Names</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-yellow-500">
+                  {statisticsAndFilteredData.under_review}
+                </div>
+                <div className="text-sm text-gray-600">Under Review</div>
               </div>
             </div>
           </div>
@@ -459,6 +541,16 @@ const StudentStatus = function () {
               >
                 Duplicate ({statisticsAndFilteredData.duplicateNamesCount})
               </button>
+              <button
+                onClick={() => handleFilterChange("under_review")}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  statusFilter === "under_review"
+                    ? "bg-yellow-500 text-white"
+                    : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
+                }`}
+              >
+                Under Review ({statisticsAndFilteredData.under_review})
+              </button>
             </div>
           </div>
 
@@ -498,62 +590,231 @@ const StudentStatus = function () {
                   <tbody className="bg-white divide-y divide-gray-200">
                     {paginationData.currentPageData.length > 0 ? (
                       paginationData.currentPageData.map((request) => (
-                        <tr
-                          key={request.student.id}
-                          className="hover:bg-gray-50 transition-colors duration-150"
-                        >
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="font-medium text-gray-900">
-                              {request.student.name}
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-gray-700">
-                            {request.student.roll_number}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-gray-700">
-                            {request.student.email}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            {getStatusBadge(request.status)}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-gray-700">
-                            {formatDate(request.due_date)}
-                          </td>
-                          <td className="px-6 py-4 text-center whitespace-nowrap text-gray-700">
-                            {request.verified_total_marks}
-                          </td>
+                        <>
+                          {(request.status === "pending" || request.status === "under_review") ? (
+                            // Accordion rows for pending/under_review requests
+                            <>
+                              <tr 
+                                key={request.student.id}
+                                className="hover:bg-gray-50 transition-colors duration-150 cursor-pointer"
+                                onClick={() => setOpenDropdownId(openDropdownId === request.id ? null : request.id)}
+                              >
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <div className="font-medium text-gray-900">
+                                    {request.student.name}
+                                  </div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-gray-700">
+                                  {request.student.roll_number}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-gray-700">
+                                  {request.student.email}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  {getStatusBadge(request.status)}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-gray-700">
+                                  {formatDate(request.due_date)}
+                                </td>
+                                <td className="px-6 py-4 text-center whitespace-nowrap text-gray-700">
+                                  {request.verified_total_marks}
+                                </td>
+                                <td className="px-6 py-4 text-center whitespace-nowrap text-gray-700">
+                                  <FaChevronRight 
+                                    className={`w-4 h-4 transition-transform mx-auto ${openDropdownId === request.id ? 'rotate-90' : ''}`} 
+                                  />
+                                </td>
+                              </tr>
+                              {openDropdownId === request.id && (
+                                <tr>
+                                  <td colSpan={headings.length} className="px-0 py-0">
+                                    <div className="bg-base-100 border-t border-gray-200">
+                                      <div className="p-6">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                          {/* Student Information */}
+                                          <div className="card bg-base-100 shadow-sm">
+                                            <div className="card-body p-4">
+                                              <h3 className="card-title text-lg text-primary">Student Information</h3>
+                                              <div className="space-y-2">
+                                                <div className="flex justify-between">
+                                                  <span className="font-medium">Name:</span>
+                                                  <span>{request.student.name}</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                  <span className="font-medium">Roll Number:</span>
+                                                  <span>{request.student.roll_number}</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                  <span className="font-medium">Email:</span>
+                                                  <span className="text-sm">{request.student.email}</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                  <span className="font-medium">Status:</span>
+                                                  <span>{getStatusBadge(request.status)}</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                  <span className="font-medium">Due Date:</span>
+                                                  <span>{formatDate(request.due_date)}</span>
+                                                </div>
+                                              </div>
+                                            </div>
+                                          </div>
 
-                          {/* download button */}
+                                          {/* Subject Information */}
+                                          <div className="card bg-base-100 shadow-sm">
+                                            <div className="card-body p-4">
+                                              <h3 className="card-title text-lg text-secondary">Subject Information</h3>
+                                              <div className="space-y-2">
+                                                <div className="flex justify-between">
+                                                  <span className="font-medium">Subject:</span>
+                                                  <span>{request.subject.name}</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                  <span className="font-medium">Subject Code:</span>
+                                                  <span>{request.subject.subject_code}</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                  <span className="font-medium">NPTEL Code:</span>
+                                                  <span>{request.subject.nptel_course_code}</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                  <span className="font-medium">Current Marks:</span>
+                                                  <span className="badge badge-outline">{request.verified_total_marks || 'Not set'}</span>
+                                                </div>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        </div>
 
-                          <td className="px-6 py-4 text-center whitespace-nowrap text-gray-700">
-                            {request.status === "completed" && (
-                              <div>
-                                <div className=" text-black py-2 rounded-md shadow-md transition-all duration-300 transform hover:scale-105 hover:bg-black hover:text-white">
-                                  <a
-                                    href={`${apiUrl}/user/certificate/file/${request.id}.pdf?download=false`}
-                                    target="_blank"
-                                    className="flex items-center justify-center font-medium"
-                                  >
-                                    <svg
-                                      xmlns="http://www.w3.org/2000/svg"
-                                      className="h-5 w-5"
-                                      fill="none"
-                                      viewBox="0 0 24 24"
-                                      stroke="currentColor"
-                                    >
-                                      <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth={2}
-                                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                                      />
-                                    </svg>
-                                  </a>
+                                        {/* Certificate Information */}
+                                        <div className="card bg-base-100 shadow-sm mt-6">
+                                          <div className="card-body p-4">
+                                            <h3 className="card-title text-lg text-accent">Certificate Details</h3>
+                                            {certLoading ? (
+                                              <div className="flex items-center gap-2 text-gray-500">
+                                                <span className="loading loading-spinner loading-sm"></span>
+                                                Loading certificate details...
+                                              </div>
+                                            ) : certData?.data ? (
+                                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div className="space-y-2">
+                                                  <h4 className="font-medium text-gray-700">Uploaded Certificate</h4>
+                                                  <div className="text-sm space-y-1">
+                                                    <div><strong>Marks:</strong> <span className="badge badge-info">{certData.data.uploaded_certificate?.marks || 'N/A'}</span></div>
+                                                    <div><strong>Course:</strong> {certData.data.uploaded_certificate?.course_name || 'N/A'}</div>
+                                                    <div><strong>Period:</strong> {certData.data.uploaded_certificate?.course_period || 'N/A'}</div>
+                                                  </div>
+                                                </div>
+                                                {certData.data.verification_certificate && (
+                                                  <div className="space-y-2">
+                                                    <h4 className="font-medium text-gray-700">Verification Certificate</h4>
+                                                    <div className="text-sm space-y-1">
+                                                      <div><strong>Marks:</strong> <span className="badge badge-success">{certData.data.verification_certificate.marks || 'N/A'}</span></div>
+                                                      <div><strong>Course:</strong> {certData.data.verification_certificate.course_name || 'N/A'}</div>
+                                                      <div><strong>Period:</strong> {certData.data.verification_certificate.course_period || 'N/A'}</div>
+                                                    </div>
+                                                  </div>
+                                                )}
+                                                <div className="md:col-span-2 mt-2">
+                                                  <div><strong>Remark:</strong> <span className="text-gray-600">{certData.data.remark || 'No remarks'}</span></div>
+                                                </div>
+                                              </div>
+                                            ) : (
+                                              <div className="alert">
+                                                <FaInfoCircle className="w-6 h-6" />
+                                                <span>No certificate uploaded yet. Current marks: {request.verified_total_marks || 'Not set'}</span>
+                                              </div>
+                                            )}
+                                          </div>
+                                        </div>
+
+                                        {/* Action Buttons */}
+                                        <div className="flex gap-3 justify-end mt-6 pt-4 border-t border-gray-200">
+                                          <button 
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleReject(request.id);
+                                            }} 
+                                            className="btn btn-error btn-sm gap-2 text-white"
+                                          >
+                                            <FaTimes className="w-4 h-4 text-white" />
+                                            Reject
+                                          </button>
+                                          <button 
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleAccept(request.id);
+                                            }} 
+                                            className="btn btn-success btn-sm gap-2 text-white"
+                                          >
+                                            <FaCheck className="w-4 h-4 text-white" />
+                                            Accept
+                                          </button>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </td>
+                                </tr>
+                              )}
+                            </>
+                          ) : (
+                            // Regular row for other statuses
+                            <tr
+                              key={request.student.id}
+                              className="hover:bg-gray-50 transition-colors duration-150"
+                            >
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="font-medium text-gray-900">
+                                  {request.student.name}
                                 </div>
-                              </div>
-                            )}
-                          </td>
-                        </tr>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-gray-700">
+                                {request.student.roll_number}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-gray-700">
+                                {request.student.email}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                {getStatusBadge(request.status)}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-gray-700">
+                                {formatDate(request.due_date)}
+                              </td>
+                              <td className="px-6 py-4 text-center whitespace-nowrap text-gray-700">
+                                {request.verified_total_marks}
+                              </td>
+                              <td className="px-6 py-4 text-center whitespace-nowrap text-gray-700">
+                                {request.status === "completed" && (
+                                  <div>
+                                    <div className=" text-black py-2 rounded-md shadow-md transition-all duration-300 transform hover:scale-105 hover:bg-black hover:text-white">
+                                      <a
+                                        href={`${apiUrl}/user/certificate/file/${request.id}.pdf?download=false`}
+                                        target="_blank"
+                                        className="flex items-center justify-center font-medium"
+                                      >
+                                        <svg
+                                          xmlns="http://www.w3.org/2000/svg"
+                                          className="h-5 w-5"
+                                          fill="none"
+                                          viewBox="0 0 24 24"
+                                          stroke="currentColor"
+                                        >
+                                          <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth={2}
+                                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                                          />
+                                        </svg>
+                                      </a>
+                                    </div>
+                                  </div>
+                                )}
+                                {request.status !== "completed" && "-"}
+                              </td>
+                            </tr>
+                          )}
+                        </>
                       ))
                     ) : (
                       <tr>
