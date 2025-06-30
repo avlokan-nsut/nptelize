@@ -551,16 +551,6 @@ const StudentStatus = function () {
               >
                 Under Review ({statisticsAndFilteredData.under_review})
               </button>
-              <button
-                onClick={() => handleFilterChange("under_review")}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  statusFilter === "under_review"
-                    ? "bg-yellow-500 text-white"
-                    : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
-                }`}
-              >
-                Under Review ({statisticsAndFilteredData.under_review})
-              </button>
             </div>
           </div>
 
