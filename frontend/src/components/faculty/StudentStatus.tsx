@@ -63,7 +63,7 @@ const StudentStatus = function () {
 
   // Filter state
   const [statusFilter, setStatusFilter] = useState<
-    "all" | "pending" | "completed" | "rejected" | "duplicate" | "no_certificate" | "under_review"
+    "all" | "pending" | "completed" | "rejected" | "duplicate" | "no_certificate" |"under_review"
   >("all");
 
   const fetchData = async () => {
@@ -101,7 +101,7 @@ const StudentStatus = function () {
         rejectedCount: 0,
         duplicateNamesCount: 0,
         noCertificateCount: 0,
-        under_review: 0,
+        under_review : 0,
       };
     }
 
@@ -123,7 +123,7 @@ const StudentStatus = function () {
     ).length;
     const under_review = requests.filter(
       (req) => req.status === "under_review"
-    ).length;
+    ).length
 
     // Calculate duplicate names
     const nameCount = new Map<string, number>();
@@ -320,12 +320,12 @@ const StudentStatus = function () {
       case "no_certificate":
         return (
           <span className="px-2 py-1 text-xs font-semibold rounded-full bg-sky-100 text-fuchsia-800">
-            No Certificate
-          </span>
+  No Certificate
+</span>
         );
 
-      case "under_review":
-        return (  
+       case "under_review":
+         return (  
           <span className="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
             Under Review
           </span>
