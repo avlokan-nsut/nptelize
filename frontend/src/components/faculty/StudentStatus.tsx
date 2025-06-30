@@ -1,6 +1,8 @@
 import { FaArrowLeft, FaDownload, FaChevronRight, FaTimes, FaCheck, FaInfoCircle } from "react-icons/fa";
+import { FaArrowLeft, FaDownload, FaChevronRight, FaTimes, FaCheck, FaInfoCircle } from "react-icons/fa";
 import { Link, useParams, useLocation } from "react-router-dom";
 import axios from "axios";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useMemo } from "react";
 import Pagination from "./Pagination";
@@ -170,6 +172,7 @@ const StudentStatus = function () {
       duplicateNamesCount,
       noCertificateCount,
       under_review
+      under_review
     };
   }, [apiData?.requests, statusFilter, searchTerm]);
 
@@ -205,6 +208,7 @@ const StudentStatus = function () {
 
   // Handle filter change
   const handleFilterChange = (
+    filter: "all" | "pending" | "completed" | "rejected" | "duplicate" | "no_certificate" | "under_review"
     filter: "all" | "pending" | "completed" | "rejected" | "duplicate" | "no_certificate" | "under_review"
   ) => {
     setStatusFilter(filter);
@@ -540,6 +544,16 @@ const StudentStatus = function () {
                 }`}
               >
                 Duplicate ({statisticsAndFilteredData.duplicateNamesCount})
+              </button>
+              <button
+                onClick={() => handleFilterChange("under_review")}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  statusFilter === "under_review"
+                    ? "bg-yellow-500 text-white"
+                    : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
+                }`}
+              >
+                Under Review ({statisticsAndFilteredData.under_review})
               </button>
               <button
                 onClick={() => handleFilterChange("under_review")}
