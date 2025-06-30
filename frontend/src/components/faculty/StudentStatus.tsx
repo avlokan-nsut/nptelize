@@ -36,6 +36,7 @@ export type Request = {
   student: Student;
   subject: Subject;
   status: "pending" | "completed" | "rejected" | "no_certificate" | "under_review";
+  status: "pending" | "completed" | "rejected" | "no_certificate" | "under_review";
   verified_total_marks: string;
   created_at: string;
   due_date: string;
@@ -100,6 +101,7 @@ const StudentStatus = function () {
         rejectedCount: 0,
         duplicateNamesCount: 0,
         noCertificateCount: 0,
+        under_review : 0,
       };
     }
 
@@ -119,6 +121,9 @@ const StudentStatus = function () {
     const noCertificateCount = requests.filter(
       (req) => req.status === "no_certificate"
     ).length;
+    const under_review = requests.filter(
+      (req)=> req.status === "under_review"
+    ).length
 
     // Calculate duplicate names
     const nameCount = new Map<string, number>();
@@ -164,6 +169,7 @@ const StudentStatus = function () {
       rejectedCount,
       duplicateNamesCount,
       noCertificateCount,
+      under_review
     };
   }, [apiData?.requests, statusFilter, searchTerm]);
 
@@ -199,7 +205,7 @@ const StudentStatus = function () {
 
   // Handle filter change
   const handleFilterChange = (
-    filter: "all" | "pending" | "completed" | "rejected" | "duplicate" | "no_certificate"
+    filter: "all" | "pending" | "completed" | "rejected" | "duplicate" | "no_certificate" | "under_review"
   ) => {
     setStatusFilter(filter);
     setCurrentPage(1); // Reset to first page when filter changes
@@ -316,9 +322,17 @@ const StudentStatus = function () {
           <span className="px-2 py-1 text-xs font-semibold rounded-full bg-sky-100 text-fuchsia-800">
   No Certificate
 </span>
-
-
         );
+
+        case "under_review" :
+          return (  
+          <span className="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
+            Under Review
+          </span>
+        );
+
+
+        
       default:
         return (
           <span className="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
@@ -392,6 +406,14 @@ const StudentStatus = function () {
                   {statisticsAndFilteredData.duplicateNamesCount}
                 </div>
                 <div className="text-sm text-gray-600">Duplicate Names</div>
+              </div>
+
+              <div className="text-center">
+                <div className="text-2xl font-bold text-yellow-500">
+  {statisticsAndFilteredData.under_review}
+</div>
+<div className="text-sm text-gray-600">Under Review</div>
+
               </div>
             </div>
           </div>
