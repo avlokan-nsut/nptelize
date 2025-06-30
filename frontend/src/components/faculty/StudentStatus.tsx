@@ -14,6 +14,7 @@ const headings = [
   "Due Date",
   "Total Marks",
   "Actions",
+  "",
 ];
 
 export type Student = {
@@ -620,6 +621,9 @@ const StudentStatus = function () {
                                   {request.verified_total_marks}
                                 </td>
                                 <td className="px-6 py-4 text-center whitespace-nowrap text-gray-700">
+                                  -
+                                </td>
+                                <td className="px-6 py-4 text-center whitespace-nowrap">
                                   <FaChevronRight 
                                     className={`w-4 h-4 transition-transform mx-auto ${openDropdownId === request.id ? 'rotate-90' : ''}`} 
                                   />
@@ -811,6 +815,9 @@ const StudentStatus = function () {
                                   </div>
                                 )}
                                 {request.status !== "completed" && "-"}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-center">
+                                -
                               </td>
                             </tr>
                           )}
