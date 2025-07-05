@@ -13,7 +13,7 @@ const App: React.FC = () => {
   }, [checkSession]);
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
+    <div className="min-h-screen flex flex-col">
       <main className="flex-grow">
         <Hero />
       </main>

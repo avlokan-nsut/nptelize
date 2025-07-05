@@ -46,21 +46,21 @@ const StudentDashboard: React.FC = () => {
       <div className="mt-6">
         {activeTab === 'pending' && (
           <div>
-            <h1 className='text-center text-xl md:text-2xl font-semibold text-gray-800 mb-10 tracking-wider'>Pending Requests</h1>
+            
             <RequestedTable />
           </div>
         )}
         
         {activeTab === 'completed' && (
           <div>
-            <h1 className='text-center text-xl md:text-2xl font-semibold text-gray-800 mb-10 tracking-wider'>Completed Requests</h1>
+    
             <CompletedRequest />
           </div>
         )}
         
         {activeTab === 'history' && (
           <div>
-            <h1 className='text-center text-xl md:text-2xl font-semibold text-gray-800 mb-10 tracking-wider'>History</h1>
+            
             <History />
           </div>
         )}
