@@ -3,6 +3,7 @@ import axios from "axios";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { FaTimes, FaCheck, FaInfoCircle } from "react-icons/fa";
 import { Request } from "./StudentStatus";
+import { CertificateApiResponse } from "../../types/faculty/MannualVerification";
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -49,8 +50,7 @@ const RequestDetailsDropdown = ({ request, colSpan, subjectId, onClose }: Reques
 
   const fetchCertInfo = async (requestId: string) => {
     try {
-      const res = await axios.get(`${apiUrl}/teacher/certificate/details/${requestId}`, { withCredentials: true });
-      console.log(res.data)
+      const res = await axios.get<CertificateApiResponse>(`${apiUrl}/teacher/certificate/details/${requestId}`, { withCredentials: true });
       return res.data;
     } catch (error: any) {
       if (error.response?.status === 404) {
@@ -103,6 +103,49 @@ const RequestDetailsDropdown = ({ request, colSpan, subjectId, onClose }: Reques
     }
   };
 
+  // Create a mapping for student information fields
+  const studentInfoFields = [
+    { label: "Name", value: request.student.name },
+    { label: "Roll Number", value: request.student.roll_number },
+    { label: "Email", value: request.student.email, className: "text-sm" },
+    { label: "Status", value: getStatusBadge(request.status) },
+    { label: "Due Date", value: formatDate(request.due_date) },
+  ];
+
+  // Create a mapping for subject information fields
+  const subjectInfoFields = [
+    { label: "Subject", value: request.subject.name },
+    { label: "Subject Code", value: request.subject.subject_code },
+    { label: "NPTEL Code", value: request.subject.nptel_course_code },
+    { label: "Current Marks", value: request.verified_total_marks || 'Not set', className: "badge badge-outline" },
+  ];
+
+  // Create a mapping for certificate field labels
+  const certificateFields = [
+    { key: "student_name", label: "Name" },
+    { key: "marks", label: "Marks" },
+    { key: "course_name", label: "Course" },
+    { key: "course_period", label: "Period" },
+  ];
+
+  // Function to render certificate details section
+  const renderCertificateDetails = (certificate: any, title: string) => {
+    if (!certificate) return null;
+    
+    return (
+      <div className="space-y-2">
+        <h4 className="font-medium text-gray-700">{title}</h4>
+        <div className="text-sm space-y-1">
+          {certificateFields.map((field, index) => (
+            <div key={index}>
+              <strong>{field.label}:</strong> {certificate[field.key] || 'N/A'}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <tr>
       <td colSpan={colSpan} className="px-0 py-0">
@@ -114,11 +157,12 @@ const RequestDetailsDropdown = ({ request, colSpan, subjectId, onClose }: Reques
                 <div className="card-body p-4">
                   <h3 className="card-title text-lg text-primary">Student Information</h3>
                   <div className="space-y-2">
-                    <div className="flex justify-between"><span className="font-medium">Name:</span><span>{request.student.name}</span></div>
-                    <div className="flex justify-between"><span className="font-medium">Roll Number:</span><span>{request.student.roll_number}</span></div>
-                    <div className="flex justify-between"><span className="font-medium">Email:</span><span className="text-sm">{request.student.email}</span></div>
-                    <div className="flex justify-between"><span className="font-medium">Status:</span><span>{getStatusBadge(request.status)}</span></div>
-                    <div className="flex justify-between"><span className="font-medium">Due Date:</span><span>{formatDate(request.due_date)}</span></div>
+                    {studentInfoFields.map((field, index) => (
+                      <div key={index} className="flex justify-between">
+                        <span className="font-medium">{field.label}:</span>
+                        <span className={field.className}>{field.value}</span>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
@@ -128,10 +172,12 @@ const RequestDetailsDropdown = ({ request, colSpan, subjectId, onClose }: Reques
                 <div className="card-body p-4">
                   <h3 className="card-title text-lg text-secondary">Subject Information</h3>
                   <div className="space-y-2">
-                    <div className="flex justify-between"><span className="font-medium">Subject:</span><span>{request.subject.name}</span></div>
-                    <div className="flex justify-between"><span className="font-medium">Subject Code:</span><span>{request.subject.subject_code}</span></div>
-                    <div className="flex justify-between"><span className="font-medium">NPTEL Code:</span><span>{request.subject.nptel_course_code}</span></div>
-                    <div className="flex justify-between"><span className="font-medium">Current Marks:</span><span className="badge badge-outline">{request.verified_total_marks || 'Not set'}</span></div>
+                    {subjectInfoFields.map((field, index) => (
+                      <div key={index} className="flex justify-between">
+                        <span className="font-medium">{field.label}:</span>
+                        <span className={field.className}>{field.value}</span>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
@@ -145,26 +191,9 @@ const RequestDetailsDropdown = ({ request, colSpan, subjectId, onClose }: Reques
                   <div className="flex items-center gap-2 text-gray-500"><span className="loading loading-spinner loading-sm"></span>Loading certificate details...</div>
                 ) : certData?.data ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <h4 className="font-medium text-gray-700">Uploaded Certificate</h4>
-                      <div className="text-sm space-y-1">
-                        <div><strong>Name:</strong> {certData.data.uploaded_certificate?.student_name || 'N/A'}</div>
-                        <div><strong>Marks:</strong> {certData.data.uploaded_certificate?.marks || 'N/A'}</div>
-                        <div><strong>Course:</strong> {certData.data.uploaded_certificate?.course_name || 'N/A'}</div>
-                        <div><strong>Period:</strong> {certData.data.uploaded_certificate?.course_period || 'N/A'}</div>
-                      </div>
-                    </div>
-                    {certData.data.verification_certificate && (
-                      <div className="space-y-2">
-                        <h4 className="font-medium text-gray-700">Verification Certificate</h4>
-                        <div className="text-sm space-y-1">
-                          <div><strong>Name:</strong> {certData.data.verification_certificate.student_name || 'N/A'}</div>
-                          <div><strong>Marks:</strong> {certData.data.verification_certificate.marks || 'N/A'}</div>
-                          <div><strong>Course:</strong> {certData.data.verification_certificate.course_name || 'N/A'}</div>
-                          <div><strong>Period:</strong> {certData.data.verification_certificate.course_period || 'N/A'}</div>
-                        </div>
-                      </div>
-                    )}
+                    {renderCertificateDetails(certData.data.uploaded_certificate, "Uploaded Certificate")}
+                    {certData.data.verification_certificate && 
+                      renderCertificateDetails(certData.data.verification_certificate, "Verification Certificate")}
                     <div className="md:col-span-2 mt-2">
                       <div><strong>Remark:</strong> <span className="text-gray-600">{certData.data.remark || 'No remarks'}</span></div>
                     </div>
