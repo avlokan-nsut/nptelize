@@ -226,6 +226,7 @@ const RequestedTable = () => {
         delete newState[requestId];
         return newState;
       });
+      refetch()
     }
   };
 

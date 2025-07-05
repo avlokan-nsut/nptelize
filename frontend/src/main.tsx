@@ -21,7 +21,6 @@ import PublicRoute from "./components/PublicRoutes";
 import StudentStatus from "./components/faculty/StudentStatus";
 import Developers from "./components/Developers";
 import ReportSection from "./components/faculty/ReportSection";
-import ManualVerification from "./components/faculty/ManualVerification";
 import RejectedVerification from "./components/faculty/RejectedVerification";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -63,10 +62,10 @@ const routes = createBrowserRouter(
           element={<StudentStatus />}
         />
         <Route path="faculty/report-section" element={<ReportSection />} />
-        <Route
+        {/* <Route
           path="faculty/manual-verification"
           element={<ManualVerification />}
-        />
+        /> */}
         <Route
           path="faculty/verify-rejected"
           element={<RejectedVerification />}
