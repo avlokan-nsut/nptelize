@@ -1,10 +1,11 @@
-import { FaArrowLeft, FaDownload, FaChevronRight, FaTimes, FaCheck, FaInfoCircle } from "react-icons/fa";
+import { FaArrowLeft, FaDownload, FaChevronRight} from "react-icons/fa";
 import { Link, useParams, useLocation } from "react-router-dom";
 import axios from "axios";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery} from "@tanstack/react-query";
 import { useState, useMemo } from "react";
 import Pagination from "./Pagination";
 import SearchBar from "./SearchBar";
+import RequestDetailsDropdown from "./RequestDetailsDropdown";
 
 const headings = [
   "Student Name",
@@ -49,7 +50,7 @@ export type ApiResponse = {
 const apiUrl = import.meta.env.VITE_API_URL;
 
 const StudentStatus = function () {
-  const queryClient = useQueryClient();
+  
   const { subjectCode: urlSubjectCode } = useParams<{ subjectCode: string }>();
   const location = useLocation();
   const subjectCode = urlSubjectCode;
@@ -341,69 +342,8 @@ const StudentStatus = function () {
     }
   };
 
-  // Fetch certificate info when dropdown opens
-  const fetchCertInfo = async (requestId: string) => {
-    try {
-      const res = await axios.get(`${apiUrl}/teacher/certificate/details/${requestId}`, { withCredentials: true });
-      console.log(res.data);
-      return res.data;
-    } catch (error: any) {
-      // If certificate doesn't exist (404), return null instead of throwing error
-      if (error.response?.status === 404) {
-        return null;
-      }
-      throw error;
-    }
-  };
+
   
-  const certQueries = useMemo(
-    () => ({
-      queryKey: ["certInfo", openDropdownId],
-      queryFn: () => fetchCertInfo(openDropdownId!),
-      enabled: openDropdownId !== null,
-      retry: false,
-    }),
-    [openDropdownId]
-  );
-  const { data: certData, isFetching: certLoading } = useQuery(certQueries);
-
-  const handleAccept = async (requestId: string) => {
-    try {
-      // Find the request data
-      const request = statisticsAndFilteredData.filteredRequests.find(req => req.id === requestId);
-      if (!request) {
-        alert("Request not found");
-        return;
-      }
-
-      // Get marks from certificate data if available, otherwise use a default value
-      const marks = certData?.data?.uploaded_certificate?.marks || 
-                   certData?.data?.verification_certificate?.marks || 
-                   parseInt(request.verified_total_marks) || 0;
-
-      await axios.post(`${apiUrl}/teacher/verify/certificate/manual/unsafe`, {
-        request_id: requestId,
-        student_id: request.student.id,
-        subject_id: request.subject.id,
-        marks: marks
-      }, { withCredentials: true });
-      queryClient.invalidateQueries({ queryKey: ["teacherRequestsStudents", subjectId] });
-      setOpenDropdownId(null);
-    } catch (e) {
-      console.error('Accept failed:', e);
-      alert("Accept failed");
-    }
-  };
-
-  const handleReject = async (requestId: string) => {
-    try {
-      await axios.put(`${apiUrl}/teacher/reject/certificate?request_id=${requestId}`, {}, { withCredentials: true });
-      queryClient.invalidateQueries({ queryKey: ["teacherRequestsStudents", subjectId] });
-      setOpenDropdownId(null);
-    } catch (e) {
-      alert("Reject failed");
-    }
-  };
 
   return (
     <>
@@ -592,7 +532,7 @@ const StudentStatus = function () {
                     {paginationData.currentPageData.length > 0 ? (
                       paginationData.currentPageData.map((request) => (
                         <>
-                          {(request.status === "pending" || request.status === "under_review") ? (
+                          {(request.status === "under_review") ? (
                             // Accordion rows for pending/under_review requests
                             <>
                               <tr 
@@ -620,9 +560,6 @@ const StudentStatus = function () {
                                 <td className="px-6 py-4 text-center whitespace-nowrap text-gray-700">
                                   {request.verified_total_marks}
                                 </td>
-                                <td className="px-6 py-4 text-center whitespace-nowrap text-gray-700">
-                                  -
-                                </td>
                                 <td className="px-6 py-4 text-center whitespace-nowrap">
                                   <FaChevronRight 
                                     className={`w-4 h-4 transition-transform mx-auto ${openDropdownId === request.id ? 'rotate-90' : ''}`} 
@@ -630,135 +567,12 @@ const StudentStatus = function () {
                                 </td>
                               </tr>
                               {openDropdownId === request.id && (
-                                <tr>
-                                  <td colSpan={headings.length} className="px-0 py-0">
-                                    <div className="bg-base-100 border-t border-gray-200">
-                                      <div className="p-6">
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                          {/* Student Information */}
-                                          <div className="card bg-base-100 shadow-sm">
-                                            <div className="card-body p-4">
-                                              <h3 className="card-title text-lg text-primary">Student Information</h3>
-                                              <div className="space-y-2">
-                                                <div className="flex justify-between">
-                                                  <span className="font-medium">Name:</span>
-                                                  <span>{request.student.name}</span>
-                                                </div>
-                                                <div className="flex justify-between">
-                                                  <span className="font-medium">Roll Number:</span>
-                                                  <span>{request.student.roll_number}</span>
-                                                </div>
-                                                <div className="flex justify-between">
-                                                  <span className="font-medium">Email:</span>
-                                                  <span className="text-sm">{request.student.email}</span>
-                                                </div>
-                                                <div className="flex justify-between">
-                                                  <span className="font-medium">Status:</span>
-                                                  <span>{getStatusBadge(request.status)}</span>
-                                                </div>
-                                                <div className="flex justify-between">
-                                                  <span className="font-medium">Due Date:</span>
-                                                  <span>{formatDate(request.due_date)}</span>
-                                                </div>
-                                              </div>
-                                            </div>
-                                          </div>
-
-                                          {/* Subject Information */}
-                                          <div className="card bg-base-100 shadow-sm">
-                                            <div className="card-body p-4">
-                                              <h3 className="card-title text-lg text-secondary">Subject Information</h3>
-                                              <div className="space-y-2">
-                                                <div className="flex justify-between">
-                                                  <span className="font-medium">Subject:</span>
-                                                  <span>{request.subject.name}</span>
-                                                </div>
-                                                <div className="flex justify-between">
-                                                  <span className="font-medium">Subject Code:</span>
-                                                  <span>{request.subject.subject_code}</span>
-                                                </div>
-                                                <div className="flex justify-between">
-                                                  <span className="font-medium">NPTEL Code:</span>
-                                                  <span>{request.subject.nptel_course_code}</span>
-                                                </div>
-                                                <div className="flex justify-between">
-                                                  <span className="font-medium">Current Marks:</span>
-                                                  <span className="badge badge-outline">{request.verified_total_marks || 'Not set'}</span>
-                                                </div>
-                                              </div>
-                                            </div>
-                                          </div>
-                                        </div>
-
-                                        {/* Certificate Information */}
-                                        <div className="card bg-base-100 shadow-sm mt-6">
-                                          <div className="card-body p-4">
-                                            <h3 className="card-title text-lg text-accent">Certificate Details</h3>
-                                            {certLoading ? (
-                                              <div className="flex items-center gap-2 text-gray-500">
-                                                <span className="loading loading-spinner loading-sm"></span>
-                                                Loading certificate details...
-                                              </div>
-                                            ) : certData?.data ? (
-                                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                <div className="space-y-2">
-                                                  <h4 className="font-medium text-gray-700">Uploaded Certificate</h4>
-                                                  <div className="text-sm space-y-1">
-                                                    <div><strong>Marks:</strong> <span className="badge badge-info">{certData.data.uploaded_certificate?.marks || 'N/A'}</span></div>
-                                                    <div><strong>Course:</strong> {certData.data.uploaded_certificate?.course_name || 'N/A'}</div>
-                                                    <div><strong>Period:</strong> {certData.data.uploaded_certificate?.course_period || 'N/A'}</div>
-                                                  </div>
-                                                </div>
-                                                {certData.data.verification_certificate && (
-                                                  <div className="space-y-2">
-                                                    <h4 className="font-medium text-gray-700">Verification Certificate</h4>
-                                                    <div className="text-sm space-y-1">
-                                                      <div><strong>Marks:</strong> <span className="badge badge-success">{certData.data.verification_certificate.marks || 'N/A'}</span></div>
-                                                      <div><strong>Course:</strong> {certData.data.verification_certificate.course_name || 'N/A'}</div>
-                                                      <div><strong>Period:</strong> {certData.data.verification_certificate.course_period || 'N/A'}</div>
-                                                    </div>
-                                                  </div>
-                                                )}
-                                                <div className="md:col-span-2 mt-2">
-                                                  <div><strong>Remark:</strong> <span className="text-gray-600">{certData.data.remark || 'No remarks'}</span></div>
-                                                </div>
-                                              </div>
-                                            ) : (
-                                              <div className="alert">
-                                                <FaInfoCircle className="w-6 h-6" />
-                                                <span>No certificate uploaded yet. Current marks: {request.verified_total_marks || 'Not set'}</span>
-                                              </div>
-                                            )}
-                                          </div>
-                                        </div>
-
-                                        {/* Action Buttons */}
-                                        <div className="flex gap-3 justify-end mt-6 pt-4 border-t border-gray-200">
-                                          <button 
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              handleReject(request.id);
-                                            }} 
-                                            className="btn btn-error btn-sm gap-2 text-white"
-                                          >
-                                            <FaTimes className="w-4 h-4 text-white" />
-                                            Reject
-                                          </button>
-                                          <button 
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              handleAccept(request.id);
-                                            }} 
-                                            className="btn btn-success btn-sm gap-2 text-white"
-                                          >
-                                            <FaCheck className="w-4 h-4 text-white" />
-                                            Accept
-                                          </button>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </td>
-                                </tr>
+                                <RequestDetailsDropdown 
+                                  request={request}
+                                  colSpan={headings.length}
+                                  subjectId={subjectId}
+                                  onClose={() => setOpenDropdownId(null)}
+                                />
                               )}
                             </>
                           ) : (
@@ -788,7 +602,7 @@ const StudentStatus = function () {
                                 {request.verified_total_marks}
                               </td>
                               <td className="px-6 py-4 text-center whitespace-nowrap text-gray-700">
-                                {request.status === "completed" && (
+                                
                                   <div>
                                     <div className=" text-black py-2 rounded-md shadow-md transition-all duration-300 transform hover:scale-105 hover:bg-black hover:text-white">
                                       <a
@@ -813,12 +627,10 @@ const StudentStatus = function () {
                                       </a>
                                     </div>
                                   </div>
-                                )}
-                                {request.status !== "completed" && "-"}
+                                
+                                
                               </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-center">
-                                -
-                              </td>
+      
                             </tr>
                           )}
                         </>
@@ -856,3 +668,4 @@ const StudentStatus = function () {
 };
 
 export default StudentStatus;
+                                         
