@@ -5,10 +5,10 @@ from sqlalchemy.orm import Session
 from app.config import config
 from app.config.db import get_db
 from app.models import User, UserRole
-from app.router.user.schemas import LoginRequest, LoginResponse, UserInfoResponse
+from app.router.user.schemas import LoginRequest, LoginResponse, UserInfoResponse, ChangePasswordRequest
 from app.oauth2 import create_access_token, get_current_user_role_agnostic
-from app.schemas import TokenData
-from app.services.utils.hashing import verify_password_hash
+from app.schemas import TokenData, GenericResponse
+from app.services.utils.hashing import verify_password_hash, generate_password_hash
 
 import os
 from typing import cast, Optional
@@ -115,3 +115,61 @@ def get_certificate_file_static(
             "Content-Disposition": f"{content_disposition}; filename={request_id}.pdf"
         }
     )
+
+@router.put("/change-password", response_model=GenericResponse)
+def change_password(
+    password_data: ChangePasswordRequest,
+    response: Response,
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(get_current_user_role_agnostic),
+):
+    """
+    Change user password after verifying current password
+    """
+    # Get the user from database
+    db_user = db.query(User).filter(User.id == current_user.user_id).first()
+    if not db_user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, 
+            detail="User not found"
+        )
+    
+    # Verify current password
+    if not verify_password_hash(password_data.current_password, cast(str, db_user.password_hash)):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, 
+            detail="Current password is incorrect"
+        )
+    
+    # Check if new password is different from current password
+    if verify_password_hash(password_data.new_password, cast(str, db_user.password_hash)):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, 
+            detail="New password must be different from current password"
+        )
+    
+    try:
+        # Generate hash for new password
+        new_password_hash = generate_password_hash(password_data.new_password)
+        
+        # Update password in database
+        db_user.password_hash = new_password_hash
+        db.commit()
+        
+        # Logout user by clearing the access token cookie
+        response.delete_cookie(
+            "access_token",
+            path='/',
+            httponly=True,
+            secure=False if TESTING else True,
+            samesite='none' if DEVELOPMENT else 'strict',
+        )
+        
+        return {"message": "Password changed successfully. You have been logged out for security."}
+        
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to change password"
+        )
