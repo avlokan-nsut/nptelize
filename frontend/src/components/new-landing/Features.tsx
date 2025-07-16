@@ -11,7 +11,7 @@ import {
 const Features = () => {
     return (
         <section className="w-full py-8 md:py-12 px-4 md:px-18">
-            <div className="flex flex-col bg-[#F0F8FF] px-4 py-6 md:px-6 md:py-8 rounded-2xl md:flex-row">
+            <div className="flex flex-col bg-[#F0F8FF] px-4 py-12 md:px-6 md:py-12 rounded-2xl md:flex-row">
                 {/* Left Side */}
                 <div className="w-full md:w-1/2 flex flex-col justify-center items-center font-hero mb-8 md:mb-0">
                     <div className="flex flex-col space-y-4 md:space-y-6 max-w-sm md:max-w-none ">

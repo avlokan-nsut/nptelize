@@ -1,4 +1,5 @@
 import { FaArrowRight } from "react-icons/fa"
+import { Link } from "react-router-dom"
 
 
 const Team = () => {
@@ -11,11 +12,18 @@ const Team = () => {
                     <span className='font-bold italic'>AVLOKAN</span>
                 </div>
                 <div className="w-full flex justify-center items-center text-white mt-12 ">
-                    <button className="bg-gradient-to-r from-white via-blue-200 to-blue-500
- text-black py-2 px-12 md:px-24 rounded-2xl text-xl flex items-center gap-2 font-semibold shadow-lg hover:shadow-xl transition-shadow border border-black">
 
-                        Check Now <FaArrowRight />
-                    </button>
+                    <Link to="/developers">
+                        <button
+                            className="bg-gradient-to-r from-white via-blue-200 to-blue-500
+                   text-black py-2 px-6 md:px-12 rounded-2xl text-lg md:text-xl
+                   flex items-center gap-2 font-semibold shadow-lg
+                   hover:shadow-xl transition-shadow border border-black"
+                        >
+                            Check Now <FaArrowRight />
+                        </button>
+                    </Link>
+
                 </div>
             </section>
         </>
