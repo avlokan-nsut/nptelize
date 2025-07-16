@@ -1,6 +1,12 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
 @import "tailwindcss";
 @plugin "daisyui" {
   themes: light --default , corporate;
+}
+
+@theme{
+  --font-hero:"Inter", sans-serif ;
+
 }
 
 
@@ -87,3 +93,40 @@
 .animate-fade-in {
   animation: fade-in 0.8s ease-out forwards;
 }
+
+@keyframes scroll-left {
+  0% {
+    transform: translateX(-50%);
+  }
+  100% {
+    transform: translateX(0%);
+  }
+}
+
+@keyframes scroll-right {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-scroll-left {
+  animation: scroll-left 20s linear infinite;
+}
+
+.animate-scroll-right {
+  animation: scroll-right 20s linear infinite;
+}
+
+@media (max-width: 640px) {
+  .animate-scroll-left {
+    animation: scroll-left 7s linear infinite;
+  }
+
+  .animate-scroll-right {
+    animation: scroll-right 7s linear infinite;
+  }
+}
+
