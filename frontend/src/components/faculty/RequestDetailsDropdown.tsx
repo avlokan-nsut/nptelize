@@ -14,36 +14,6 @@ interface RequestDetailsDropdownProps {
   onClose: () => void;
 }
 
-// Helper to format date
-const formatDate = (dateString: string) => {
-  if (dateString == null || dateString == undefined) {
-    return "";
-  }
-  const date = new Date(dateString);
-  const istOffset = 5.5 * 60 * 60 * 1000;
-  const istDate = new Date(date.getTime() + istOffset);
-  return istDate.toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
-};
-
-// Helper to get status badge
-const getStatusBadge = (status: string) => {
-  switch (status) {
-    case "completed":
-      return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Completed</span>;
-    case "rejected":
-      return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">Rejected</span>;
-    case "no_certificate":
-      return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-sky-100 text-fuchsia-800">No Certificate</span>;
-    case "under_review":
-      return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">Under Review</span>;
-    default:
-      return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">Pending</span>;
-  }
-};
 
 const RequestDetailsDropdown = ({ request, colSpan, subjectId, onClose }: RequestDetailsDropdownProps) => {
   const queryClient = useQueryClient();
@@ -103,23 +73,6 @@ const RequestDetailsDropdown = ({ request, colSpan, subjectId, onClose }: Reques
     }
   };
 
-  // Create a mapping for student information fields
-  const studentInfoFields = [
-    { label: "Name", value: request.student.name },
-    { label: "Roll Number", value: request.student.roll_number },
-    { label: "Email", value: request.student.email, className: "text-sm" },
-    { label: "Status", value: getStatusBadge(request.status) },
-    { label: "Due Date", value: formatDate(request.due_date) },
-  ];
-
-  // Create a mapping for subject information fields
-  const subjectInfoFields = [
-    { label: "Subject", value: request.subject.name },
-    { label: "Subject Code", value: request.subject.subject_code },
-    { label: "NPTEL Code", value: request.subject.nptel_course_code },
-    { label: "Current Marks", value: request.verified_total_marks || 'Not set', className: "badge badge-outline" },
-  ];
-
   // Create a mapping for certificate field labels
   const certificateFields = [
     { key: "student_name", label: "Name" },
@@ -129,18 +82,53 @@ const RequestDetailsDropdown = ({ request, colSpan, subjectId, onClose }: Reques
   ];
 
   // Function to render certificate details section
-  const renderCertificateDetails = (certificate: any, title: string) => {
-    if (!certificate) return null;
-    
+  const renderCertificateDetails = (certificate: any, title: string, isEmpty: boolean = false,isNptel:boolean) => {
     return (
-      <div className="space-y-2">
-        <h4 className="font-medium text-gray-700">{title}</h4>
-        <div className="text-sm space-y-1">
-          {certificateFields.map((field, index) => (
-            <div key={index}>
-              <strong>{field.label}:</strong> {certificate[field.key] || 'N/A'}
+      <div className="card bg-base-100 shadow-sm border border-gray-200 h-full">
+        <div className="card-body p-4">
+          <h4 className={`card-title text-base font-medium mb-3 ${isNptel ? "text-blue-600" : "text-purple-800"}`}>{title}</h4>
+          {isEmpty ? (
+            <div className="flex items-center justify-center h-32 text-gray-500">
+              <div className="text-center">
+                <FaInfoCircle className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">No certificate available</p>
+              </div>
             </div>
-          ))}
+          ) : (
+            <div className="space-y-3">
+              {certificateFields.map((field, index) => (
+                <div key={index} className="flex flex-col">
+                  <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">{field.label}</span>
+                  <span className="text-sm text-gray-900 mt-1">{certificate[field.key] || 'N/A'}</span>
+                </div>
+              ))}
+              {certificate.file_url && isNptel && (
+                <div className="pt-2 border-t border-gray-100">
+                  <a 
+                    href={certificate.file_url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="btn btn-outline btn-sm w-full"
+                  >
+                    {isNptel ? "View NPTEL certificate" : "View uploaded certificate" }
+                  </a>
+                </div>
+              )}
+
+              {certificate.file_url && !isNptel && (
+                <div className="pt-2 border-t border-gray-100">
+                  <a 
+                    href={`${apiUrl}/user/certificate/file/${request.id}.pdf?download=false`} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="btn btn-outline btn-sm w-full"
+                  >
+                    {isNptel ? "View NPTEL certificate" : "View uploaded certificate" }
+                  </a>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     );
@@ -151,63 +139,116 @@ const RequestDetailsDropdown = ({ request, colSpan, subjectId, onClose }: Reques
       <td colSpan={colSpan} className="px-0 py-0">
         <div className="bg-base-100 border-t border-gray-200">
           <div className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Student Information */}
-              <div className="card bg-base-100 shadow-sm">
+            {/* Three Card Layout */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Card 1: Student & Subject Information */}
+              <div className="card bg-base-100 shadow-sm border border-gray-200">
                 <div className="card-body p-4">
-                  <h3 className="card-title text-lg text-primary">Student Information</h3>
-                  <div className="space-y-2">
-                    {studentInfoFields.map((field, index) => (
-                      <div key={index} className="flex justify-between">
-                        <span className="font-medium">{field.label}:</span>
-                        <span className={field.className}>{field.value}</span>
+                  <h3 className="card-title text-base font-medium text-green-600 mb-3">University Information</h3>
+                  <div className="space-y-4">
+                    {/* Student Info Section */}
+                    <div>
+                      <h5 className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Student Details</h5>
+                      <div className="space-y-2">
+                        <div className="flex flex-col">
+                          <span className="text-xs text-gray-500">Name</span>
+                          <span className="text-sm text-gray-900">{request.student.name}</span>
+                        </div>
                       </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Subject Information */}
-              <div className="card bg-base-100 shadow-sm">
-                <div className="card-body p-4">
-                  <h3 className="card-title text-lg text-secondary">Subject Information</h3>
-                  <div className="space-y-2">
-                    {subjectInfoFields.map((field, index) => (
-                      <div key={index} className="flex justify-between">
-                        <span className="font-medium">{field.label}:</span>
-                        <span className={field.className}>{field.value}</span>
+                    </div>
+                    
+                    {/* Subject Info Section */}
+                    <div className="pt-3 border-t border-gray-100">
+                      <h5 className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Course Details</h5>
+                      <div className="space-y-2">
+                        <div className="flex flex-col">
+                          <span className="text-xs text-gray-500">Course</span>
+                          <span className="text-sm text-gray-900">{request.subject.name}</span>
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-xs text-gray-500">NPTEL Course Code</span>
+                          <span className="text-sm text-gray-900">{request.subject.nptel_course_code}</span>
+                        </div>
                       </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Certificate Information */}
-            <div className="card bg-base-100 shadow-sm mt-6">
-              <div className="card-body p-4">
-                <h3 className="card-title text-lg text-accent">Certificate Details</h3>
-                {certLoading ? (
-                  <div className="flex items-center gap-2 text-gray-500"><span className="loading loading-spinner loading-sm"></span>Loading certificate details...</div>
-                ) : certData?.data ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {renderCertificateDetails(certData.data.uploaded_certificate, "Uploaded Certificate")}
-                    {certData.data.verification_certificate && 
-                      renderCertificateDetails(certData.data.verification_certificate, "Verification Certificate")}
-                    <div className="md:col-span-2 mt-2">
-                      <div><strong>Remark:</strong> <span className="text-gray-600">{certData.data.remark || 'No remarks'}</span></div>
                     </div>
                   </div>
-                ) : (
-                  <div className="alert"><FaInfoCircle className="w-6 h-6" /><span>No certificate uploaded yet. Current marks: {request.verified_total_marks || 'Not set'}</span></div>
-                )}
+                </div>
               </div>
+
+              {/* Card 2: Uploaded Certificate */}
+              {certLoading ? (
+                <div className="card bg-base-100 shadow-sm border border-gray-200">
+                  <div className="card-body p-4 flex items-center justify-center">
+                    <div className="text-center">
+                      <span className="loading loading-spinner loading-md"></span>
+                      <p className="text-sm text-gray-500 mt-2">Loading uploaded certificate details...</p>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                renderCertificateDetails(
+                  certData?.data?.uploaded_certificate, 
+                  "Uploaded Certificate",
+                  !certData?.data?.uploaded_certificate,
+                  false
+
+                )
+              )}
+
+              {/* Card 3: Verification Certificate */}
+              {certLoading ? (
+                <div className="card bg-base-100 shadow-sm border border-gray-200">
+                  <div className="card-body p-4 flex items-center justify-center">
+                    <div className="text-center">
+                      <span className="loading loading-spinner loading-md"></span>
+                      <p className="text-sm text-gray-500 mt-2">Loading NPTEL certificate details...</p>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                renderCertificateDetails(
+                  certData?.data?.verification_certificate, 
+                  "NPTEL Information",
+                  !certData?.data?.verification_certificate,
+                  true
+                )
+              )}
             </div>
+
+            {/* Remark Section (if available) */}
+            {certData?.data && (
+              <div className="card bg-base-100 shadow-sm border border-gray-200 mt-6">
+                <div className="card-body p-4">
+                  <h4 className="card-title text-base font-medium text-purple-600 mb-2">Mismatched Information</h4>
+                  <p className="text-[16px] text-gray-600">{certData.data.uploaded_certificate.student_name!==certData.data.verification_certificate.student_name  || certData.data.verification_certificate.student_name!== request.student.name ? "Student Name" : ""}</p>
+
+                  <p className="text-[16px]  text-gray-600">{certData.data.uploaded_certificate.marks!==certData.data.verification_certificate.marks  ? "Marks" : ""}</p>
+
+                  <p className="text-[16px]  text-gray-600">{certData.data.uploaded_certificate.course_name!==certData.data.verification_certificate.course_name || request.subject.name!==certData.data.verification_certificate.course_name  ? "Course Name" : ""}</p>
+                  
+                </div>
+              </div>
+            )}
+
+            {certData?.data?.remark && (
+              <div className="card bg-base-100 shadow-sm border border-gray-200 mt-6">
+                <div className="card-body p-4">
+                  <h4 className="card-title text-base font-medium text-purple-600 mb-2">Remarks</h4>
+                  <p className="text-sm text-gray-600">{certData.data.remark}</p>
+                </div>
+              </div>
+            )}
 
             {/* Action Buttons */}
             <div className="flex gap-3 justify-end mt-6 pt-4 border-t border-gray-200">
-              <button onClick={handleReject} className="btn btn-error btn-sm gap-2 text-white"><FaTimes className="w-4 h-4 text-white" />Reject</button>
-              <button onClick={handleAccept} className="btn btn-success btn-sm gap-2 text-white"><FaCheck className="w-4 h-4 text-white" />Accept</button>
+              <button onClick={handleReject} className="btn btn-error btn-sm gap-2 text-white">
+                <FaTimes className="w-4 h-4 text-white" />
+                Reject
+              </button>
+              <button onClick={handleAccept} className="btn btn-success btn-sm gap-2 text-white">
+                <FaCheck className="w-4 h-4 text-white" />
+                Accept
+              </button>
             </div>
           </div>
         </div>
