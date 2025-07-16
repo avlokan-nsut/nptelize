@@ -7,7 +7,6 @@ import {
   RouterProvider,
 } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import App from "./App";
 import "./index.css";
 import Layout from "./Layout";
 import LoginForm from "./components/LoginForm";
@@ -24,6 +23,7 @@ import ReportSection from "./components/faculty/ReportSection";
 import RejectedVerification from "./components/faculty/RejectedVerification";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import LandingApp from "./components/new-landing/LandingApp";
 
 const queryClient = new QueryClient();
 
@@ -46,7 +46,7 @@ const routes = createBrowserRouter(
           </PublicRoute>
         }
       />
-      <Route index element={<App />} />
+      <Route index element={<LandingApp />} />
 
       {/* Protected Routes */}
 
