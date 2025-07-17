@@ -51,9 +51,16 @@ const fetchData = async () => {
       },
     }
   );
-
-
-  return data;
+ const sortedRequests = data.requests.sort((a, b) => {
+    const dateA = new Date(a.due_date);
+    const dateB = new Date(b.due_date);
+    return dateA.getTime() - dateB.getTime();
+  });
+  
+  return {
+    ...data,
+    requests: sortedRequests
+  };
 };
 
 function formatDateOnly(isoString: string): string {

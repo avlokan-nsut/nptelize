@@ -56,8 +56,16 @@ const Hero = () => {
 
 
                     <div className="pt-10 w-full flex justify-center lg:pt-20">
-                        <div className="backdrop-blur-md bg-white/10 border-2 border-black rounded-xl p-1">
-                            <img src="/landing/hero.png" className="rounded-lg" />
+                        <div className="backdrop-blur-md bg-white/10 border-2 border-black rounded-xl p-1 max-w-4xl w-full">
+                            <div className="aspect-[18/10] w-full relative">
+                                <img 
+                                    src="/landing/hero.avif" 
+                                    loading="eager"
+                                    fetchPriority="high"
+                                    className="rounded-lg w-full h-full object-cover absolute inset-0"
+                                    alt="Hero illustration"
+                                />
+                            </div>
                         </div>
                     </div>
 

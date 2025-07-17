@@ -15,7 +15,7 @@ const headings = [
   "Due Date",
   "Total Marks",
   "Actions",
-  "",
+  "File URL",
 ];
 
 export type Student = {
@@ -532,7 +532,7 @@ const StudentStatus = function () {
                     {paginationData.currentPageData.length > 0 ? (
                       paginationData.currentPageData.map((request) => (
                         <>
-                          {(request.status === "under_review") ? (
+                          {(request.status !== "pending") ? (
                             // Accordion rows for pending/under_review requests
                             <>
                               <tr 
@@ -565,6 +565,35 @@ const StudentStatus = function () {
                                     className={`w-4 h-4 transition-transform mx-auto ${openDropdownId === request.id ? 'rotate-90' : ''}`} 
                                   />
                                 </td>
+                                <td className="px-6 py-4 text-center whitespace-nowrap text-gray-700">
+                                
+                                  <div>
+                                    <div className=" text-black py-2 rounded-md shadow-md transition-all duration-300 transform hover:scale-105 hover:bg-black hover:text-white">
+                                      <a
+                                        href={`${apiUrl}/user/certificate/file/${request.id}.pdf?download=false`}
+                                        target="_blank"
+                                        className="flex items-center justify-center font-medium"
+                                      >
+                                        <svg
+                                          xmlns="http://www.w3.org/2000/svg"
+                                          className="h-5 w-5"
+                                          fill="none"
+                                          viewBox="0 0 24 24"
+                                          stroke="currentColor"
+                                        >
+                                          <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth={2}
+                                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                                          />
+                                        </svg>
+                                      </a>
+                                    </div>
+                                  </div>
+                                
+                                
+                              </td>
                               </tr>
                               {openDropdownId === request.id && (
                                 <RequestDetailsDropdown 
@@ -600,35 +629,6 @@ const StudentStatus = function () {
                               </td>
                               <td className="px-6 py-4 text-center whitespace-nowrap text-gray-700">
                                 {request.verified_total_marks}
-                              </td>
-                              <td className="px-6 py-4 text-center whitespace-nowrap text-gray-700">
-                                
-                                  <div>
-                                    <div className=" text-black py-2 rounded-md shadow-md transition-all duration-300 transform hover:scale-105 hover:bg-black hover:text-white">
-                                      <a
-                                        href={`${apiUrl}/user/certificate/file/${request.id}.pdf?download=false`}
-                                        target="_blank"
-                                        className="flex items-center justify-center font-medium"
-                                      >
-                                        <svg
-                                          xmlns="http://www.w3.org/2000/svg"
-                                          className="h-5 w-5"
-                                          fill="none"
-                                          viewBox="0 0 24 24"
-                                          stroke="currentColor"
-                                        >
-                                          <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth={2}
-                                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                                          />
-                                        </svg>
-                                      </a>
-                                    </div>
-                                  </div>
-                                
-                                
                               </td>
       
                             </tr>
