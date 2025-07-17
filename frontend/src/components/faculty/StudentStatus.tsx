@@ -1,7 +1,7 @@
-import { FaArrowLeft, FaDownload, FaChevronRight} from "react-icons/fa";
+import { FaArrowLeft, FaDownload, FaChevronRight } from "react-icons/fa";
 import { Link, useParams, useLocation } from "react-router-dom";
 import axios from "axios";
-import { useQuery} from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useState, useMemo } from "react";
 import Pagination from "./Pagination";
 import SearchBar from "./SearchBar";
@@ -50,11 +50,11 @@ export type ApiResponse = {
 const apiUrl = import.meta.env.VITE_API_URL;
 
 const StudentStatus = function () {
-  
+
   const { subjectCode: urlSubjectCode } = useParams<{ subjectCode: string }>();
   const location = useLocation();
   const subjectCode = urlSubjectCode;
-  const subjectId = location.state?.subjectId; 
+  const subjectId = location.state?.subjectId;
   const subjectName = location.state?.subjectName;
   const [searchTerm, setSearchTerm] = useState("");
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
@@ -65,11 +65,11 @@ const StudentStatus = function () {
 
   // Filter state
   const [statusFilter, setStatusFilter] = useState<
-    "all" | "pending" | "completed" | "rejected" | "duplicate" | "no_certificate" |"under_review"
+    "all" | "pending" | "completed" | "rejected" | "duplicate" | "no_certificate" | "under_review"
   >("all");
 
   const fetchData = async () => {
-    
+
 
     const { data } = await axios.get<ApiResponse>(
       `${apiUrl}/teacher/subject/requests/${subjectId}`,
@@ -103,7 +103,7 @@ const StudentStatus = function () {
         rejectedCount: 0,
         duplicateNamesCount: 0,
         noCertificateCount: 0,
-        under_review : 0,
+        under_review: 0,
       };
     }
 
@@ -145,8 +145,8 @@ const StudentStatus = function () {
         return nameCount.get(name)! > 1;
       });
 
-       filteredRequests.sort((a, b) => 
-    a.student.name.toLowerCase().trim().localeCompare(b.student.name.toLowerCase().trim())
+      filteredRequests.sort((a, b) =>
+        a.student.name.toLowerCase().trim().localeCompare(b.student.name.toLowerCase().trim())
       );
 
     } else if (statusFilter === "all") {
@@ -287,8 +287,7 @@ const StudentStatus = function () {
         link.setAttribute("href", url);
         link.setAttribute(
           "download",
-          `${subjectCode}_students_${statusFilter}_${
-            new Date().toISOString().split("T")[0]
+          `${subjectCode}_students_${statusFilter}_${new Date().toISOString().split("T")[0]
           }.csv`
         );
         link.style.visibility = "hidden";
@@ -318,16 +317,16 @@ const StudentStatus = function () {
             Rejected
           </span>
         );
-        
+
       case "no_certificate":
         return (
           <span className="px-2 py-1 text-xs font-semibold rounded-full bg-sky-100 text-fuchsia-800">
-  No Certificate
-</span>
+            No Certificate
+          </span>
         );
 
-       case "under_review":
-         return (  
+      case "under_review":
+        return (
           <span className="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
             Under Review
           </span>
@@ -343,7 +342,7 @@ const StudentStatus = function () {
   };
 
 
-  
+
 
   return (
     <>
@@ -424,71 +423,64 @@ const StudentStatus = function () {
             <div className="flex flex-wrap gap-2">
               <button
                 onClick={() => handleFilterChange("all")}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  statusFilter === "all"
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${statusFilter === "all"
                     ? "bg-blue-600 text-white"
                     : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
-                }`}
+                  }`}
               >
                 All ({statisticsAndFilteredData.totalRequests})
               </button>
               <button
                 onClick={() => handleFilterChange("pending")}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  statusFilter === "pending"
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${statusFilter === "pending"
                     ? "bg-yellow-600 text-white"
                     : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
-                }`}
+                  }`}
               >
                 Pending ({statisticsAndFilteredData.pendingCount})
               </button>
               <button
                 onClick={() => handleFilterChange("completed")}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  statusFilter === "completed"
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${statusFilter === "completed"
                     ? "bg-green-600 text-white"
                     : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
-                }`}
+                  }`}
               >
                 Completed ({statisticsAndFilteredData.completedCount})
               </button>
               <button
                 onClick={() => handleFilterChange("rejected")}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  statusFilter === "rejected"
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${statusFilter === "rejected"
                     ? "bg-red-600 text-white"
                     : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
-                }`}
+                  }`}
               >
                 Rejected ({statisticsAndFilteredData.rejectedCount})
               </button>
               <button
                 onClick={() => handleFilterChange("no_certificate")}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  statusFilter === "no_certificate"
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${statusFilter === "no_certificate"
                     ? "bg-fuchsia-600 text-white"
                     : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
-                }`}
+                  }`}
               >
                 No Certificate ({statisticsAndFilteredData.noCertificateCount})
               </button>
               <button
                 onClick={() => handleFilterChange("duplicate")}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  statusFilter === "duplicate"
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${statusFilter === "duplicate"
                     ? "bg-black text-white"
                     : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
-                }`}
+                  }`}
               >
                 Duplicate ({statisticsAndFilteredData.duplicateNamesCount})
               </button>
               <button
                 onClick={() => handleFilterChange("under_review")}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  statusFilter === "under_review"
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${statusFilter === "under_review"
                     ? "bg-yellow-500 text-white"
                     : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
-                }`}
+                  }`}
               >
                 Under Review ({statisticsAndFilteredData.under_review})
               </button>
@@ -535,10 +527,10 @@ const StudentStatus = function () {
                           {(request.status !== "pending") ? (
                             // Accordion rows for pending/under_review requests
                             <>
-                              <tr 
+                              <tr
                                 key={request.student.id}
                                 className="hover:bg-gray-50 transition-colors duration-150 cursor-pointer"
-                                onClick={() => setOpenDropdownId(openDropdownId === request.id ? null : request.id)}
+
                               >
                                 <td className="px-6 py-4 whitespace-nowrap">
                                   <div className="font-medium text-gray-900">
@@ -561,12 +553,18 @@ const StudentStatus = function () {
                                   {request.verified_total_marks}
                                 </td>
                                 <td className="px-6 py-4 text-center whitespace-nowrap">
-                                  <FaChevronRight 
-                                    className={`w-4 h-4 transition-transform mx-auto ${openDropdownId === request.id ? 'rotate-90' : ''}`} 
-                                  />
+                                  <button
+                                    onClick={() => setOpenDropdownId(openDropdownId === request.id ? null : request.id)}
+                                    className="shadow-md px-5 py-2 rounded-lg transition-all duration-300 transform hover:scale-105 hover:bg-black hover:text-white hover:cursor-pointer"
+                                  >
+                                    <FaChevronRight
+                                      className={`w-4 h-4 transition-transform mx-auto ${openDropdownId === request.id ? 'rotate-90' : ''}`}
+                                    />
+                                  </button>
                                 </td>
+
                                 <td className="px-6 py-4 text-center whitespace-nowrap text-gray-700">
-                                
+
                                   <div>
                                     <div className=" text-black py-2 rounded-md shadow-md transition-all duration-300 transform hover:scale-105 hover:bg-black hover:text-white">
                                       <a
@@ -591,12 +589,12 @@ const StudentStatus = function () {
                                       </a>
                                     </div>
                                   </div>
-                                
-                                
-                              </td>
+
+
+                                </td>
                               </tr>
                               {openDropdownId === request.id && (
-                                <RequestDetailsDropdown 
+                                <RequestDetailsDropdown
                                   request={request}
                                   colSpan={headings.length}
                                   subjectId={subjectId}
@@ -630,7 +628,7 @@ const StudentStatus = function () {
                               <td className="px-6 py-4 text-center whitespace-nowrap text-gray-700">
                                 {request.verified_total_marks}
                               </td>
-      
+
                             </tr>
                           )}
                         </>
@@ -668,4 +666,3 @@ const StudentStatus = function () {
 };
 
 export default StudentStatus;
-                                         
