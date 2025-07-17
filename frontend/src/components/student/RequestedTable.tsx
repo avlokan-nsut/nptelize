@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import axios, { isAxiosError } from "axios";
 import { useState } from "react";
 import AlertDialog from "./AlertDialog";
+import { toast } from "react-toastify";
 
 const headings = [
   "Subject Code",
@@ -72,7 +73,17 @@ const fetchData = async () => {
       },
     }
   );
-  return data;
+  const sortedRequests = data.requests.sort((a, b) => {
+    const dateA = new Date(a.due_date);
+    const dateB = new Date(b.due_date);
+    return dateA.getTime() - dateB.getTime();
+  });
+  
+  return {
+    ...data,
+    requests: sortedRequests
+  };
+
 };
 
 const RequestedTable = () => {
@@ -198,6 +209,8 @@ const RequestedTable = () => {
         [requestId]: null,
       }));
 
+      toast.success("Certificate uploaded successfully!")
+
       // Refresh the data to show updated status
       refetch();
     } catch (error) {
@@ -213,6 +226,14 @@ const RequestedTable = () => {
           message: `${errorMessage}`,
         },
       }));
+
+      if(errorMessage==="Student name mismatch - under review"){
+        toast.error(`${errorMessage}. Please check history tab!`)
+      }
+      else{
+        toast.error(`${errorMessage}`)
+      }
+      
     } finally {
       // Clear loading state
       setUploadLoading((prev) => ({
