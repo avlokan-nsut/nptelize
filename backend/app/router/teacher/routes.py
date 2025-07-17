@@ -345,7 +345,7 @@ def reject_certificate_under_review(
     if db_request.status == RequestStatus.pending:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Cannot reject request with status. Requests with 'pending' status cannot be rejected."
+            detail=f"Requests with 'pending' status cannot be rejected."
         )
 
     # Get the associated certificate
