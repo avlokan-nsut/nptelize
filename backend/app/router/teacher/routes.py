@@ -341,7 +341,7 @@ def reject_certificate_under_review(
             detail="Request not found or you are not authorized to access this request"
         )
 
-    # Check if the request is in under_review status
+    # Check if the request is in pending status
     if db_request.status == RequestStatus.pending:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
