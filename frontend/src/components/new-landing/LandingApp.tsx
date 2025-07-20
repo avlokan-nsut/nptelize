@@ -19,16 +19,25 @@ const LandingApp: React.FC = () => {
     checkSession();
   }, [checkSession]);
 
-  useEffect(()=>{
+  useEffect(() => {
     const lenis = new Lenis();
-    function raf(time:any){
+
+    // Declare the function reference that will be used for the animation loop
+    let rafId: number;
+
+    function raf(time: number) {
       lenis.raf(time);
-      requestAnimationFrame(raf);
+      rafId = requestAnimationFrame(raf); // Store the ID returned from each call
     }
 
-    requestAnimationFrame(raf);
+    // Start the animation loop
+    rafId = requestAnimationFrame(raf);
 
-  },[])
+    return () => {
+      cancelAnimationFrame(rafId);
+      lenis.destroy();
+    };
+  }, []);
 
 
 
@@ -36,11 +45,11 @@ const LandingApp: React.FC = () => {
     <div className="min-h-screen flex flex-col">
       <main className='flex-grow font-hero'>
         <Background />
-        <Hero/>
-        <Counter/>
-        <Features/>
-        <Testimonials/>
-        <Team/>
+        <Hero />
+        <Counter />
+        <Features />
+        <Testimonials />
+        <Team />
       </main>
       <Footer />
     </div>
