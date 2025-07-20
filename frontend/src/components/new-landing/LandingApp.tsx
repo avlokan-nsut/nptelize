@@ -8,6 +8,7 @@ import Counter from './Counter';
 import Features from './Features';
 import Testimonials from './Testimonials';
 import Team from './Team';
+import Lenis from 'lenis'
 
 const LandingApp: React.FC = () => {
 
@@ -17,6 +18,19 @@ const LandingApp: React.FC = () => {
 
     checkSession();
   }, [checkSession]);
+
+  useEffect(()=>{
+    const lenis = new Lenis();
+    function raf(time:any){
+      lenis.raf(time);
+      requestAnimationFrame(raf);
+    }
+
+    requestAnimationFrame(raf);
+
+  },[])
+
+
 
   return (
     <div className="min-h-screen flex flex-col">
