@@ -3,6 +3,7 @@ import axios, { isAxiosError } from "axios";
 import { useState } from "react";
 import AlertDialog from "./AlertDialog";
 import { toast } from "react-toastify";
+import TableSkeleton from "../ui/TableSkeleton";
 
 const headings = [
   "Subject Code",
@@ -274,6 +275,7 @@ const RequestedTable = () => {
               message: "Marked as no certificate successfully!",
             },
           }));
+          toast.success("Marked as no certificate successfully!")
           refetch();
         } else {
           setUploadStatus((prev) => ({
@@ -283,6 +285,7 @@ const RequestedTable = () => {
               message: "Failed to mark as no certificate",
             },
           }));
+          toast.error("Failed to mark as no certificate")
         }
       } catch (error) {
         
@@ -349,11 +352,7 @@ const RequestedTable = () => {
     );
   }
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center ">
-        <span className="loading loading-ring loading-xl"></span>
-      </div>
-    );
+    return <TableSkeleton rows={5} cols={7} className="max-w-7xl mx-auto" />;
   }
 
   if (data) {
@@ -383,7 +382,7 @@ const RequestedTable = () => {
                   <td className="px-6 py-4">{formatDateOnly(row.due_date)}</td>
                   <td className="px-6 py-4">
                     <div className="flex flex-col space-y-2">
-                      <div className="flex items-center space-x-2">
+                      <div className="flex flex-col mt-8 items-center space-x-2 space-y-4 md:flex-row md:space-y-0 md:mt-0">
                         <input
                           type="file"
                           accept=".pdf"
@@ -394,7 +393,7 @@ const RequestedTable = () => {
                             )
                           }
                           className="
-                            file-input file-input-sm w-[65%] max-w-xs text-sm
+                            file-input file-input-sm w-[130%] max-w-xs text-sm
                             file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0
                             file:text-sm file:bg-blue-50 file:text-blue-600
                             hover:file:bg-blue-100 cursor-pointer
@@ -440,12 +439,10 @@ const RequestedTable = () => {
                           {uploadStatus[row.request_id]?.message}
                         </div>
                       )}
-                      <div className="text-[10px] text-left text-gray-500">
-                        File Size should be less than 2 MB
-                      </div>
+                     
 
                       <div
-                        className="text-[12px] text-left text-gray-500 cursor-pointer hover:text-blue-600 hover:underline"
+                        className="text-[12px] font-bold text-center text-gray-500 cursor-pointer hover:text-blue-600 hover:underline md:text-left"
                         onClick={() => handleCertificateRequest(row.request_id, row.subject.name)}
                       >
                         Didn't receive your certificate?
