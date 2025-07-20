@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
+import TableSkeleton from "../ui/TableSkeleton";
 
 const headings = [
   "Subject Code",
@@ -142,11 +143,8 @@ const RequestedTable = () => {
     );
   }
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center ">
-        <span className="loading loading-ring loading-xl"></span>
-      </div>
-    );
+    return <TableSkeleton rows={5} cols={7} className="max-w-7xl mx-auto" />;
+    
   }
 
   if (data) {

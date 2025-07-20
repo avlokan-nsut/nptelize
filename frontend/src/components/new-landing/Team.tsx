@@ -18,7 +18,7 @@ const Team = () => {
                             className="bg-gradient-to-r from-white via-blue-200 to-blue-500
                    text-black py-2 px-6 md:px-12 rounded-2xl text-lg md:text-xl
                    flex items-center gap-2 font-semibold shadow-lg
-                   hover:shadow-xl transition-shadow border border-black"
+                   hover:shadow-xl transition-shadow border border-black hover:cursor-pointer"
                         >
                             Check Now <FaArrowRight />
                         </button>

@@ -51,7 +51,7 @@ const Hero = () => {
 
                     <div className="w-full max-w-md ">
                         {/* Log In form or button */}
-                        <button className="w-full bg-black text-white py-2 rounded-xl flex flex-row justify-center items-center" onClick={handleClick}>{user ?"Dashboard": "Log In"} <span className='ml-2'><FaArrowRight /></span></button>
+                        <button className="w-full bg-black text-white py-2 rounded-xl flex flex-row justify-center items-center hover:cursor-pointer transition-all duration-300 transform hover:scale-105 hover:shadow-md shadow-gray-500" onClick={handleClick}>{user ?"Dashboard": "Log In"} <span className='ml-2'><FaArrowRight /></span></button>
                     </div>
 
 
