@@ -42,7 +42,7 @@ const Counter = () => {
     return (
         <>
             <section className="w-full py-6 my-10 px-10 lg:px-24 md:py-20 md:mb-0 ">
-                <div className=" flex flex-col space-y-14 justify-between font-hero text-black  rounded-xl text-center text-[22px] font-medium md:flex-row md:space-y-0 ">
+                <div className=" flex flex-col space-y-14 justify-between font-hero text-black  rounded-xl text-center text-[22px] font-medium lg:flex-row ">
                     {counters.map((counter, index) => (
                         <div key={index}>
                             <GradientText
