@@ -22,7 +22,7 @@ const Hero = () => {
 
     return (
         <>
-            <section className="p-6 mt-16 flex flex-col items-center justify-center font-hero md:mt-24 ">
+            <section className="p-6 mt-16 flex flex-col items-center justify-center font-hero">
                 <div className='max-w-2xl flex flex-col items-center justify-center'>
                     <div className="text-center font-medium">
                         <h1 className="text-4xl md:text-5xl text-center leading-tight">
