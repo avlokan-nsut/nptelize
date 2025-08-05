@@ -51,7 +51,7 @@ disallow_untyped_decorators = false
 check_untyped_defs = true  # Still check typehinting inside the function body
 
 [[tool.mypy.overrides]]
-module = "alembic.*"
+module = "app.database.revisions.*"
 ignore_errors = true
 follow_imports = "skip"
 

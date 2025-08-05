@@ -10,7 +10,7 @@ from sqlalchemy.orm import joinedload
 
 from typing import Sequence
 
-from app.models import Request, RequestStatus, Certificate
+from app.database.models import Request, RequestStatus, Certificate
 
 logger = logging.getLogger(__name__)
 

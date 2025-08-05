@@ -5,11 +5,11 @@ from datetime import datetime
 from typing import List, Optional
 
 from cuid import cuid
-from sqlalchemy import Column, String, Enum, ForeignKey, Integer, Text, Boolean, DateTime
+from sqlalchemy import Column, String, Enum, ForeignKey, Integer, Text, Boolean, DateTime, PrimaryKeyConstraint
 from sqlalchemy.orm import relationship, Mapped
 from sqlalchemy.sql.expression import text
 
-from app.config.db import Base
+from app.database.core import Base
 
 
 class UserRole(enum.Enum):
@@ -104,3 +104,20 @@ class Certificate(Base):
 
     request: Mapped["Request"] = relationship("Request", back_populates="certificate")
     student: Mapped["User"] = relationship("User", back_populates="certificates")
+
+class Module(Base):
+    __tablename__ = "modules"
+
+    name = Column(String, primary_key=True)
+    roles: Mapped[List["Role"]] = relationship("Role", back_populates="modules")
+
+class Role(Base):
+    __tablename__ = "roles"
+
+    module_name = Column(String, ForeignKey("modules.name"), nullable=False)
+    name = Column(String, nullable=False)
+    module: Mapped["Module"] = relationship("Module", back_populates="roles")
+
+    __table_args__ = (
+        PrimaryKeyConstraint('module_name', 'name'),
+    )

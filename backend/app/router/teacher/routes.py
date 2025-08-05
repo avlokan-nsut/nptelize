@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, cast
 
 from app.config import config
-from app.config.db import get_db, get_async_db
+from app.database.core import get_db, get_async_db
 from app.oauth2 import get_current_teacher
 from app.schemas import TokenData, GenericResponse
 from app.router.teacher.schemas import (
@@ -19,7 +19,7 @@ from app.router.teacher.schemas import (
     CertificateResponse,
     UnsafeManualVerificationRequest
 )
-from app.models import User, UserRole, Subject, StudentSubject, Request, RequestStatus, Certificate
+from app.database.models import User, UserRole, Subject, StudentSubject, Request, RequestStatus, Certificate
 from app.services.log_service import setup_logger
 
 from app.services.utils.limiter import process_upload
@@ -234,7 +234,7 @@ async def get_stray_certificates(
     current_teacher: TokenData = Depends(get_current_teacher),
     db: AsyncSession = Depends(get_async_db)
 ):
-    from app.config.db import AsyncSessionLocal
+    from app.database.core import AsyncSessionLocal
     from app.services.cleanup import CleanupService
 
     cleanup_service = CleanupService(AsyncSessionLocal)

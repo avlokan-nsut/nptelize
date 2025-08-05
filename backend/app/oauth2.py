@@ -6,7 +6,7 @@ from fastapi import HTTPException, status, Request
 
 from app.config import config
 from app.schemas import TokenData
-from app.models import UserRole
+from app.database.models import UserRole
 
 JWT_SECRET_KEY = config['JWT_SECRET_KEY']
 ALGORITHM = config['ALGORITHM']
