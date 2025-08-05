@@ -4,8 +4,8 @@ from typing import List
 import os
 
 from app.config import config
-from app.config.db import get_db
-from app.models import User, RequestStatus, StudentSubject, Subject, Request, Certificate
+from app.database.core import get_db
+from app.database.models import User, RequestStatus, StudentSubject, Subject, Request, Certificate
 from app.router.student.schemas import CertificateRequestResponse, StudentSubjectsResponse, CertificateResponse
 from app.schemas import TokenData, GenericResponse
 from app.services.verifier import Verifier

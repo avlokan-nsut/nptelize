@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from typing import Tuple, Optional, cast, Dict
 
 from app.config import config
-from app.models import Request, RequestStatus, Certificate
+from app.database.models import Request, RequestStatus, Certificate
 from app.services.log_service import setup_logger
 
 from .utils.qr_extraction import extract_link

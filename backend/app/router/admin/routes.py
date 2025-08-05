@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from app.config.db import get_db
-from app.models import UserRole, User, Subject, StudentSubject
+from app.database.core import get_db
+from app.database.models import UserRole, User, Subject, StudentSubject
 from app.oauth2 import get_current_admin
 from app.router.admin.schemas import StudentCreate, TeacherCreate, AdminCreate, CreateUserResponse, SubjectCreate, CreateSubjectResponse, AddStudentToSubjectSchema
 from app.schemas import TokenData, GenericResponse

@@ -2,7 +2,7 @@ from datetime import datetime
 from pydantic import BaseModel, EmailStr
 from typing import Optional
 
-from app.models import UserRole, RequestStatus
+from app.database.models import UserRole, RequestStatus
 
 class TokenData(BaseModel):
     user_id: str

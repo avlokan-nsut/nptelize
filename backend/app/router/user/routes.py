@@ -3,8 +3,8 @@ from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
 from app.config import config
-from app.config.db import get_db
-from app.models import User, UserRole
+from app.database.core import get_db
+from app.database.models import User, UserRole
 from app.router.user.schemas import LoginRequest, LoginResponse, UserInfoResponse
 from app.oauth2 import create_access_token, get_current_user_role_agnostic
 from app.schemas import TokenData
