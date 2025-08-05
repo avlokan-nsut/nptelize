@@ -36,6 +36,17 @@ class User(Base):
     requests_received: Mapped[List["Request"]] = relationship("Request", foreign_keys='Request.student_id', back_populates="student")
     certificates: Mapped[List["Certificate"]] = relationship("Certificate", back_populates="student")
 
+    student_enrollments: Mapped[List["StudentSubject"]] = relationship(
+        "StudentSubject", 
+        foreign_keys="StudentSubject.student_id",
+        back_populates="student"
+    )
+    teacher_enrollments: Mapped[List["StudentSubject"]] = relationship(
+        "StudentSubject", 
+        foreign_keys="StudentSubject.teacher_id", 
+        back_populates="teacher"
+    )
+
 
 class Subject(Base):
     __tablename__ = "subjects"
@@ -56,8 +67,13 @@ class StudentSubject(Base):
 
     student_id = Column(String, ForeignKey("users.id"), nullable=False, primary_key=True)
     subject_id = Column(String, ForeignKey("subjects.id"), nullable=False, primary_key=True)
+    year = Column(Integer, nullable=False)
+    is_sem_odd = Column(Boolean, nullable=False)
+    teacher_id = Column(String, ForeignKey("users.id"), nullable=False)
 
     subject: Mapped["Subject"] = relationship("Subject", back_populates="enrolled_students")
+    teacher: Mapped["User"] = relationship("User", foreign_keys=[teacher_id], back_populates="teacher_enrollments")
+    student: Mapped["User"] = relationship("User", foreign_keys=[student_id], back_populates="student_enrollments")
 
 
 class RequestStatus(enum.Enum):
@@ -109,7 +125,7 @@ class Module(Base):
     __tablename__ = "modules"
 
     name = Column(String, primary_key=True)
-    roles: Mapped[List["Role"]] = relationship("Role", back_populates="modules")
+    roles: Mapped[List["Role"]] = relationship("Role", back_populates="module")
 
 class Role(Base):
     __tablename__ = "roles"
