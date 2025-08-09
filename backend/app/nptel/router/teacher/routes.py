@@ -1,6 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Body, Query, UploadFile
 
-from sqlalchemy import and_
 from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -29,6 +28,8 @@ from app.services.utils.extractor import extract_student_info_from_pdf
 from app.services.utils.qr_extraction import extract_link
 from app.services.verifier import Verifier, COURSE_NAME_SINGLE_LINE_CHARACTER_LIMIT
 
+from .service import get_teacher_alloted_subjects, get_student_requests_for_subject, get_students_of_a_subject_allotment
+
 logger = setup_logger(__name__)
 
 router = APIRouter(prefix="/teacher")
@@ -36,23 +37,25 @@ router = APIRouter(prefix="/teacher")
 CERTIFICATES_FOLDER_PATH = config['CERTIFICATES_FOLDER_PATH']
 logger.info(f"Certificates folder path: {CERTIFICATES_FOLDER_PATH}")
 
+
+def check_coordinator(current_teacher: TokenData = Depends(get_current_teacher)):
+    service_role_dict = current_teacher.service_role_dict
+    return 'nptel' in service_role_dict and 'coordinator' 
+    
 @router.get('/subjects', response_model=SubjectResponse)
 def get_alloted_subjects(
     year: int = Query(),
     sem: int = Query(),
     db: Session = Depends(get_db),
-    current_teacher: TokenData = Depends(get_current_teacher)
+    current_teacher: TokenData = Depends(get_current_teacher),
+    is_coordinator: bool = Depends(check_coordinator)
 ):
     is_sem_odd = bool(sem & 1)
 
-    allotments = db.query(TeacherSubjectAllotment).filter(
-        TeacherSubjectAllotment.year == year,
-        TeacherSubjectAllotment.is_sem_odd == is_sem_odd,
-        TeacherSubjectAllotment.teacher_id == current_teacher.user_id
-    )
+    subjects = get_teacher_alloted_subjects(db, current_teacher.user_id, year, is_sem_odd, is_coordinator)
     
     return {
-        'subjects': [allotment.subject for allotment in allotments]
+        'subjects': subjects
     }
 
 
@@ -62,22 +65,14 @@ def get_student_requests_for_a_subject(
     year: int = Query(),
     sem: int = Query(),
     db: Session = Depends(get_db), 
-    current_teacher: TokenData = Depends(get_current_teacher)
+    current_teacher: TokenData = Depends(get_current_teacher),
+    is_coordinator: bool = Depends(check_coordinator)
 ):
     is_sem_odd = bool(sem & 1)
     
-    enrollments = db.query(StudentSubjectEnrollment).filter(
-        StudentSubjectEnrollment.teacher_id == current_teacher.user_id,
-        StudentSubjectEnrollment.request.has(),
-        StudentSubjectEnrollment.teacher_subject_allotment.has(
-            and_(
-                TeacherSubjectAllotment.year == year,
-                TeacherSubjectAllotment.is_sem_odd == is_sem_odd,
-            )
-        )
-    ).all()
-
-    requests = [cast(Request, t.request) for t in enrollments]
+    requests = get_student_requests_for_subject(
+        db, current_teacher.user_id, subject_id, year, is_sem_odd, is_coordinator
+    )
 
     return {
         'requests': [
@@ -108,25 +103,19 @@ def get_student_requests_for_a_subject(
 
 
 @router.get('/students/{subject_id}', response_model=EnrolledStudentResponse)
-def get_students_in_subject(
+def get_students_enrolled_in_a_subject(
     subject_id: str,
     year: int = Query(),
     sem: int = Query(),
     db: Session = Depends(get_db),
-    current_teacher: TokenData = Depends(get_current_teacher)
+    current_teacher: TokenData = Depends(get_current_teacher),
+    is_coordinator: bool = Depends(check_coordinator)
 ):
-    is_sem_odd = sem & 1
+    is_sem_odd = bool(sem & 1)
 
-    enrollments = db.query(StudentSubjectEnrollment).filter(
-        StudentSubjectEnrollment.subject_id == subject_id,
-        StudentSubjectEnrollment.teacher_id == current_teacher.user_id,
-        StudentSubjectEnrollment.teacher_subject_allotment.has(
-            and_(
-                TeacherSubjectAllotment.year == year,
-                TeacherSubjectAllotment.is_sem_odd == is_sem_odd,
-            )
-        )
-    ).all()
+    enrollments = get_students_of_a_subject_allotment(
+        db, current_teacher.user_id, subject_id, year, is_sem_odd, is_coordinator
+    )
 
     if not enrollments:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Subject not found")
@@ -139,14 +128,15 @@ def get_students_in_subject(
 def get_request_info_by_id(
     request_id: str,
     db: Session = Depends(get_db),
-    current_teacher: TokenData = Depends(get_current_teacher)
+    current_teacher: TokenData = Depends(get_current_teacher),
+    is_coordinator: bool = Depends(check_coordinator)
 ):
     request = db.query(Request).filter(Request.id == request_id).first()
 
     if not request:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Request not found")
 
-    if request.student_subject_enrollment.teacher_id != current_teacher.user_id:
+    if not is_coordinator and request.student_subject_enrollment.teacher_subject_allotment.teacher_id != current_teacher.user_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You are not authorized to view this request")
     
     return {
@@ -169,6 +159,61 @@ def get_request_info_by_id(
             'due_date': request.due_date,
         }
     }
+
+
+@router.get('/certificate/details/{request_id}', response_model=CertificateResponse)
+async def get_verified_certificate_details(
+    request_id: str,
+    current_teacher = Depends(get_current_teacher),
+    db: Session = Depends(get_db),
+    is_coordinator: bool = Depends(check_coordinator)
+):
+    # Build query conditions conditionally
+    query = db.query(Request).filter(Request.id == request_id)
+    
+    if not is_coordinator:
+        query = query.filter(
+            Request.student_subject_enrollment.has(
+                StudentSubjectEnrollment.teacher_subject_allotment.has(
+                    TeacherSubjectAllotment.teacher_id == current_teacher.user_id
+                )
+            )
+        )
+    
+    db_request = query.first()
+
+    if db_request is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Request not found")
+
+    db_certificate = db.query(Certificate).filter(
+        Certificate.request_id == request_id,
+    ).first()
+
+    if db_certificate is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Verified certificate not found")
+
+    uploaded_file_path = f"{CERTIFICATES_FOLDER_PATH}/{db_certificate.file_url}"
+    
+    verifier = Verifier(
+        cast(str, db_certificate.file_url), 
+        uploaded_file_path, 
+        request_id, 
+        cast(str,db_request.student_id), 
+        db,
+    )
+
+    certificate_data = await verifier.manual_verification(cast(str, db_request.student_subject_enrollment.teacher_subject_allotment.subject.name))
+
+    response =  {
+        "message": "Certificate details fetched successfully",
+        "data": {
+            **certificate_data, 
+            "subject_name": db_request.student_subject_enrollment.teacher_subject_allotment.subject.name,
+            "remark": db_certificate.remark
+        }
+    }
+    return response
+
 
 @router.post('/students/request', response_model=MakeCertificateRequestResponse)
 def make_certificate_request_to_student(
@@ -458,52 +503,3 @@ def verify_certificate_manual_unsafe(
     db.commit()
 
     return {'message': 'Certificate verified successfully'}
-
-
-@router.get('/certificate/details/{request_id}', response_model=CertificateResponse)
-async def get_verified_certificate_details(
-    request_id: str,
-    current_teacher = Depends(get_current_teacher),
-    db: Session = Depends(get_db)
-):
-    db_request = db.query(Request).filter(
-        Request.id == request_id,
-        # Request.teacher_id == current_teacher.user_id,
-        Request.student_subject_enrollment.has(
-            StudentSubjectEnrollment.teacher_subject_allotment.has(
-                TeacherSubjectAllotment.teacher_id == current_teacher.user_id
-            )
-        )
-    ).first()
-
-    if db_request is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Request not found")
-
-    db_certificate = db.query(Certificate).filter(
-        Certificate.request_id == request_id,
-    ).first()
-
-    if db_certificate is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Verified certificate not found")
-
-    uploaded_file_path = f"{CERTIFICATES_FOLDER_PATH}/{db_certificate.file_url}"
-    
-    verifier = Verifier(
-        cast(str, db_certificate.file_url), 
-        uploaded_file_path, 
-        request_id, 
-        cast(str,db_request.student_id), 
-        db,
-    )
-
-    certificate_data = await verifier.manual_verification(cast(str, db_request.student_subject_enrollment.teacher_subject_allotment.subject.name))
-
-    response =  {
-        "message": "Certificate details fetched successfully",
-        "data": {
-            **certificate_data, 
-            "subject_name": db_request.student_subject_enrollment.teacher_subject_allotment.subject.name,
-            "remark": db_certificate.remark
-        }
-    }
-    return response
