@@ -1,11 +1,11 @@
-from fastapi import APIRouter, Depends, Body, UploadFile, HTTPException, status
+from fastapi import APIRouter, Depends, Body, UploadFile, HTTPException, status, Query
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, cast
 import os
 
 from app.config import config
 from app.database.core import get_db
-from app.database.models import User, RequestStatus, StudentSubjectEnrollment, Subject, Request, Certificate
+from app.database.models import RequestStatus, StudentSubjectEnrollment, Request, Certificate
 from app.schemas import TokenData, GenericResponse
 from app.services.verifier import Verifier
 from app.services.utils.limiter import process_upload
@@ -25,29 +25,40 @@ CERTIFICATES_FOLDER_PATH = config['CERTIFICATES_FOLDER_PATH']
 @router.post('/requests', response_model=CertificateRequestResponse)
 def get_certificate_requests(
     request_types: List[RequestStatus] = Body(embed=True),
+    year: int = Query(),
+    sem: int = Query(),
     db: Session = Depends(get_db),
     current_student: TokenData = Depends(get_current_student),
 ):
     request_types = list(set(request_types))
     try: 
-        student = db.query(User).filter(User.id == current_student.user_id).one()
-        filtered_requests = filter(
-            lambda x: x.status in request_types,
-            student.requests_received
-        )
+
+        is_sem_odd = sem & 1
+        
+        enrollments = db.query(StudentSubjectEnrollment).filter(
+            StudentSubjectEnrollment.student_id == current_student.user_id,
+            StudentSubjectEnrollment.year == year, 
+            StudentSubjectEnrollment.is_sem_odd == is_sem_odd, 
+            StudentSubjectEnrollment.request.has()
+        ).all()
+
+        filtered_requests = [
+            cast(Request, t.request) 
+            for t in enrollments if cast(Request, t.request).status in request_types
+        ]
 
         return {
             'requests': [
                 {
                     'request_id': request.id,
                     'subject': {
-                        'id': request.subject.id,
-                        'name': request.subject.name,
-                        'code': request.subject.subject_code,
-                        'nptel_course_code': request.subject.nptel_course_code,
+                        'id': request.student_subject_enrollment.subject_id,
+                        'name': request.student_subject_enrollment.subject.name,
+                        'code': request.student_subject_enrollment.subject.subject_code,
+                        'nptel_course_code': request.student_subject_enrollment.subject.nptel_course_code,
                         'teacher': {
-                            'id': request.teacher.id,
-                            'name': request.teacher.name,
+                            'id': request.student_subject_enrollment.teacher_id,
+                            'name': request.student_subject_enrollment.teacher.name,
                         },
                     },
                     'verified_total_marks': request.certificate.verified_total_marks if request.certificate else None,
@@ -65,28 +76,34 @@ def get_certificate_requests(
 
 @router.get('/subjects', response_model=StudentSubjectsResponse)
 def get_student_subjects(
+    year: int = Query(),
+    sem: int = Query(),
     db: Session = Depends(get_db),
     current_student: TokenData = Depends(get_current_student),
 ):
+    
     try:
-        subjects = db.query(Subject).join(
-            StudentSubjectEnrollment,
-            Subject.id == StudentSubjectEnrollment.subject_id
-        ).filter(StudentSubjectEnrollment.student_id == current_student.user_id).all()
+        is_sem_odd = sem & 1
+        
+        enrollments = db.query(StudentSubjectEnrollment).filter(
+            StudentSubjectEnrollment.year == year,
+            StudentSubjectEnrollment.is_sem_odd == is_sem_odd,
+            StudentSubjectEnrollment.student_id == current_student.user_id 
+        ).all()
         
         return {
             'subjects': [
                 {
-                    'id': subject.id,
-                    'code': subject.subject_code,
-                    'nptel_course_code': subject.nptel_course_code,
-                    'name': subject.name,
+                    'id': enrollment.subject.id,
+                    'code': enrollment.subject.subject_code,
+                    'nptel_course_code': enrollment.subject.nptel_course_code,
+                    'name': enrollment.subject.name,
                     'teacher': {
-                        'id': subject.teacher.id,
-                        'name': subject.teacher.name,
+                        'id': enrollment.teacher.id,
+                        'name': enrollment.teacher.name,
                     }
                 }
-                for subject in subjects
+                for enrollment in enrollments 
             ]
         }
     except Exception as e:
