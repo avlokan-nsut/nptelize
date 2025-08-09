@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from typing import Tuple, Optional, cast, Dict
 
 from app.config import config
-from app.database.models import Request, RequestStatus, Certificate
+from app.database.models import Request, RequestStatus, Certificate, StudentSubjectEnrollment
 from app.services.log_service import setup_logger
 
 from .utils.qr_extraction import extract_link
@@ -31,7 +31,9 @@ class Verifier:
         # update db request status to processing
         db_request = self.db.query(Request).filter(
             Request.id == self.request_id,
-            Request.student_id == self.student_id
+            Request.student_subject_enrollment.has(
+                StudentSubjectEnrollment.student_id == self.student_id
+            )
         ).first()
 
         if not db_request:

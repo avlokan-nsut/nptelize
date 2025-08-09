@@ -41,12 +41,11 @@ class User(Base):
         foreign_keys="StudentSubjectEnrollment.student_id",
         back_populates="student"
     )
-    teacher_enrollments: Mapped[List["StudentSubjectEnrollment"]] = relationship(
-        "StudentSubjectEnrollment", 
-        foreign_keys="StudentSubjectEnrollment.teacher_id", 
+    teacher_allotments: Mapped[List["TeacherSubjectAllotment"]] = relationship(
+        "TeacherSubjectAllotment",
+        foreign_keys="TeacherSubjectAllotment.teacher_id",
         back_populates="teacher"
     )
-
     user_role_mappings: Mapped[Optional[List["UserRoleMapping"]]] = relationship("UserRoleMapping", back_populates="user")
 
 
@@ -61,7 +60,7 @@ class Subject(Base):
 
     teacher: Mapped["User"] = relationship("User", back_populates="subjects")
     requests: Mapped[List["Request"]] = relationship("Request", back_populates="subject", cascade="all, delete")
-    enrolled_students: Mapped[List["StudentSubjectEnrollment"]] = relationship("StudentSubjectEnrollment", back_populates="subject", cascade="all, delete")
+    teacher_allotments: Mapped[List["TeacherSubjectAllotment"]] = relationship("TeacherSubjectAllotment", back_populates="subject", cascade="all, delete")
 
 
 class StudentSubjectEnrollment(Base):
@@ -69,20 +68,41 @@ class StudentSubjectEnrollment(Base):
 
     id = Column(String, primary_key=True, default=cuid)
     student_id = Column(String, ForeignKey("users.id"), nullable=False)
-    subject_id = Column(String, ForeignKey("subjects.id"), nullable=False)
-    year = Column(Integer, nullable=False)
-    is_sem_odd = Column(Boolean, nullable=False)
-    teacher_id = Column(String, ForeignKey("users.id"), nullable=False)
+    teacher_subject_allotment_id = Column(String, ForeignKey("teacher_subject_allotments.id"), nullable=False)
 
-    subject: Mapped["Subject"] = relationship("Subject", back_populates="enrolled_students")
-    teacher: Mapped["User"] = relationship("User", foreign_keys=[teacher_id], back_populates="teacher_enrollments")
+    subject_id = Column(String, ForeignKey("subjects.id"), nullable=False)      # Deprecated
+    year = Column(Integer, nullable=False)                                      # Deprecated
+    is_sem_odd = Column(Boolean, nullable=False)                                # Deprecated
+    teacher_id = Column(String, ForeignKey("users.id"), nullable=False)         # Deprecated
+
     student: Mapped["User"] = relationship("User", foreign_keys=[student_id], back_populates="student_enrollments")
+    teacher_subject_allotment: Mapped["TeacherSubjectAllotment"] = relationship(
+        "TeacherSubjectAllotment", foreign_keys=[teacher_subject_allotment_id], back_populates="enrolled_students"
+    )
     
     # One-to-one relationship with Request
     request: Mapped[Optional["Request"]] = relationship("Request", back_populates="student_subject_enrollment", uselist=False)
 
     __table_args__ = (
         UniqueConstraint('student_id', 'subject_id', 'year', 'is_sem_odd'),
+    )
+
+
+class TeacherSubjectAllotment(Base):
+    __tablename__ = "teacher_subject_allotments"
+
+    id = Column(String, primary_key=True, default=cuid)
+    teacher_id = Column(String, ForeignKey("users.id"), nullable=False)
+    subject_id = Column(String, ForeignKey("subjects.id"), nullable=False)
+    year = Column(Integer, nullable=False)
+    is_sem_odd = Column(Boolean, nullable=False)
+
+    teacher: Mapped["User"] = relationship("User", foreign_keys=[teacher_id], back_populates="teacher_allotments")
+    subject: Mapped["Subject"] = relationship("Subject", back_populates="teacher_allotments")
+    enrolled_students: Mapped[Optional[List["StudentSubjectEnrollment"]]] = relationship("StudentSubjectEnrollment", back_populates="teacher_subject_allotment")
+
+    __table_args__ = (
+        UniqueConstraint('teacher_id', 'subject_id', 'year', 'is_sem_odd'),
     )
 
 
