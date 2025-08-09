@@ -5,13 +5,13 @@ from sqlalchemy.orm import Session
 from app.config import config
 from app.database.core import get_db
 from app.database.models import User, UserRole
-from app.router.user.schemas import LoginRequest, LoginResponse, UserInfoResponse
+from .schemas import LoginRequest, LoginResponse, UserInfoResponse
 from app.oauth2 import create_access_token, get_current_user_role_agnostic
 from app.schemas import TokenData
 from app.services.utils.hashing import verify_password_hash
 
 import os
-from typing import cast, Optional
+from typing import cast, Optional, List, Dict
 
 
 ENV=config['ENV']
@@ -35,12 +35,30 @@ def login(
     ):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
     
+    user_role_mappings = user.user_role_mappings
+    service_role_dict: Dict[str, List[str]] = {}
+
+    if user_role_mappings:
+        for mapping in user_role_mappings:
+            role_name = mapping.role_assigned.name
+            module_name = mapping.role_assigned.module_name
+
+            assert role_name is not None
+            assert module_name is not None
+
+            if module_name not in service_role_dict:
+                service_role_dict[module_name] = []
+            
+            service_role_dict[module_name].append(role_name)
+
+    
     access_token = create_access_token(
         data={
             'email': user.email,
             'role': user.role.value,
             'user_id': user.id,
             'name': user.name,
+            'service_role_dict': service_role_dict,
         }
     )
 
@@ -54,10 +72,13 @@ def login(
     )
 
     return {
-            'message': "Login successful", 
-            'user_id': user.id,
-            'name': user.name
-        }
+        'message': "Login successful", 
+        'email': user.email,
+        'role': user.role.value,
+        'user_id': user.id,
+        'name': user.name,
+        'service_role_dict': service_role_dict,
+    }
     
 @router.get('/me', response_model=UserInfoResponse)
 def get_user_info(
@@ -68,11 +89,28 @@ def get_user_info(
     if not db_user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
+    user_role_mappings = db_user.user_role_mappings
+    service_role_dict: Dict[str, List[str]] = {}
+
+    if user_role_mappings:
+        for mapping in user_role_mappings:
+            role_name = mapping.role_assigned.name
+            module_name = mapping.role_assigned.module_name
+
+            assert role_name is not None
+            assert module_name is not None
+
+            if module_name not in service_role_dict:
+                service_role_dict[module_name] = []
+            
+            service_role_dict[module_name].append(role_name)
+
     return {
         'user_id': db_user.id,
         'name': db_user.name,
         'email': db_user.email,
         'role': db_user.role,
+        'service_role_dict': service_role_dict
     }
 
 @router.post("/logout")

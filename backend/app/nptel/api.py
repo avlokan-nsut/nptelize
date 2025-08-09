@@ -5,6 +5,7 @@ from app.nptel.router.student.routes import router as student_router
 from app.nptel.router.teacher.routes import router as teacher_router
 from app.nptel.router.user.routes import router as user_router
 
+
 router = APIRouter(prefix="/nptel")
 
 router.include_router(admin_router, tags=['admin'])

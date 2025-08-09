@@ -47,6 +47,8 @@ class User(Base):
         back_populates="teacher"
     )
 
+    user_role_mappings: Mapped[Optional[List["UserRoleMapping"]]] = relationship("UserRoleMapping", back_populates="user")
+
 
 class Subject(Base):
     __tablename__ = "subjects"
@@ -163,6 +165,7 @@ class UserRoleMapping(Base):
     role_id = Column(String, ForeignKey("roles.id"), nullable=False)
     
     role_assigned: Mapped["Role"] = relationship("Role", foreign_keys=[role_id], back_populates="users_mapped")
+    user: Mapped["User"] = relationship("User", foreign_keys=[user_id], back_populates="user_role_mappings")
 
     __table_args__ = (
         PrimaryKeyConstraint('user_id', 'role_id'),
