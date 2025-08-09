@@ -5,13 +5,14 @@ import os
 
 from app.config import config
 from app.database.core import get_db
-from app.database.models import User, RequestStatus, StudentSubject, Subject, Request, Certificate
-from app.router.student.schemas import CertificateRequestResponse, StudentSubjectsResponse, CertificateResponse
+from app.database.models import User, RequestStatus, StudentSubjectEnrollment, Subject, Request, Certificate
 from app.schemas import TokenData, GenericResponse
 from app.services.verifier import Verifier
 from app.services.utils.limiter import process_upload
 from app.services.utils.file_storage import save_file_to_local_storage
 from app.services.log_service import setup_logger
+
+from .schemas import CertificateRequestResponse, StudentSubjectsResponse, CertificateResponse
 
 from app.oauth2 import get_current_student
 
@@ -69,9 +70,9 @@ def get_student_subjects(
 ):
     try:
         subjects = db.query(Subject).join(
-            StudentSubject,
-            Subject.id == StudentSubject.subject_id
-        ).filter(StudentSubject.student_id == current_student.user_id).all()
+            StudentSubjectEnrollment,
+            Subject.id == StudentSubjectEnrollment.subject_id
+        ).filter(StudentSubjectEnrollment.student_id == current_student.user_id).all()
         
         return {
             'subjects': [

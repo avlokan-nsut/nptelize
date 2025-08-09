@@ -9,7 +9,7 @@ from typing import AsyncGenerator
 
 from app.config import check_config, config
 from app.database.core import AsyncSessionLocal
-from app.router import router
+from app.nptel.api import router
 from app.services.cleanup import CleanupService
 
 
