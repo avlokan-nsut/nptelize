@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Body, Query, UploadFile
 
+from sqlalchemy import and_
 from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -19,7 +20,7 @@ from .schemas import (
     CertificateResponse,
     UnsafeManualVerificationRequest
 )
-from app.database.models import User, UserRole, Subject, StudentSubjectEnrollment, Request, RequestStatus, Certificate
+from app.database.models import User, UserRole, Subject, StudentSubjectEnrollment, Request, RequestStatus, Certificate, TeacherSubjectAllotment
 from app.services.log_service import setup_logger
 
 from app.services.utils.limiter import process_upload
@@ -37,38 +38,63 @@ logger.info(f"Certificates folder path: {CERTIFICATES_FOLDER_PATH}")
 
 @router.get('/subjects', response_model=SubjectResponse)
 def get_alloted_subjects(
+    year: int = Query(),
+    sem: int = Query(),
     db: Session = Depends(get_db),
     current_teacher: TokenData = Depends(get_current_teacher)
 ):
-    subjects = db.query(Subject).filter(Subject.teacher_id == current_teacher.user_id).all()
+    is_sem_odd = bool(sem & 1)
+
+    allotments = db.query(TeacherSubjectAllotment).filter(
+        TeacherSubjectAllotment.year == year,
+        TeacherSubjectAllotment.is_sem_odd == is_sem_odd,
+        TeacherSubjectAllotment.teacher_id == current_teacher.user_id
+    )
+    
     return {
-        'subjects': subjects
+        'subjects': [allotment.subject for allotment in allotments]
     }
 
 
 @router.get('/subject/requests/{subject_id}', response_model=GetStudentRequestsResponse)
-def get_student_requests_for_a_subject(subject_id: str, db: Session = Depends(get_db), current_teacher: TokenData = Depends(get_current_teacher)):
-    # requests for a particular subject
-    requests = db.query(Request).filter(
-        Request.subject_id == subject_id,
-        Request.teacher_id == current_teacher.user_id
+def get_student_requests_for_a_subject(
+    subject_id: str, 
+    year: int = Query(),
+    sem: int = Query(),
+    db: Session = Depends(get_db), 
+    current_teacher: TokenData = Depends(get_current_teacher)
+):
+    is_sem_odd = bool(sem & 1)
+    
+    enrollments = db.query(StudentSubjectEnrollment).filter(
+        StudentSubjectEnrollment.teacher_id == current_teacher.user_id,
+        StudentSubjectEnrollment.request.has(),
+        StudentSubjectEnrollment.teacher_subject_allotment.has(
+            and_(
+                TeacherSubjectAllotment.year == year,
+                TeacherSubjectAllotment.is_sem_odd == is_sem_odd,
+            )
+        )
     ).all()
+
+    requests = [cast(Request, t.request) for t in enrollments]
+
     return {
         'requests': [
             {
                'id': request.id,
                'student': {
-                    'id': request.student.id,
-                    'name': request.student.name,
-                    'email': request.student.email,
-                    'roll_number': request.student.roll_number,
+                    'id': request.student_subject_enrollment.student.id,
+                    'name': request.student_subject_enrollment.student.name,
+                    'email': request.student_subject_enrollment.student.email,
+                    'roll_number': request.student_subject_enrollment.student.roll_number,
                 },
                 'subject': {
-                    'id': request.subject.id,
-                    'name': request.subject.name,
-                    'subject_code': request.subject.subject_code,
-                    'nptel_course_code': request.subject.nptel_course_code,
-                    'teacher_id': request.subject.teacher_id,
+                    'id': request.student_subject_enrollment.teacher_subject_allotment.subject.id,
+                    'name': request.student_subject_enrollment.teacher_subject_allotment.subject.name,
+                    'subject_code': request.student_subject_enrollment.teacher_subject_allotment.subject.subject_code,
+                    'nptel_course_code': request.student_subject_enrollment.teacher_subject_allotment.subject.nptel_course_code,
+                    'teacher_id': request.student_subject_enrollment.teacher_subject_allotment.subject.teacher_id,
                 },
                 'verified_total_marks': request.certificate.verified_total_marks if request.certificate else None,
                 'status': request.status,
@@ -80,29 +106,33 @@ def get_student_requests_for_a_subject(subject_id: str, db: Session = Depends(ge
         ]
     }
 
+
 @router.get('/students/{subject_id}', response_model=EnrolledStudentResponse)
 def get_students_in_subject(
     subject_id: str,
+    year: int = Query(),
+    sem: int = Query(),
     db: Session = Depends(get_db),
     current_teacher: TokenData = Depends(get_current_teacher)
 ):
-    subject = db.query(Subject).filter(Subject.id == subject_id).first()
+    is_sem_odd = sem & 1
 
-    if not subject:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Subject not found")
-
-    if subject.teacher_id != current_teacher.user_id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You are not authorized to view this subject")
-    
-    enrolled_students = db.query(User).join(
-        StudentSubjectEnrollment,
-        StudentSubjectEnrollment.student_id == User.id
-    ).filter(
-        StudentSubjectEnrollment.subject_id == subject_id
+    enrollments = db.query(StudentSubjectEnrollment).filter(
+        StudentSubjectEnrollment.subject_id == subject_id,
+        StudentSubjectEnrollment.teacher_id == current_teacher.user_id,
+        StudentSubjectEnrollment.teacher_subject_allotment.has(
+            and_(
+                TeacherSubjectAllotment.year == year,
+                TeacherSubjectAllotment.is_sem_odd == is_sem_odd,
+            )
+        )
     ).all()
 
+    if not enrollments:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Subject not found")
+
     return {
-        'enrolled_students': enrolled_students
+        'enrolled_students': [enrollment.student for enrollment in enrollments]
     }
 
 @router.get('/requests/{request_id}', response_model=GetRequestByIdResponse)
@@ -116,22 +146,22 @@ def get_request_info_by_id(
     if not request:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Request not found")
 
-    if request.teacher_id != current_teacher.user_id:
+    if request.student_subject_enrollment.teacher_id != current_teacher.user_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You are not authorized to view this request")
     
     return {
         'request': {
             'student': {
-                'id': request.student.id,
-                'name': request.student.name,
-                'email': request.student.email,
-                'roll_number': request.student.roll_number,
+                'id': request.student_subject_enrollment.student.id,
+                'name': request.student_subject_enrollment.student.name,
+                'email': request.student_subject_enrollment.student.email,
+                'roll_number': request.student_subject_enrollment.student.roll_number,
             },
             'subject': {
-                'id': request.subject.id,
-                'name': request.subject.name,
-                'subject_code': request.subject.subject_code,
-                'teacher_id': request.subject.teacher_id,
+                'id': request.student_subject_enrollment.teacher_subject_allotment.subject.id,
+                'name': request.student_subject_enrollment.teacher_subject_allotment.subject.name,
+                'subject_code': request.student_subject_enrollment.teacher_subject_allotment.subject.subject_code,
+                'teacher_id': request.student_subject_enrollment.teacher_subject_allotment.subject.teacher_id,
             },
             'status': request.status,
             'created_at': request.created_at,
@@ -229,6 +259,7 @@ def make_certificate_request_to_student(
         'results': results
     }
             
+
 @router.post('/stray/requests')
 async def get_stray_certificates(
     current_teacher: TokenData = Depends(get_current_teacher),
@@ -317,7 +348,6 @@ async def verify_certificate_manual(
     return {'message': 'Certificate verified successfully'}
 
 
-
 @router.put('/reject/certificate', response_model=GenericResponse)
 def reject_certificate_under_review(
     request_id: str = Query(),
@@ -385,8 +415,6 @@ def reject_certificate_under_review(
         )
 
 
-
-
 @router.post('/verify/certificate/manual/unsafe', response_model=GenericResponse)
 def verify_certificate_manual_unsafe(
     verification_data: UnsafeManualVerificationRequest,
@@ -431,6 +459,7 @@ def verify_certificate_manual_unsafe(
 
     return {'message': 'Certificate verified successfully'}
 
+
 @router.get('/certificate/details/{request_id}', response_model=CertificateResponse)
 async def get_verified_certificate_details(
     request_id: str,
@@ -439,7 +468,12 @@ async def get_verified_certificate_details(
 ):
     db_request = db.query(Request).filter(
         Request.id == request_id,
-        Request.teacher_id == current_teacher.user_id
+        # Request.teacher_id == current_teacher.user_id,
+        Request.student_subject_enrollment.has(
+            StudentSubjectEnrollment.teacher_subject_allotment.has(
+                TeacherSubjectAllotment.teacher_id == current_teacher.user_id
+            )
+        )
     ).first()
 
     if db_request is None:
@@ -462,13 +496,13 @@ async def get_verified_certificate_details(
         db,
     )
 
-    certificate_data = await verifier.manual_verification(cast(str, db_request.subject.name))
+    certificate_data = await verifier.manual_verification(cast(str, db_request.student_subject_enrollment.teacher_subject_allotment.subject.name))
 
     response =  {
         "message": "Certificate details fetched successfully",
         "data": {
             **certificate_data, 
-            "subject_name": db_request.subject.name,
+            "subject_name": db_request.student_subject_enrollment.teacher_subject_allotment.subject.name,
             "remark": db_certificate.remark
         }
     }

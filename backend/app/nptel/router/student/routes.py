@@ -1,11 +1,12 @@
 from fastapi import APIRouter, Depends, Body, UploadFile, HTTPException, status, Query
 from sqlalchemy.orm import Session
+from sqlalchemy import and_
 from typing import List, cast
 import os
 
 from app.config import config
 from app.database.core import get_db
-from app.database.models import RequestStatus, StudentSubjectEnrollment, Request, Certificate
+from app.database.models import RequestStatus, StudentSubjectEnrollment, Request, Certificate, TeacherSubjectAllotment
 from app.schemas import TokenData, GenericResponse
 from app.services.verifier import Verifier
 from app.services.utils.limiter import process_upload
@@ -33,14 +34,20 @@ def get_certificate_requests(
     request_types = list(set(request_types))
     try: 
 
-        is_sem_odd = sem & 1
-        
-        enrollments = db.query(StudentSubjectEnrollment).filter(
-            StudentSubjectEnrollment.student_id == current_student.user_id,
-            StudentSubjectEnrollment.year == year, 
-            StudentSubjectEnrollment.is_sem_odd == is_sem_odd, 
-            StudentSubjectEnrollment.request.has()
-        ).all()
+        is_sem_odd = bool(sem & 1)
+
+        enrollments = (
+            db.query(StudentSubjectEnrollment).filter(
+                StudentSubjectEnrollment.student_id == current_student.user_id,
+                StudentSubjectEnrollment.request.has(),  # scalar relationship check
+                StudentSubjectEnrollment.teacher_subject_allotment.has(
+                    and_(
+                        TeacherSubjectAllotment.year == year,
+                        TeacherSubjectAllotment.is_sem_odd == is_sem_odd,
+                    )
+                ),
+            ).all()
+        )
 
         filtered_requests = [
             cast(Request, t.request) 
@@ -53,12 +60,12 @@ def get_certificate_requests(
                     'request_id': request.id,
                     'subject': {
                         'id': request.student_subject_enrollment.subject_id,
-                        'name': request.student_subject_enrollment.subject.name,
-                        'code': request.student_subject_enrollment.subject.subject_code,
-                        'nptel_course_code': request.student_subject_enrollment.subject.nptel_course_code,
+                        'name': request.student_subject_enrollment.teacher_subject_allotment.subject.name,
+                        'code': request.student_subject_enrollment.teacher_subject_allotment.subject.subject_code,
+                        'nptel_course_code': request.student_subject_enrollment.teacher_subject_allotment.subject.nptel_course_code,
                         'teacher': {
-                            'id': request.student_subject_enrollment.teacher_id,
-                            'name': request.student_subject_enrollment.teacher.name,
+                            'id': request.student_subject_enrollment.teacher_subject_allotment.teacher_id,
+                            'name': request.student_subject_enrollment.teacher_subject_allotment.teacher.name,
                         },
                     },
                     'verified_total_marks': request.certificate.verified_total_marks if request.certificate else None,
@@ -83,24 +90,28 @@ def get_student_subjects(
 ):
     
     try:
-        is_sem_odd = sem & 1
+        is_sem_odd = bool(sem & 1)
         
         enrollments = db.query(StudentSubjectEnrollment).filter(
-            StudentSubjectEnrollment.year == year,
-            StudentSubjectEnrollment.is_sem_odd == is_sem_odd,
-            StudentSubjectEnrollment.student_id == current_student.user_id 
+            StudentSubjectEnrollment.student_id == current_student.user_id,
+            StudentSubjectEnrollment.teacher_subject_allotment.has(
+                and_(
+                    TeacherSubjectAllotment.year == year,
+                    TeacherSubjectAllotment.is_sem_odd == is_sem_odd
+                )
+            )
         ).all()
         
         return {
             'subjects': [
                 {
-                    'id': enrollment.subject.id,
-                    'code': enrollment.subject.subject_code,
-                    'nptel_course_code': enrollment.subject.nptel_course_code,
-                    'name': enrollment.subject.name,
+                    'id': enrollment.teacher_subject_allotment.subject.id,
+                    'code': enrollment.teacher_subject_allotment.subject.subject_code,
+                    'nptel_course_code': enrollment.teacher_subject_allotment.subject.nptel_course_code,
+                    'name': enrollment.teacher_subject_allotment.subject.name,
                     'teacher': {
-                        'id': enrollment.teacher.id,
-                        'name': enrollment.teacher.name,
+                        'id': enrollment.teacher_subject_allotment.teacher.id,
+                        'name': enrollment.teacher_subject_allotment.teacher.name,
                     }
                 }
                 for enrollment in enrollments 
@@ -146,7 +157,9 @@ async def upload_certificate(
     # check if the request_id belongs to the current student
     db_request = db.query(Request).filter(
         Request.id == request_id,
-        Request.student_id == current_student.user_id
+        Request.student_subject_enrollment.has(
+            StudentSubjectEnrollment.student_id == current_student.user_id
+        )
     ).first()
 
     if not db_request:
@@ -199,7 +212,9 @@ def upload_reqeust_status_to_no_certificate(
     # the request must exist (and belong to the student)
     db_request = db.query(Request).filter(
         Request.id == request_id,
-        Request.student_id == current_student.user_id,
+        Request.student_subject_enrollment.has(
+            StudentSubjectEnrollment.student_id == current_student.user_id
+        )
     ).first()
 
     if not db_request:
