@@ -29,8 +29,9 @@ def verify_access_token(token: str, credentials_exception: Exception) -> TokenDa
         payload = jwt.decode(token, JWT_SECRET_KEY, [ALGORITHM])
         user_id = payload['user_id']
         role = payload['role']
+        service_specific_roles = payload['service_specific_role']
 
-        return TokenData(user_id=user_id, role=role)
+        return TokenData(user_id=user_id, role=role, service_specific_roles=service_specific_roles)
 
     except jwt.ExpiredSignatureError:
         raise HTTPException(

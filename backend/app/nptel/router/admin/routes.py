@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.database.core import get_db
-from app.database.models import UserRole, User, Subject, StudentSubject
+from app.database.models import UserRole, User, Subject, StudentSubjectEnrollment
 from app.oauth2 import get_current_admin
 from app.router.admin.schemas import StudentCreate, TeacherCreate, AdminCreate, CreateUserResponse, SubjectCreate, CreateSubjectResponse, AddStudentToSubjectSchema
 from app.schemas import TokenData, GenericResponse
@@ -81,10 +81,10 @@ def get_students_in_a_subject(
     students = db.query(
         User
     ).join(
-        StudentSubject,
-        User.id == StudentSubject.student_id
+        StudentSubjectEnrollment,
+        User.id == StudentSubjectEnrollment.student_id
     ).filter(
-        StudentSubject.subject_id == student_id
+        StudentSubjectEnrollment.subject_id == student_id
     ).all()
 
     return {
@@ -106,9 +106,9 @@ def get_subjects_of_a_student(
     current_admin: TokenData = Depends(get_current_admin)
 ):
     subjects = db.query(Subject).join(
-        StudentSubject,
-        Subject.id == StudentSubject.subject_id
-    ).filter(StudentSubject.student_id == student_id).all()
+        StudentSubjectEnrollment,
+        Subject.id == StudentSubjectEnrollment.subject_id
+    ).filter(StudentSubjectEnrollment.student_id == student_id).all()
     return {
         'subjects': [
             {
@@ -340,9 +340,9 @@ def add_students_to_subject(
                 continue
 
             # check if student is already enrolled in the subject
-            student_subject = db.query(StudentSubject).filter(
-                StudentSubject.student_id == db_student.id,
-                StudentSubject.subject_id == db_subject.id
+            student_subject = db.query(StudentSubjectEnrollment).filter(
+                StudentSubjectEnrollment.student_id == db_student.id,
+                StudentSubjectEnrollment.subject_id == db_subject.id
             ).first()
             if student_subject:
                 add_status.append({
@@ -354,7 +354,7 @@ def add_students_to_subject(
                 continue
 
             # add student to subject
-            student_subject = StudentSubject(
+            student_subject = StudentSubjectEnrollment(
                 student_id=db_student.id,
                 subject_id=db_subject.id
             )
@@ -393,9 +393,9 @@ def delete_student_from_subject(
     current_admin: TokenData = Depends(get_current_admin)
 ):
     try:
-        student_subject = db.query(StudentSubject).filter(
-            StudentSubject.student_id == student_id,
-            StudentSubject.subject_id == subject_id
+        student_subject = db.query(StudentSubjectEnrollment).filter(
+            StudentSubjectEnrollment.student_id == student_id,
+            StudentSubjectEnrollment.subject_id == subject_id
         ).first()
 
         if not student_subject:
