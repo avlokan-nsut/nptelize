@@ -1,13 +1,13 @@
 from datetime import datetime
 from pydantic import BaseModel, EmailStr
-from typing import Optional, List
+from typing import Optional, List, Dict
 
 from app.database.models import UserRole, RequestStatus
 
 class TokenData(BaseModel):
     user_id: str
     role: str
-    service_specific_roles: List[str]
+    service_role_dict: Dict[str, List[str]]
 
 class GenericResponse(BaseModel):
     message: str
