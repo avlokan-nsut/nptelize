@@ -5,6 +5,8 @@ import { useQuery } from "@tanstack/react-query";
 import SearchBar from "./SearchBar";
 import { useEffect, useState } from "react";
 import Pagination from "./Pagination";
+import { useAuthStore } from "../../store/useAuthStore";
+import { TenureSelector } from "../ui/DropDown";
 
 const headings = ["Subject Code", "Subject Name", "Actions", "Request Status"];
 
@@ -19,26 +21,31 @@ export type ApiResponse = {
   subjects: Subject[];
 };
 
-const fetchData = async () => {
+const fetchData = async (year:number ,sem:number ) => {
   const apiUrl = import.meta.env.VITE_API_URL;
 
   const { data } = await axios.get<ApiResponse>(`${apiUrl}/teacher/subjects`, {
     withCredentials: true,
-  });
+    params :{year,sem}
+  }
+  
+);
 
-  // console.log(data);
 
   return data;
 };
 
 const Table = function () {
+   const { tenure } = useAuthStore();
+    const year = tenure?.year;
+    const sem = tenure?.is_even;
   const {
     data: apiData,
     error,
     isLoading,
   } = useQuery({
-    queryKey: ["teacherRequests"],
-    queryFn: fetchData,
+    queryKey: ["teacherRequests",year,sem],
+    queryFn:() => fetchData(year as number, sem as number),
     refetchOnWindowFocus: false,
   });
 
@@ -50,13 +57,6 @@ const Table = function () {
     setCurrentPage(1);
   }, [searchTerm]);
 
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-      </div>
-    );
-  }
 
   if (error) {
     return (
@@ -66,19 +66,15 @@ const Table = function () {
     );
   }
 
-  if (!apiData || apiData.subjects.length === 0) {
-    return (
-      <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6 text-center">
-        <p className="text-gray-500">No subjects found</p>
-      </div>
+  
+  let filteredSubjects: Subject[] = [];
+  if (apiData) {
+    filteredSubjects = apiData.subjects.filter(
+      (subject) =>
+        subject.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        subject.subject_code.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }
-
-  const filteredSubjects = apiData.subjects.filter(
-    (subject) =>
-      subject.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      subject.subject_code.toLowerCase().includes(searchTerm.toLowerCase())
-  );
 
   const totalItems = filteredSubjects.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
@@ -89,8 +85,12 @@ const Table = function () {
   );
 
   return (
+    <>
+    <div className="flex justify-center md:justify-end  max-w-7xl mx-auto">
+            <TenureSelector />
+      </div>
     <div className="max-w-7xl mx-auto">
-      <div className="w-full flex flex-col justify-end space-x-2 mt-10 md:flex-row md:mt-0">
+      <div className="w-full flex justify-center md:justify-end space-x-2 mt-4 md:flex-row md:mt-0">
         <Link to="/faculty/verify-rejected">
           <button className="p-3 text-sm rounded-2xl my-4 transition-colors duration-200 md:p-4 md:text-md bg-blue-900 text-white hover:bg-blue-800 cursor-pointer">
             Manual Verification
@@ -126,6 +126,15 @@ const Table = function () {
               ))}
             </tr>
           </thead>
+          {isLoading ?(
+            <tbody>
+              <tr>
+                <td colSpan={headings.length} className="text-center py-8">
+                  <span className="loading loading-ring loading-xl"></span>
+                </td>
+              </tr>
+            </tbody>
+          ):(
           <tbody className="divide-y divide-gray-100">
             {paginatedSubjects.map((subject) => (
               <tr
@@ -159,7 +168,7 @@ const Table = function () {
                 </td>
               </tr>
             ))}
-          </tbody>
+          </tbody>)}
         </table>
       </div>
       {totalPages > 1 && (
@@ -172,6 +181,7 @@ const Table = function () {
         />
       )}
     </div>
+    </>
   );
 };
 

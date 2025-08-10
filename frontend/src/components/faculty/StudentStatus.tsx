@@ -6,6 +6,8 @@ import { useState, useMemo } from "react";
 import Pagination from "./Pagination";
 import SearchBar from "./SearchBar";
 import RequestDetailsDropdown from "./RequestDetailsDropdown";
+import { useAuthStore } from "../../store/useAuthStore";
+import { TenureSelector } from "../ui/DropDown";
 
 const headings = [
   "Student Name",
@@ -68,13 +70,14 @@ const StudentStatus = function () {
     "all" | "pending" | "completed" | "rejected" | "duplicate" | "no_certificate" | "under_review"
   >("all");
 
-  const fetchData = async () => {
-
+  const fetchData = async (year:number,sem:number) => {
+    
 
     const { data } = await axios.get<ApiResponse>(
       `${apiUrl}/teacher/subject/requests/${subjectId}`,
       {
         withCredentials: true,
+        params :{year,sem}
       }
     );
     // console.log(data);
@@ -82,13 +85,18 @@ const StudentStatus = function () {
     return data;
   };
 
+   const { tenure } = useAuthStore();
+    const year = tenure?.year;
+    const sem = tenure?.is_even;
+
+
   const {
     data: apiData,
     error,
     isLoading,
   } = useQuery({
-    queryKey: ["teacherRequestsStudents", subjectId],
-    queryFn: fetchData,
+    queryKey: ["teacherRequestsStudents", subjectId,year,sem],
+    queryFn: ()=>fetchData(year as number,sem as number),
     refetchOnWindowFocus: false,
   });
 
@@ -350,6 +358,9 @@ const StudentStatus = function () {
         <h1 className="text-center text-2xl font-semibold text-gray-800 mb-10 tracking-wider">
           Student Status
         </h1>
+         <div className="flex justify-center md:justify-end mb-6  max-w-7xl mx-auto">
+                    <TenureSelector />
+              </div>
 
         <div className="overflow-hidden rounded-lg shadow-md border border-gray-100 bg-white max-w-7xl mx-auto">
           <div className="flex items-center justify-between p-4 border-b bg-gray-50">
