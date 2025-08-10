@@ -2,6 +2,9 @@ import { useQuery } from "@tanstack/react-query";
 import axios, { isAxiosError } from "axios";
 import { useState } from "react";
 import AlertDialog from "./AlertDialog";
+import { ApiResponse } from "../../types/student/apiResponse";
+import { useAuthStore } from "../../store/useAuthStore";
+import { TenureSelector } from "../ui/DropDown";
 import { toast } from "react-toastify";
 import TableSkeleton from "../ui/TableSkeleton";
 
@@ -14,31 +17,9 @@ const headings = [
   "Upload Certificate",
 ];
 
-export type Teacher = {
-  id: string;
-  name: string;
-};
-
-export type Subject = {
-  id: string;
-  code: string;
-  name: string;
-  teacher: Teacher;
-};
-
-export type Request = {
-  request_id: string;
-  subject: Subject;
-  status: string;
-  due_date: string;
-};
-
-export type ApiResponse = {
-  requests: Request[];
-};
-
 const FILE_SIZE_LIMIT = 2097152;
 const apiUrl = import.meta.env.VITE_API_URL;
+
 
 function formatDateOnly(isoString: string): string {
   if (isoString === null || isoString === undefined) {
@@ -58,20 +39,17 @@ function formatDateOnly(isoString: string): string {
   return adjustedDate.toLocaleDateString("en-US", options);
 }
 
-const fetchData = async () => {
+// Replace fixed fetchData with parameterized version
+const fetchData = async (year: number, sem: number) => {
   const apiUrl = import.meta.env.VITE_API_URL;
-  const reqType = {
-    request_types: ["pending", "rejected", "error" ,"no_certificate" ],
-  };
-
+  const reqType = { request_types: ["pending", "rejected", "error", "no_certificate"] };
   const { data } = await axios.post<ApiResponse>(
     `${apiUrl}/student/requests`,
     reqType,
     {
       withCredentials: true,
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
+      params: { year, sem }
     }
   );
   const sortedRequests = data.requests.sort((a, b) => {
@@ -102,15 +80,20 @@ const RequestedTable = () => {
   const [selectedRequestId, setselectedRequestId] = useState<string | null>(
     null
   );
-  const [selectedSubject , setSelectedSubject] = useState<string | null >(
+  const [selectedSubject, setSelectedSubject] = useState<string | null>(
     null
   );
 
   const [alertLoading, setAlertLoading] = useState(false);
 
+  const { tenure } = useAuthStore();
+  const year = tenure?.year;
+  const sem = tenure?.is_even; // 0 = Odd, 1 = Even
+
   const { data, error, isLoading, refetch } = useQuery({
-    queryKey: ["myData"],
-    queryFn: fetchData,
+    queryKey: ["myData", year, sem],
+    queryFn: () => fetchData(year as number, sem as number),
+    enabled: year !== undefined && sem !== undefined,
     staleTime: 1000 * 60 * 1,
   });
 
@@ -252,7 +235,7 @@ const RequestedTable = () => {
     }
   };
 
-  const handleCertificateRequest = (request_id: string , subject_name : string) => {
+  const handleCertificateRequest = (request_id: string, subject_name: string) => {
     setselectedRequestId(request_id);
     setSelectedSubject(subject_name);
     setAlertOpen(false);
@@ -264,8 +247,8 @@ const RequestedTable = () => {
         setAlertLoading(true);
         const response = await axios.put(
           `${apiUrl}/student/update/request-status/no-certificate?request_id=${selectedRequestId}`,
-          {}, 
-          { withCredentials: true } 
+          {},
+          { withCredentials: true }
         )
         if (response.status === 200) {
           setUploadStatus((prev) => ({
@@ -288,7 +271,7 @@ const RequestedTable = () => {
           toast.error("Failed to mark as no certificate")
         }
       } catch (error) {
-        
+
         let errorMessage = "Failed to mark as no certificate";
         console.error("Error marking as no certificate:", error);
         if (isAxiosError(error)) {
@@ -313,8 +296,8 @@ const RequestedTable = () => {
       case "no_certificate":
         return (
           <span className="px-2 py-1 text-xs font-semibold rounded-full bg-sky-100 text-fuchsia-800 whitespace-nowrap">
-  No Certificate
-</span>
+            No Certificate
+          </span>
 
         );
       case "rejected":
@@ -329,14 +312,14 @@ const RequestedTable = () => {
             Rejected
           </span>
         );
-        case "pending" :
-          return (  
+      case "pending":
+        return (
           <span className="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
             Pending
           </span>
         );
 
-       
+
     }
   };
 
@@ -355,20 +338,32 @@ const RequestedTable = () => {
     return <TableSkeleton rows={5} cols={7} className="max-w-7xl mx-auto" />;
   }
 
-  if (data) {
-    return (
-      <>
-        <div className="overflow-x-auto rounded-lg shadow-sm border border-gray-100 bg-white max-w-7xl mx-auto">
-          <table className="table w-full">
-            <thead className="bg-gray-200">
-              <tr className="text-gray-600 text-sm font-medium">
-                {headings.map((heading, idx) => (
-                  <th key={idx} className="px-6 py-4">
-                    {heading}
-                  </th>
-                ))}
+  return (<>
+      <div className="flex justify-center md:justify-end mb-6 max-w-7xl mx-auto">
+        <TenureSelector />
+      </div>
+      <div className="overflow-x-auto rounded-lg shadow-sm border border-gray-100 bg-white max-w-7xl mx-auto">
+
+        <table className="table w-full">
+          <thead className="bg-gray-200">
+            <tr className="text-gray-600 text-sm font-medium">
+              {headings.map((heading, idx) => (
+                <th key={idx} className="px-6 py-4">
+                  {heading}
+                </th>
+              ))}
+            </tr>
+          </thead>
+
+          {isLoading ? (
+            <tbody>
+              <tr>
+                <td colSpan={headings.length} className="text-center py-8">
+                  <span className="loading loading-ring loading-xl"></span>
+                </td>
               </tr>
-            </thead>
+            </tbody>
+          ) : data && (
             <tbody className="divide-y divide-gray-100">
               {data.requests.map((row, idx) => (
                 <tr
@@ -400,13 +395,11 @@ const RequestedTable = () => {
                           "
                         />
                         <button
-                          className={`btn btn-sm ${
-                            uploadLoading[row.request_id] ? "loading" : ""
-                          } ${
-                            fileUploads[row.request_id]
+                          className={`btn btn-sm ${uploadLoading[row.request_id] ? "loading" : ""
+                            } ${fileUploads[row.request_id]
                               ? "btn-primary"
                               : "btn-neutral"
-                          }`}
+                            }`}
                           onClick={() => handleSubmit(row.request_id)}
                           disabled={
                             uploadLoading[row.request_id] ||
@@ -430,11 +423,10 @@ const RequestedTable = () => {
 
                       {uploadStatus[row.request_id] && (
                         <div
-                          className={`text-xs px-2 py-1 rounded ${
-                            uploadStatus[row.request_id]?.success
-                              ? "bg-green-100 text-green-700"
-                              : "bg-red-100 text-red-700"
-                          }`}
+                          className={`text-xs px-2 py-1 rounded ${uploadStatus[row.request_id]?.success
+                            ? "bg-green-100 text-green-700"
+                            : "bg-red-100 text-red-700"
+                            }`}
                         >
                           {uploadStatus[row.request_id]?.message}
                         </div>
@@ -451,20 +443,18 @@ const RequestedTable = () => {
                   </td>
                 </tr>
               ))}
-            </tbody>
-          </table>
-        </div>
-
-        <AlertDialog
-          isClosed={alertOpen}
-          onClick={handleAlertAction}
-          onStateChange={setAlertOpen}
-          SubjectName={selectedSubject}
-          Disabled = {alertLoading}
-        />
-      </>
-    );
-  }
+            </tbody>)}
+        </table>
+      </div>
+      <AlertDialog
+        isClosed={alertOpen}
+        onClick={handleAlertAction}
+        onStateChange={setAlertOpen}
+        SubjectName={selectedSubject}
+        Disabled={alertLoading}
+      />
+    </>
+  );
 };
 
 export default RequestedTable;

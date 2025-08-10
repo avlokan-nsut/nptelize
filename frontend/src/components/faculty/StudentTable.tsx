@@ -5,6 +5,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useState, useMemo } from "react";
 import Pagination from "./Pagination";
 import SearchBar from "./SearchBar";
+import { useAuthStore } from "../../store/useAuthStore";
+import { TenureSelector } from "../ui/DropDown";
 
 const headings = ["Select", "Student Name", "NSUT Roll No.", "Email"];
 
@@ -130,7 +132,6 @@ export default function StudentTable() {
                 }
             );
 
-            console.log(response.data)
 
             response.data.results.forEach((obj) => {
                 if (obj.success === false) {
@@ -154,26 +155,33 @@ export default function StudentTable() {
         setIsLoadingPost(false);
     };
 
-    const fetchData = async () => {
+    const fetchData = async (year:number,sem:number) => {
         const apiUrl = import.meta.env.VITE_API_URL;
 
         const { data } = await axios.get<ApiResponse>(
             `${apiUrl}/teacher/students/${subjectId}`,
             {
                 withCredentials: true,
+                params :{year,sem}
             }
+            
+
         );
 
         return data;
     };
+
+    const { tenure } = useAuthStore();
+    const year = tenure?.year;
+    const sem = tenure?.is_even;
 
     const {
         data: apiData,
         error: apiError,
         isLoading,
     } = useQuery({
-        queryKey: ["teacherRequestsStudents", subjectId],
-        queryFn: fetchData,
+        queryKey: ["teacherRequestsStudents", subjectId,year,sem],
+        queryFn:() => fetchData(year as number, sem as number),
         refetchOnWindowFocus: false,
     });
 
@@ -225,6 +233,10 @@ export default function StudentTable() {
                     Student List
                 </h1>
 
+                 <div className="flex justify-center md:justify-end mb-6  max-w-7xl mx-auto">
+            <TenureSelector />
+      </div>
+
                 
 
                                 {apiCalled && submitted > 0 && (
@@ -273,7 +285,8 @@ export default function StudentTable() {
                             </h2>
                         </div>
 
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-col items-center gap-2 md:flex-row">
+                            
                             <span className="text-sm text-gray-600 mr-2">
                                 Due Date:
                             </span>
