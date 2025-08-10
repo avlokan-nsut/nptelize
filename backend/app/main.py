@@ -32,7 +32,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 app = FastAPI(
     title="NPTEL Automation API",
     version="1.0.0",
-    lifespan=lifespan
+    # lifespan=lifespan
 )
 
 check_config()

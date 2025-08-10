@@ -10,8 +10,6 @@ from typing import Sequence, Union
 from alembic import op
 import sqlalchemy as sa
 
-from app.database.core import get_db
-
 
 # revision identifiers, used by Alembic.
 revision: str = '56144840703d'
@@ -19,22 +17,6 @@ down_revision: Union[str, None] = 'a6ed6b2dc8cb'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
-
-def populate_values() -> None:
-    generator = get_db()
-
-    db = next(generator)
-    results = db.execute(sa.text("SELECT * FROM student_subjects"))
-
-    if not results:
-        generator.close()
-        return
-
-    db.execute(sa.text(
-        "UPDATE student_subjects SET student_subjects.teacher_id = subjects.teacher_id, student_subjects.is_sem_odd = FALSE, student_subjects.year = 2025 FROM student_subjects INNER JOIN subjects ON student_subjects.subject_id = subjects.id"
-    )) 
-
-    generator.close()
 
 
 def upgrade() -> None:
@@ -62,9 +44,6 @@ def upgrade() -> None:
             WHERE student_subjects.subject_id = subjects.id
         """))
         
-        # Commit the updates before adding constraints
-        connection.commit()
-    
     # Add foreign key constraint
     op.create_foreign_key(
         'fk_student_subjects_teacher_id', 
