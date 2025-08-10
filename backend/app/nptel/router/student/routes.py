@@ -59,7 +59,7 @@ def get_certificate_requests(
                 {
                     'request_id': request.id,
                     'subject': {
-                        'id': request.student_subject_enrollment.subject_id,
+                        'id': request.student_subject_enrollment.teacher_subject_allotment.subject_id,
                         'name': request.student_subject_enrollment.teacher_subject_allotment.subject.name,
                         'code': request.student_subject_enrollment.teacher_subject_allotment.subject.subject_code,
                         'nptel_course_code': request.student_subject_enrollment.teacher_subject_allotment.subject.nptel_course_code,

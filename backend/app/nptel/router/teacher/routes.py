@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Body, Query, UploadFile
 
+from sqlalchemy import and_
 from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -19,7 +20,7 @@ from .schemas import (
     CertificateResponse,
     UnsafeManualVerificationRequest
 )
-from app.database.models import User, UserRole, Subject, StudentSubjectEnrollment, Request, RequestStatus, Certificate, TeacherSubjectAllotment
+from app.database.models import User, StudentSubjectEnrollment, Request, RequestStatus, Certificate, TeacherSubjectAllotment
 from app.services.log_service import setup_logger
 
 from app.services.utils.limiter import process_upload
@@ -29,6 +30,7 @@ from app.services.utils.qr_extraction import extract_link
 from app.services.verifier import Verifier, COURSE_NAME_SINGLE_LINE_CHARACTER_LIMIT
 
 from .service import get_teacher_alloted_subjects, get_student_requests_for_subject, get_students_of_a_subject_allotment
+from ...oauth2 import role_based_access
 
 logger = setup_logger(__name__)
 
@@ -89,7 +91,7 @@ def get_student_requests_for_a_subject(
                     'name': request.student_subject_enrollment.teacher_subject_allotment.subject.name,
                     'subject_code': request.student_subject_enrollment.teacher_subject_allotment.subject.subject_code,
                     'nptel_course_code': request.student_subject_enrollment.teacher_subject_allotment.subject.nptel_course_code,
-                    'teacher_id': request.student_subject_enrollment.teacher_subject_allotment.subject.teacher_id,
+                    'teacher_id': request.student_subject_enrollment.teacher_subject_allotment.teacher_id,
                 },
                 'verified_total_marks': request.certificate.verified_total_marks if request.certificate else None,
                 'status': request.status,
@@ -195,11 +197,13 @@ async def get_verified_certificate_details(
         cast(str, db_certificate.file_url), 
         uploaded_file_path, 
         request_id, 
-        cast(str,db_request.student_id), 
+        cast(str,db_request.student_subject_enrollment.student_id), 
         db,
     )
 
-    certificate_data = await verifier.manual_verification(cast(str, db_request.student_subject_enrollment.teacher_subject_allotment.subject.name))
+    certificate_data = await verifier.manual_verification(
+        cast(str, db_request.student_subject_enrollment.teacher_subject_allotment.subject.name)
+    )
 
     response =  {
         "message": "Certificate details fetched successfully",
@@ -215,9 +219,13 @@ async def get_verified_certificate_details(
 @router.post('/students/request', response_model=MakeCertificateRequestResponse)
 def make_certificate_request_to_student(
     student_request_data_list: List[CreateCertificateRequestFields] = Body(embed=True),
+    year: int = Query(),
+    sem: int = Query(),
     db: Session = Depends(get_db),
-    current_teacher = Depends(get_current_teacher)
+    current_coordinator: TokenData = Depends(role_based_access(['coordinator']))
 ):
+    is_sem_odd = bool(sem & 1)
+    
     results = []
 
     for student_data in student_request_data_list:
@@ -232,8 +240,18 @@ def make_certificate_request_to_student(
                 })
                 continue
             
-            db_subject = db.query(Subject).filter(Subject.id == student_data.subject_id).first()
-            if not db_subject:
+            db_subject_enrollment = db.query(StudentSubjectEnrollment).filter(
+                StudentSubjectEnrollment.student_id == db_student.id,
+                StudentSubjectEnrollment.teacher_subject_allotment.has(
+                    and_(
+                        TeacherSubjectAllotment.subject_id == student_data.subject_id,
+                        TeacherSubjectAllotment.year == year,
+                        TeacherSubjectAllotment.is_sem_odd == is_sem_odd
+                    )
+                )
+            ).first()
+
+            if not db_subject_enrollment:
                 results.append({
                     'student_id': student_data.student_id,
                     'subject_id': student_data.subject_id,
@@ -244,9 +262,10 @@ def make_certificate_request_to_student(
             
             # Check if the student has already requested a certificate
             existing_request = db.query(Request).filter(
-                Request.student_id == db_student.id,
                 Request.status == 'pending',
-                Request.subject_id == student_data.subject_id 
+                Request.student_subject_enrollment.has(
+                    StudentSubjectEnrollment.student_id == db_student.id,
+                )
             ).first()
 
             if existing_request:
@@ -259,19 +278,8 @@ def make_certificate_request_to_student(
                 })
                 continue
                 
-            # Create a new request
-            coordinator = db.query(User).filter(
-                User.role == UserRole.teacher,
-                User.id == current_teacher.user_id
-            ).first()
-
-            if not coordinator:
-                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Coordinator not found")
-
             certificate_request = Request(
-                student_id=db_student.id,
-                subject_id=student_data.subject_id,  # Assuming this is a general request
-                teacher_id=coordinator.id,  # Assigning the coordinator's ID
+                student_subject_enrollment_id=db_subject_enrollment.id,
                 due_date=student_data.due_date,
                 status=RequestStatus.pending,
             )
@@ -321,14 +329,14 @@ async def verify_certificate_manual(
     subject_id: str = Query(),
     student_id: str = Query(),
     file: UploadFile = Depends(process_upload),
-    current_teacher = Depends(get_current_teacher),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_coordinator: TokenData = Depends(role_based_access(['coordinator'])),
 ):
     db_request = db.query(Request).filter(
         Request.id == request_id,
-        Request.student_id == student_id,
-        Request.subject_id == subject_id,
-        Request.teacher_id == current_teacher.user_id
+        Request.student_subject_enrollment.has(
+            StudentSubjectEnrollment.student_id == student_id,
+        )
     ).first()
 
     if not db_request:
@@ -394,7 +402,7 @@ async def verify_certificate_manual(
 def reject_certificate_under_review(
     request_id: str = Query(),
     db: Session = Depends(get_db),
-    current_teacher: TokenData = Depends(get_current_teacher)
+    current_coordinator: TokenData = Depends(role_based_access(['coordinator'])),
 ):
     """
     Reject a certificate request that is currently under review.
@@ -404,7 +412,6 @@ def reject_certificate_under_review(
     # Verify the request exists and belongs to the current teacher
     db_request = db.query(Request).filter(
         Request.id == request_id,
-        Request.teacher_id == current_teacher.user_id
     ).first()
 
     if not db_request:
@@ -442,7 +449,7 @@ def reject_certificate_under_review(
         # Commit the changes
         db.commit()
         
-        logger.info(f"Request {request_id} rejected by teacher {current_teacher.user_id}")
+        logger.info(f"Request {request_id} rejected by coordinator {current_coordinator.user_id}")
         
         return {
             'message': 'Certificate request has been successfully rejected'
@@ -461,18 +468,13 @@ def reject_certificate_under_review(
 def verify_certificate_manual_unsafe(
     verification_data: UnsafeManualVerificationRequest,
     db: Session = Depends(get_db),
-    current_teacher = Depends(get_current_teacher)
+    current_coordinator: TokenData = Depends(role_based_access(['coordinator'])),
 ):
     request_id = verification_data.request_id
-    student_id = verification_data.student_id
-    subject_id = verification_data.subject_id
     total_marks = verification_data.marks
     
     db_request = db.query(Request).filter(
         Request.id == request_id,
-        Request.student_id == student_id,
-        Request.subject_id == subject_id,
-        Request.teacher_id == current_teacher.user_id
     ).first()
 
     if not db_request:

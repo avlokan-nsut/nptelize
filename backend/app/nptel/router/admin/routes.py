@@ -3,12 +3,22 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from app.database.core import get_db
 from app.database.models import UserRole, User, Subject, StudentSubjectEnrollment, TeacherSubjectAllotment
 from app.oauth2 import get_current_admin
-from .schemas import StudentCreate, TeacherCreate, AdminCreate, CreateUserResponse, SubjectCreate, CreateSubjectResponse, AddStudentToSubjectSchema
+from .schemas import (
+    StudentCreate, 
+    TeacherCreate, 
+    AdminCreate, 
+    CreateUserResponse, 
+    SubjectCreate, 
+    CreateSubjectResponse, 
+    AddStudentToSubjectSchema, 
+    AddTeacherToSubjectSchema
+)
 from app.schemas import TokenData, GenericResponse
 from app.services.utils.hashing import generate_password_hash
 from app.services.log_service import setup_logger
 
 import multiprocessing
+
 from sqlalchemy.orm import Session
 from sqlalchemy import and_
 
@@ -130,7 +140,7 @@ def get_subjects_of_a_student(
                 'id': enrollment.teacher_subject_allotment.subject.id,
                 'name': enrollment.teacher_subject_allotment.subject.name,
                 'subject_code': enrollment.teacher_subject_allotment.subject.subject_code,
-                'teacher_id': enrollment.teacher_subject_allotment.subject.teacher_id
+                'teacher_id': enrollment.teacher_subject_allotment.teacher_id
             }
             for enrollment in enrollments
         ]
@@ -216,10 +226,6 @@ def create_coordinator(
     current_admin: TokenData = Depends(get_current_admin), 
     db: Session = Depends(get_db)
 ):
-    # check if any teacher already exists
-    existing_teacher = db.query(User).filter(User.role == UserRole.teacher).first()
-    if existing_teacher:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="A coordinator already exists")
 
     try:
         teacher_password_hash = generate_password_hash(teacher_data.password)
@@ -277,26 +283,12 @@ def create_subjects(
     db: Session = Depends(get_db)
 ):
     results = []
-    coordinator = db.query(User).filter(User.role == UserRole.teacher).first()
-    if not coordinator:
-        return {
-            'results': [
-                {
-                    "subject_code": subject.subject_code,
-                    "nptel_course_code": subject.nptel_course_code,
-                    "success": False,
-                    "message": "No coordinator exists"
-                } 
-                for subject in subjects
-            ]
-        }
 
     for subject in subjects:
         try:
             db_subject = Subject(
                 name=subject.name,
                 subject_code=subject.subject_code,
-                teacher_id=coordinator.id,
                 nptel_course_code=subject.nptel_course_code,
             )
 
@@ -321,13 +313,81 @@ def create_subjects(
         'results': results
     }
 
-
-@router.post('/add/students')
-def add_students_to_subject(
-    students: List[AddStudentToSubjectSchema],
+@router.post('/allot/teacher-subject')
+def allot_teacher_to_subject(
+    teachers_data: List[AddTeacherToSubjectSchema],
+    year: int = Query(),
+    sem: int = Query(),
     db: Session = Depends(get_db),
-    current_teacher: TokenData = Depends(get_current_admin)
 ):
+    is_sem_odd = bool(sem & 1)
+    allotment_status = []
+
+    for teacher in teachers_data:
+        try:
+            # Check if teacher exists
+            db_teacher = db.query(User).filter(
+                User.email == teacher.email, 
+                User.role == UserRole.teacher
+            ).first()
+            if not db_teacher:
+                allotment_status.append({
+                    'email': teacher.email,
+                    'success': False,
+                    'message': 'Teacher not found',
+                    'course_code': teacher.course_code
+                })
+                continue
+
+            # Check if subject exists
+            db_subject = db.query(Subject).filter(Subject.subject_code == teacher.course_code).first()
+            if not db_subject:
+                allotment_status.append({
+                    'email': teacher.email,
+                    'success': False,
+                    'message': 'Subject not found',
+                    'course_code': teacher.course_code,
+                })
+                continue
+
+            # Create the allotment
+            allotment = TeacherSubjectAllotment(
+                teacher_id=db_teacher.id,
+                subject_id=db_subject.id,
+                year=year,
+                is_sem_odd=is_sem_odd
+            )
+
+            db.add(allotment)
+            db.commit()
+
+            allotment_status.append({
+                'email': teacher.email,
+                'success': True,
+                'message': 'Teacher allotted to subject successfully',
+                'course_code': teacher.course_code
+            })
+        except Exception as e:
+            logger.error(f"Error allotting teacher to subject: {e}")
+            db.rollback()
+            allotment_status.append({
+                'email': teacher.email,
+                'success': False,
+                'message': 'Unknown error while allotting teacher to subject',
+                'course_code': teacher.course_code,
+            })
+
+
+@router.post('/enroll/students')
+def enroll_students_to_subject(
+    students: List[AddStudentToSubjectSchema],
+    year: int = Query(),
+    sem: int = Query(),
+    db: Session = Depends(get_db),
+    current_admin: TokenData = Depends(get_current_admin)
+):
+    is_sem_odd = bool(sem & 1)
+
     add_status = []
     for student in students:
         subject_condition = Subject.subject_code == student.course_code
@@ -344,8 +404,15 @@ def add_students_to_subject(
                 continue 
 
             # check if subject exists
-            db_subject = db.query(Subject).filter(subject_condition).first()
-            if not db_subject:
+            db_subject_allotment = db.query(TeacherSubjectAllotment).filter(
+                TeacherSubjectAllotment.subject.has(
+                    subject_condition
+                ),
+                TeacherSubjectAllotment.year == year,
+                TeacherSubjectAllotment.is_sem_odd == is_sem_odd
+            ).first()
+
+            if not db_subject_allotment:
                 add_status.append({
                     'email': student.email,
                     'success': False,
@@ -357,8 +424,9 @@ def add_students_to_subject(
             # check if student is already enrolled in the subject
             student_subject = db.query(StudentSubjectEnrollment).filter(
                 StudentSubjectEnrollment.student_id == db_student.id,
-                StudentSubjectEnrollment.subject_id == db_subject.id
+                StudentSubjectEnrollment.teacher_subject_allotment_id == db_subject_allotment.id
             ).first()
+
             if student_subject:
                 add_status.append({
                     'email': student.email,
@@ -371,9 +439,8 @@ def add_students_to_subject(
             # add student to subject
             student_subject = StudentSubjectEnrollment(
                 student_id=db_student.id,
-                subject_id=db_subject.id
+                teacher_subject_allotment_id=db_subject_allotment.id
             )
-
 
             db.add(student_subject)
             db.commit()
@@ -385,6 +452,7 @@ def add_students_to_subject(
                 'message': 'Student added to subject',
                 'course_code': student.course_code,
             })
+
         except Exception as e:
             logger.error(f"Error adding student to subject: {e}")
             db.rollback()
@@ -404,13 +472,23 @@ def add_students_to_subject(
 def delete_student_from_subject(
     student_id: str,
     subject_id: str,
+    year: int = Query(),
+    sem: int = Query(),
     db: Session = Depends(get_db),
     current_admin: TokenData = Depends(get_current_admin)
 ):
+    is_sem_odd = bool(sem & 1)
+    
     try:
         student_subject = db.query(StudentSubjectEnrollment).filter(
             StudentSubjectEnrollment.student_id == student_id,
-            StudentSubjectEnrollment.subject_id == subject_id
+            StudentSubjectEnrollment.teacher_subject_allotment.has(
+                and_(
+                    TeacherSubjectAllotment.subject_id == subject_id,
+                    TeacherSubjectAllotment.year == year,
+                    TeacherSubjectAllotment.is_sem_odd == is_sem_odd
+                )
+            )
         ).first()
 
         if not student_subject:
