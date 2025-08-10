@@ -31,8 +31,6 @@ class User(Base):
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow, server_default=text('now()'))
 
     # Relationships
-    requests_sent: Mapped[List["Request"]] = relationship("Request", foreign_keys='Request.teacher_id', back_populates="teacher")
-    requests_received: Mapped[List["Request"]] = relationship("Request", foreign_keys='Request.student_id', back_populates="student")
     certificates: Mapped[List["Certificate"]] = relationship("Certificate", back_populates="student")
 
     student_enrollments: Mapped[List["StudentSubjectEnrollment"]] = relationship(
@@ -110,12 +108,8 @@ class RequestStatus(enum.Enum):
 class Request(Base):
     __tablename__ = "requests"
 
-    id = Column(String, unique=True, nullable=False, default=cuid)
+    id = Column(String, primary_key=True, default=cuid)
     student_subject_enrollment_id = Column(String, ForeignKey("student_subject_enrollments.id"), unique=True, nullable=False)
-
-    subject_id = Column(String, ForeignKey("subjects.id"), primary_key=True, nullable=False)    # Deprecated
-    student_id = Column(String, ForeignKey("users.id"), primary_key=True, nullable=False)       # Deprecated
-    teacher_id = Column(String, ForeignKey("users.id"), nullable=False)                         # Deprecated
 
     status = Column(Enum(RequestStatus), default=RequestStatus.pending)
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow, server_default=text('now()'))
@@ -124,9 +118,6 @@ class Request(Base):
 
     # One-to-one relationship with StudentSubjectEnrollment
     student_subject_enrollment: Mapped["StudentSubjectEnrollment"] = relationship("StudentSubjectEnrollment", back_populates="request")
-
-    teacher: Mapped["User"] = relationship("User", foreign_keys=[teacher_id], back_populates="requests_sent")       # Deprecated
-    student: Mapped["User"] = relationship("User", foreign_keys=[student_id], back_populates="requests_received")   # Deprecated
 
     certificate: Mapped[Optional["Certificate"]] = relationship("Certificate", uselist=False, back_populates="request", cascade="all, delete")
 

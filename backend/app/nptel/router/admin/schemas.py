@@ -28,6 +28,10 @@ class AddStudentToSubjectSchema(BaseModel):
     email: str
     course_code: str
 
+class AddTeacherToSubjectSchema(BaseModel):
+    email: str
+    course_code: str
+
 # -----------------------------------------------------------------------
 # Response Schemas
 # -----------------------------------------------------------------------
