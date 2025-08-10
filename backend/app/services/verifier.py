@@ -100,11 +100,11 @@ class Verifier:
 
             success, output, verified_roll_no, verified_total_marks = self.verify_file(
                 verification_file_path=temp_f.name,
-                subject_name=cast(str, db_request.subject.name),
+                subject_name=cast(str, db_request.student_subject_enrollment.teacher_subject_allotment.subject.name),
                 student_name=cast(str, db_request.student.name),
                 course_period_year=COURSE_PERIOD_YEAR,
-                is_subject_name_long=isinstance(db_request.subject.name, str) and (
-                    len(db_request.subject.name.strip()) > COURSE_NAME_SINGLE_LINE_CHARACTER_LIMIT
+                is_subject_name_long=isinstance(db_request.student_subject_enrollment.teacher_subject_allotment.subject.name, str) and (
+                    len(db_request.student_subject_enrollment.teacher_subject_allotment.subject.name.strip()) > COURSE_NAME_SINGLE_LINE_CHARACTER_LIMIT
                 )
             )
 

@@ -117,11 +117,8 @@ def get_students_enrolled_in_a_subject(
         db, current_teacher.user_id, subject_id, year, is_sem_odd, is_coordinator
     )
 
-    if not enrollments:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Subject not found")
-
     return {
-        'enrolled_students': [enrollment.student for enrollment in enrollments]
+        'enrolled_students': [enrollment.student for enrollment in enrollments] if enrollments else []
     }
 
 @router.get('/requests/{request_id}', response_model=GetRequestByIdResponse)
@@ -151,7 +148,7 @@ def get_request_info_by_id(
                 'id': request.student_subject_enrollment.teacher_subject_allotment.subject.id,
                 'name': request.student_subject_enrollment.teacher_subject_allotment.subject.name,
                 'subject_code': request.student_subject_enrollment.teacher_subject_allotment.subject.subject_code,
-                'teacher_id': request.student_subject_enrollment.teacher_subject_allotment.subject.teacher_id,
+                'teacher_id': request.student_subject_enrollment.teacher_subject_allotment.teacher_id,
             },
             'status': request.status,
             'created_at': request.created_at,
@@ -357,8 +354,8 @@ async def verify_certificate_manual(
         course_period 
     ) = extract_student_info_from_pdf(
         file_path, 
-        is_subject_name_long=isinstance(db_request.subject.name, str) and (
-            len(db_request.subject.name.strip()) > COURSE_NAME_SINGLE_LINE_CHARACTER_LIMIT
+        is_subject_name_long=isinstance(db_request.student_subject_enrollment.teacher_subject_allotment.subject.name, str) and (
+            len(db_request.student_subject_enrollment.teacher_subject_allotment.subject.name.strip()) > COURSE_NAME_SINGLE_LINE_CHARACTER_LIMIT
         )
     ) 
 

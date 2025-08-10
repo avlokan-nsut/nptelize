@@ -31,7 +31,6 @@ class User(Base):
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow, server_default=text('now()'))
 
     # Relationships
-    subjects: Mapped[List["Subject"]] = relationship("Subject", back_populates="teacher", cascade="all, delete")
     requests_sent: Mapped[List["Request"]] = relationship("Request", foreign_keys='Request.teacher_id', back_populates="teacher")
     requests_received: Mapped[List["Request"]] = relationship("Request", foreign_keys='Request.student_id', back_populates="student")
     certificates: Mapped[List["Certificate"]] = relationship("Certificate", back_populates="student")
@@ -58,8 +57,6 @@ class Subject(Base):
     nptel_course_code = Column(String, unique=False, nullable=False)
     teacher_id = Column(String, ForeignKey("users.id"), nullable=False)   # Deprecated
 
-    teacher: Mapped["User"] = relationship("User", back_populates="subjects")
-    requests: Mapped[List["Request"]] = relationship("Request", back_populates="subject", cascade="all, delete")
     teacher_allotments: Mapped[List["TeacherSubjectAllotment"]] = relationship("TeacherSubjectAllotment", back_populates="subject", cascade="all, delete")
 
 
@@ -134,7 +131,6 @@ class Request(Base):
     # One-to-one relationship with StudentSubjectEnrollment
     student_subject_enrollment: Mapped["StudentSubjectEnrollment"] = relationship("StudentSubjectEnrollment", back_populates="request")
 
-    subject: Mapped["Subject"] = relationship("Subject", back_populates="requests")                                 # Deprecated
     teacher: Mapped["User"] = relationship("User", foreign_keys=[teacher_id], back_populates="requests_sent")       # Deprecated
     student: Mapped["User"] = relationship("User", foreign_keys=[student_id], back_populates="requests_received")   # Deprecated
 
