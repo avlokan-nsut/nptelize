@@ -55,7 +55,6 @@ class Subject(Base):
     name = Column(String, nullable=False)
     subject_code = Column(String, unique=True, nullable=False)
     nptel_course_code = Column(String, unique=False, nullable=False)
-    teacher_id = Column(String, ForeignKey("users.id"), nullable=False)   # Deprecated
 
     teacher_allotments: Mapped[List["TeacherSubjectAllotment"]] = relationship("TeacherSubjectAllotment", back_populates="subject", cascade="all, delete")
 
@@ -67,11 +66,6 @@ class StudentSubjectEnrollment(Base):
     student_id = Column(String, ForeignKey("users.id"), nullable=False)
     teacher_subject_allotment_id = Column(String, ForeignKey("teacher_subject_allotments.id"), nullable=False)
 
-    subject_id = Column(String, ForeignKey("subjects.id"), nullable=False)      # Deprecated
-    year = Column(Integer, nullable=False)                                      # Deprecated
-    is_sem_odd = Column(Boolean, nullable=False)                                # Deprecated
-    teacher_id = Column(String, ForeignKey("users.id"), nullable=False)         # Deprecated
-
     student: Mapped["User"] = relationship("User", foreign_keys=[student_id], back_populates="student_enrollments")
     teacher_subject_allotment: Mapped["TeacherSubjectAllotment"] = relationship(
         "TeacherSubjectAllotment", foreign_keys=[teacher_subject_allotment_id], back_populates="enrolled_students"
@@ -81,7 +75,7 @@ class StudentSubjectEnrollment(Base):
     request: Mapped[Optional["Request"]] = relationship("Request", back_populates="student_subject_enrollment", uselist=False)
 
     __table_args__ = (
-        UniqueConstraint('student_id', 'subject_id', 'year', 'is_sem_odd'),
+        UniqueConstraint('student_id', 'teacher_subject_allotment_id'),  # Ensure unique enrollment per student and allotment
     )
 
 

@@ -30,7 +30,6 @@ class Subject(BaseModel):
     name: str
     subject_code: str
     nptel_course_code: str
-    teacher_id: str
 
 class SubjectResponse(BaseModel):
     subjects: List[Subject]
