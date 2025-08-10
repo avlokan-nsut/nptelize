@@ -4,6 +4,7 @@ import SearchBar from "./SearchBar";
 import { useEffect, useState } from "react";
 import Pagination from "./Pagination";
 import { RefreshCw } from "lucide-react";
+import { useAuthStore } from "../../store/useAuthStore";
 
 const headings = [
     "Subject Code",
@@ -61,12 +62,13 @@ interface Stats {
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
-const fetchData = async () => {
+const fetchData = async (year:number ,sem:number) => {
     // Fetch subjects data
     const { data } = await axios.get<ApiResponse>(
         `${apiUrl}/teacher/subjects`,
         {
             withCredentials: true,
+            params :{year,sem}
         }
     );
 
@@ -74,7 +76,9 @@ const fetchData = async () => {
     const requestPromises = data.subjects.map(async (subject) => {
         const { data: requestData } = await axios.get<ApiResponseCSV>(
             `${apiUrl}/teacher/subject/requests/${subject.id}`,
-            { withCredentials: true }
+            { withCredentials: true,
+                params : {year,sem}
+             }
         );
         return {
             subjectId: subject.id,
@@ -142,14 +146,17 @@ const fetchData = async () => {
 
 const ReportSection = function () {
     const [stats, setStats] = useState<Stats>({});
+    const { tenure } = useAuthStore();
+        const year = tenure?.year;
+        const sem = tenure?.is_even;
 
     const {
         data: apiData,
         error,
         isLoading,
     } = useQuery({
-        queryKey: ["teacherRequestsStats"],
-        queryFn: fetchData,
+        queryKey: ["teacherRequestsStats",year,sem],
+        queryFn: () =>fetchData(year as number,sem as number),
         staleTime : 60000,
         refetchOnWindowFocus: false,
     });
@@ -182,6 +189,7 @@ const ReportSection = function () {
                     `${apiUrl}/teacher/subject/requests/${subjectId}`,
                     {
                         withCredentials: true,
+                        params:{year,sem}
                     }
                 );
 
@@ -284,7 +292,9 @@ const ReportSection = function () {
         setDisabled(true);
         const { data } = await axios.get<ApiResponseCSV>(
             `${apiUrl}/teacher/subject/requests/${subjectId}`,
-            { withCredentials: true }
+            { withCredentials: true,
+                params : {year,sem}
+             }
         );
 
         const statusCounts = data.requests.reduce(

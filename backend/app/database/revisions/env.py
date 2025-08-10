@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 import os
 
 
-from app.models import Base
+from app.database.models import Base
 
 load_dotenv()
 

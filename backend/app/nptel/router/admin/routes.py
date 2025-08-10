@@ -1,15 +1,16 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 
-from app.config.db import get_db
-from app.models import UserRole, User, Subject, StudentSubject
+from app.database.core import get_db
+from app.database.models import UserRole, User, Subject, StudentSubjectEnrollment, TeacherSubjectAllotment
 from app.oauth2 import get_current_admin
-from app.router.admin.schemas import StudentCreate, TeacherCreate, AdminCreate, CreateUserResponse, SubjectCreate, CreateSubjectResponse, AddStudentToSubjectSchema
+from .schemas import StudentCreate, TeacherCreate, AdminCreate, CreateUserResponse, SubjectCreate, CreateSubjectResponse, AddStudentToSubjectSchema
 from app.schemas import TokenData, GenericResponse
 from app.services.utils.hashing import generate_password_hash
 from app.services.log_service import setup_logger
 
 import multiprocessing
 from sqlalchemy.orm import Session
+from sqlalchemy import and_
 
 from typing import List
 
@@ -66,7 +67,6 @@ def get_subjects(
                 'name': subject.name,
                 'subject_code': subject.subject_code,
                 'nptel_course_code': subject.nptel_course_code,
-                'teacher_id': subject.teacher_id
             }
             for subject in subjects
         ]
@@ -74,50 +74,65 @@ def get_subjects(
 
 @router.get('/get/subject-students/{student_id}')
 def get_students_in_a_subject(
-    student_id: str,
+    subject_id: str,
+    year: int = Query(),
+    sem: int = Query(),
     db: Session = Depends(get_db),
     current_admin: TokenData = Depends(get_current_admin)
 ): 
-    students = db.query(
-        User
-    ).join(
-        StudentSubject,
-        User.id == StudentSubject.student_id
-    ).filter(
-        StudentSubject.subject_id == student_id
+    is_sem_odd = bool(sem & 1)
+
+    student_enrollments = db.query(StudentSubjectEnrollment).filter(
+        StudentSubjectEnrollment.teacher_subject_allotment.has(
+            and_(
+                TeacherSubjectAllotment.subject_id == subject_id,
+                TeacherSubjectAllotment.year == year,
+                TeacherSubjectAllotment.is_sem_odd == is_sem_odd
+            )
+        )
     ).all()
 
     return {
         'students': [
             {
-                'id': student.id,
-                'name': student.name,
-                'email': student.email,
-                'roll_number': student.roll_number
+                'id': enrollment.student.id,
+                'name': enrollment.student.name,
+                'email': enrollment.student.email,
+                'roll_number': enrollment.student.roll_number
             }
-            for student in students
+            for enrollment in student_enrollments
         ]
     }
 
 @router.get('/get/student-subjects/{student_id}')
 def get_subjects_of_a_student(
     student_id: str,
+    year: int = Query(),
+    sem: int = Query(),
     db: Session = Depends(get_db),
     current_admin: TokenData = Depends(get_current_admin)
 ):
-    subjects = db.query(Subject).join(
-        StudentSubject,
-        Subject.id == StudentSubject.subject_id
-    ).filter(StudentSubject.student_id == student_id).all()
+    is_sem_odd = bool(sem & 1)
+
+    enrollments = db.query(StudentSubjectEnrollment).filter(
+        StudentSubjectEnrollment.student_id == student_id,
+        StudentSubjectEnrollment.teacher_subject_allotment.has(
+            and_(
+                TeacherSubjectAllotment.year == year,
+                TeacherSubjectAllotment.is_sem_odd == is_sem_odd
+            )
+        )
+    ).all()
+
     return {
         'subjects': [
             {
-                'id': subject.id,
-                'name': subject.name,
-                'subject_code': subject.subject_code,
-                'teacher_id': subject.teacher_id
+                'id': enrollment.teacher_subject_allotment.subject.id,
+                'name': enrollment.teacher_subject_allotment.subject.name,
+                'subject_code': enrollment.teacher_subject_allotment.subject.subject_code,
+                'teacher_id': enrollment.teacher_subject_allotment.subject.teacher_id
             }
-            for subject in subjects
+            for enrollment in enrollments
         ]
     }
 
@@ -340,9 +355,9 @@ def add_students_to_subject(
                 continue
 
             # check if student is already enrolled in the subject
-            student_subject = db.query(StudentSubject).filter(
-                StudentSubject.student_id == db_student.id,
-                StudentSubject.subject_id == db_subject.id
+            student_subject = db.query(StudentSubjectEnrollment).filter(
+                StudentSubjectEnrollment.student_id == db_student.id,
+                StudentSubjectEnrollment.subject_id == db_subject.id
             ).first()
             if student_subject:
                 add_status.append({
@@ -354,7 +369,7 @@ def add_students_to_subject(
                 continue
 
             # add student to subject
-            student_subject = StudentSubject(
+            student_subject = StudentSubjectEnrollment(
                 student_id=db_student.id,
                 subject_id=db_subject.id
             )
@@ -393,9 +408,9 @@ def delete_student_from_subject(
     current_admin: TokenData = Depends(get_current_admin)
 ):
     try:
-        student_subject = db.query(StudentSubject).filter(
-            StudentSubject.student_id == student_id,
-            StudentSubject.subject_id == subject_id
+        student_subject = db.query(StudentSubjectEnrollment).filter(
+            StudentSubjectEnrollment.student_id == student_id,
+            StudentSubjectEnrollment.subject_id == subject_id
         ).first()
 
         if not student_subject:

@@ -1,12 +1,12 @@
 from datetime import datetime, timezone, timedelta
-from typing import Dict
+from typing import Dict, List, Callable
 
 import jwt
 from fastapi import HTTPException, status, Request
 
 from app.config import config
 from app.schemas import TokenData
-from app.models import UserRole
+from app.database.models import UserRole
 
 JWT_SECRET_KEY = config['JWT_SECRET_KEY']
 ALGORITHM = config['ALGORITHM']
@@ -29,8 +29,9 @@ def verify_access_token(token: str, credentials_exception: Exception) -> TokenDa
         payload = jwt.decode(token, JWT_SECRET_KEY, [ALGORITHM])
         user_id = payload['user_id']
         role = payload['role']
+        service_role_dict = payload['service_role_dict']
 
-        return TokenData(user_id=user_id, role=role)
+        return TokenData(user_id=user_id, role=role, service_role_dict=service_role_dict)
 
     except jwt.ExpiredSignatureError:
         raise HTTPException(
@@ -79,3 +80,38 @@ def get_current_user_role_agnostic(request: Request) -> TokenData:
     token_data = verify_access_token(jwt_token, credentials_exception)
 
     return token_data
+
+def role_based_access_generic(service_name: str) -> Callable[[List[str]], Callable[[Request], TokenData]]:
+    
+    def role_based_access(role_names: List[str]) -> Callable[[Request], TokenData]:
+        
+        def get_current_access(request: Request) -> TokenData:
+            credentials_exception = HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Couldn't not validate credentials",
+            )
+
+            jwt_token = request.cookies.get('access_token')
+            token_data = verify_access_token(jwt_token, credentials_exception)
+
+            service_role_dict = token_data.service_role_dict
+
+            if service_name not in service_role_dict:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED, 
+                    detail="You are not authorized to access this resource."
+                )
+                
+            current_service_roles = service_role_dict[service_name]
+
+            if set(role_names) and set(current_service_roles):
+                return token_data
+            
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, 
+                detail="You are not authorized to access this resource."
+            )
+            
+        return get_current_access
+    
+    return role_based_access
