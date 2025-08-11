@@ -82,6 +82,33 @@ def get_subjects(
         ]
     }
 
+@router.get('/get/session-subjects')
+def get_session_subjects(
+    year: int = Query(),
+    sem: int = Query(),
+    db: Session = Depends(get_db),
+    current_admin: TokenData = Depends(get_current_admin)
+):
+    is_sem_odd = bool(sem & 1)
+
+    allotments = db.query(TeacherSubjectAllotment).filter(
+        TeacherSubjectAllotment.year == year,
+        TeacherSubjectAllotment.is_sem_odd == is_sem_odd
+    ).all()
+
+    return {
+        'subjects': [
+            {
+                'id': allotment.subject.id,
+                'name': allotment.subject.name,
+                'subject_code': allotment.subject.subject_code,
+                'nptel_course_id': allotment.subject.nptel_course_code,
+                'teacher_id': allotment.teacher_id
+            }
+            for allotment in allotments
+        ]
+    }
+
 @router.get('/get/subject-students/{student_id}')
 def get_students_in_a_subject(
     subject_id: str,
