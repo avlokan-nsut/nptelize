@@ -422,6 +422,10 @@ def allot_teacher_to_subject(
                 'course_code': teacher.course_code,
             })
 
+    return {
+        'results': allotment_status
+    }
+
 
 @router.post('/enroll/students')
 def enroll_students_to_subject(
