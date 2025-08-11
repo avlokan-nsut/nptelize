@@ -127,7 +127,7 @@ const AdminLoginForm: FC = () => {
     };
 
     return (
-        <div className="p-4 flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="p-4 flex items-center justify-center min-h-[85vh] ">
             {toastMessage && (
                 <div
                     className={`absolute top-[70px] right-4 px-4 py-3 rounded border ${

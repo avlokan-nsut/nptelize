@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import Pagination from "./Pagination";
 import { RefreshCw } from "lucide-react";
 import { useAuthStore } from "../../store/useAuthStore";
+import { TenureSelector } from "../ui/DropDown";
 
 const headings = [
     "Subject Code",
@@ -323,50 +324,21 @@ const ReportSection = function () {
         setDisabled(false);
     };
 
-    if (isLoading) {
-        return (
-            <div className="flex justify-center items-center h-64">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-            </div>
-        );
-    }
-
-    if (error) {
-        return (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg shadow-sm">
-                <p>Error loading subjects: {(error as Error).message}</p>
-            </div>
-        );
-    }
-
-    if (
-        !apiData ||
-        !apiData.stats ||
-        !apiData.subjects ||
-        !apiData.totals ||
-        apiData.subjects.length === 0
-    ) {
-        return (
-            <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6 text-center">
-                <p className="text-gray-500">No subjects found</p>
-            </div>
-        );
-    }
-
-    const filteredSubjects = apiData.subjects.filter(
-        (subject) =>
-            subject.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            subject.subject_code
-                .toLowerCase()
-                .includes(searchTerm.toLowerCase())
-    );
-
+    // Add these computed values for filtering and pagination
+    const filteredSubjects = apiData?.subjects
+        ? apiData.subjects.filter(
+              (subject) =>
+                  subject.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                  subject.subject_code.toLowerCase().includes(searchTerm.toLowerCase())
+          )
+        : [];
+    
     const totalItems = filteredSubjects.length;
-    const totalPages = Math.ceil(totalItems / itemsPerPage);
-    const startIndex = (currentPage - 1) * itemsPerPage;
+    const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
+    
     const paginatedSubjects = filteredSubjects.slice(
-        startIndex,
-        startIndex + itemsPerPage
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
     );
 
     return (
@@ -374,192 +346,213 @@ const ReportSection = function () {
             <h1 className="text-center text-xl md:text-2xl font-semibold text-gray-800 tracking-wider">
                 Report Section
             </h1>
+            
+            <div className="flex justify-center md:justify-end mb-6 max-w-7xl mx-auto">
+                <TenureSelector />
+            </div>
 
-            <div className="w-full flex flex-col justify-end space-x-2 mt-10 md:flex-row md:mt-0">
-                <div className="flex flex-col">
-                    <label
-                        htmlFor="status-filter"
-                        className="text-sm font-medium text-gray-700 mb-1 "
-                    >
-                        Download by Status:
-                    </label>
-                    <select
-                        id="status-filter"
-                        value={statusFilter}
-                        onChange={(e) => {
-                            setStatusFilter(e.target.value);
-                            setCurrentPage(1);
-                        }}
-                        className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-700"
-                    >
-                        <option value="all">All Status</option>
-                        <option value="completed">Completed</option>
-                        <option value="rejected">Rejected</option>
-                        <option value="no_certificate">No Certificate</option>
-                        <option value="pending">Pending</option>
-                    </select>
+            {isLoading ? (
+                <div className="flex justify-center items-center h-64">
+                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
                 </div>
-
-                <button
-                    className={`p-3 text-sm rounded-2xl my-4 transition-colors duration-200 md:p-4 md:text-md ${
-                        disabled
-                            ? "bg-gray-400 text-gray-200 cursor-not-allowed"
-                            : "bg-black text-white cursor-pointer hover:bg-gray-500"
-                    }`}
-                    disabled={disabled}
-                    onClick={() =>
-                        handleClick(
-                            apiData.subjects.map((subject) => subject.id)
-                        )
-                    }
-                >
-                    Download all
-                </button>
-            </div>
-
-            {disabled && (
-                <h1 className="text-center px-2 py-1 font-semibold rounded-full bg-yellow-100 text-yellow-800 my-4">
-                    This is a resource intense task and can take upto 5 minutes
-                </h1>
-            )}
-
-            <div className="mb-4">
-                <SearchBar
-                    value={searchTerm}
-                    onChange={(value) => {
-                        setSearchTerm(value);
-                        setCurrentPage(1);
-                    }}
-                    placeholder="Search by subject name or code"
-                />
-            </div>
-
-            <div className="p-4 bg-blue-50 border-b">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="text-center">
-                        <div className="text-2xl font-bold text-blue-600">
-                            {apiData?.totals?.completed || "0"}
-                        </div>
-                        <div className="text-sm text-gray-600">Completed</div>
-                    </div>
-                    <div className="text-center">
-                        <div className="text-2xl font-bold text-yellow-600">
-                            {apiData?.totals?.pending || "0"}
-                        </div>
-                        <div className="text-sm text-gray-600">Pending</div>
-                    </div>
-                    <div className="text-center">
-                        <div className="text-2xl font-bold text-red-600">
-                            {apiData?.totals?.rejected || "0"}
-                        </div>
-                        <div className="text-sm text-gray-600">Rejected</div>
-                    </div>
-                    <div className="text-center">
-                        <div className="text-2xl font-bold text-fuchsia-600">
-                            {apiData?.totals?.no_certificate || "0"}
-                        </div>
-                        <div className="text-sm text-gray-600">
-                            No Certificate
-                        </div>
-                    </div>
+            ) : error ? (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg shadow-sm">
+                    <p>Error loading subjects: {(error as Error).message}</p>
                 </div>
-            </div>
-
-            <div className="overflow-x-scroll rounded-lg shadow-sm border border-gray-100 bg-white">
-                <table className="w-full">
-                    <thead className="bg-gray-50">
-                        <tr className="text-sm font-medium text-gray-700">
-                            {headings.map((heading, idx) => (
-                                <th
-                                    key={idx}
-                                    className="px-6 py-4 text-center "
-                                >
-                                    {heading}
-                                </th>
-                            ))}
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100">
-                        {paginatedSubjects.map((subject) => (
-                            <tr
-                                key={subject.id}
-                                className="hover:bg-gray-50 transition-colors duration-200 text-center"
+            ) : !apiData || !apiData.stats || !apiData.subjects || !apiData.totals || apiData.subjects.length === 0 ? (
+                <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6 text-center">
+                    <p className="text-gray-500">No subjects found</p>
+                </div>
+            ) : (
+                <>
+                    <div className="w-full flex flex-col justify-end space-x-2 mt-10 md:flex-row md:mt-0">
+                        <div className="flex flex-col">
+                            <label
+                                htmlFor="status-filter"
+                                className="text-sm font-medium text-gray-700 mb-1 "
                             >
-                                <td className="px-6 py-4 ">
-                                    {subject.subject_code}
-                                </td>
-                                <td className="px-6 py-4">{subject.name}</td>
+                                Download by Status:
+                            </label>
+                            <select
+                                id="status-filter"
+                                value={statusFilter}
+                                onChange={(e) => {
+                                    setStatusFilter(e.target.value);
+                                    setCurrentPage(1);
+                                }}
+                                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-700"
+                            >
+                                <option value="all">All Status</option>
+                                <option value="completed">Completed</option>
+                                <option value="rejected">Rejected</option>
+                                <option value="no_certificate">No Certificate</option>
+                                <option value="pending">Pending</option>
+                            </select>
+                        </div>
 
-                                <td className="px-6 py-4 text-center whitespace-nowrap text-gray-700">
-                                    <div>
-                                        <button
-                                            className={`py-2 px-4 rounded-md shadow-md transition-all duration-300 transform ${
-                                                disabled
-                                                    ? "text-gray-400 bg-gray-100 cursor-not-allowed"
-                                                    : "text-black hover:scale-105 hover:bg-black hover:text-white cursor-pointer"
-                                            }`}
-                                            onClick={() =>
-                                                handleClick([subject.id])
-                                            }
-                                            disabled={disabled}
+                        <button
+                            className={`p-3 text-sm rounded-2xl my-4 transition-colors duration-200 md:p-4 md:text-md ${
+                                disabled
+                                    ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                                    : "bg-black text-white cursor-pointer hover:bg-gray-500"
+                            }`}
+                            disabled={disabled}
+                            onClick={() =>
+                                handleClick(
+                                    apiData.subjects.map((subject) => subject.id)
+                                )
+                            }
+                        >
+                            Download all
+                        </button>
+                    </div>
+
+                    {disabled && (
+                        <h1 className="text-center px-2 py-1 font-semibold rounded-full bg-yellow-100 text-yellow-800 my-4">
+                            This is a resource intense task and can take upto 5 minutes
+                        </h1>
+                    )}
+
+                    <div className="mb-4">
+                        <SearchBar
+                            value={searchTerm}
+                            onChange={(value) => {
+                                setSearchTerm(value);
+                                setCurrentPage(1);
+                            }}
+                            placeholder="Search by subject name or code"
+                        />
+                    </div>
+
+                    <div className="p-4 bg-blue-50 border-b">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div className="text-center">
+                                <div className="text-2xl font-bold text-blue-600">
+                                    {apiData?.totals?.completed || "0"}
+                                </div>
+                                <div className="text-sm text-gray-600">Completed</div>
+                            </div>
+                            <div className="text-center">
+                                <div className="text-2xl font-bold text-yellow-600">
+                                    {apiData?.totals?.pending || "0"}
+                                </div>
+                                <div className="text-sm text-gray-600">Pending</div>
+                            </div>
+                            <div className="text-center">
+                                <div className="text-2xl font-bold text-red-600">
+                                    {apiData?.totals?.rejected || "0"}
+                                </div>
+                                <div className="text-sm text-gray-600">Rejected</div>
+                            </div>
+                            <div className="text-center">
+                                <div className="text-2xl font-bold text-fuchsia-600">
+                                    {apiData?.totals?.no_certificate || "0"}
+                                </div>
+                                <div className="text-sm text-gray-600">
+                                    No Certificate
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="overflow-x-scroll rounded-lg shadow-sm border border-gray-100 bg-white">
+                        <table className="w-full">
+                            <thead className="bg-gray-50">
+                                <tr className="text-sm font-medium text-gray-700">
+                                    {headings.map((heading, idx) => (
+                                        <th
+                                            key={idx}
+                                            className="px-6 py-4 text-center "
                                         >
-                                            <svg
-                                                xmlns="http://www.w3.org/2000/svg"
-                                                className="h-5 w-5"
-                                                fill="none"
-                                                viewBox="0 0 24 24"
-                                                stroke="currentColor"
-                                            >
-                                                <path
-                                                    strokeLinecap="round"
-                                                    strokeLinejoin="round"
-                                                    strokeWidth={2}
-                                                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                                                />
-                                            </svg>
-                                        </button>
-                                    </div>
-                                </td>
-                                <td className="px-6 py-4">
-                                    {stats[subject.id]?.pending || "0"}
-                                </td>
-                                <td className="px-6 py-4">
-                                    {stats[subject.id]?.completed || "0"}
-                                </td>
-                                <td className="px-6 py-4">
-                                    {stats[subject.id]?.rejected || "0"}
-                                </td>
-                                <td className="px-6 py-4">
-                                    {stats[subject.id]?.no_certificate || "0"}
-                                </td>
-                                <td className="px-6 py-4">
-                                    <button
-                                        disabled={disabled}
-                                        onClick={() =>
-                                            handleRefresh(subject.id)
-                                        }
-                                        className={`inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 transition-all duration-200 group ${
-                                            disabled
-                                                ? "text-gray-400 bg-gray-100 cursor-not-allowed"
-                                                : "cursor-pointer"
-                                        }`}
+                                            {heading}
+                                        </th>
+                                    ))}
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100">
+                                {paginatedSubjects.map((subject) => (
+                                    <tr
+                                        key={subject.id}
+                                        className="hover:bg-gray-50 transition-colors duration-200 text-center"
                                     >
-                                        <RefreshCw className="w-4 h-4 group-hover:rotate-180 transition-transform duration-300" />
-                                    </button>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
-            {totalPages > 1 && (
-                <Pagination
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    onPageChange={(page) => setCurrentPage(page)}
-                    itemsPerPage={itemsPerPage}
-                    totalItems={totalItems}
-                />
+                                        <td className="px-6 py-4 ">
+                                            {subject.subject_code}
+                                        </td>
+                                        <td className="px-6 py-4">{subject.name}</td>
+
+                                        <td className="px-6 py-4 text-center whitespace-nowrap text-gray-700">
+                                            <div>
+                                                <button
+                                                    className={`py-2 px-4 rounded-md shadow-md transition-all duration-300 transform ${
+                                                        disabled
+                                                            ? "text-gray-400 bg-gray-100 cursor-not-allowed"
+                                                            : "text-black hover:scale-105 hover:bg-black hover:text-white cursor-pointer"
+                                                    }`}
+                                                    onClick={() =>
+                                                        handleClick([subject.id])
+                                                    }
+                                                    disabled={disabled}
+                                                >
+                                                    <svg
+                                                        xmlns="http://www.w3.org/2000/svg"
+                                                        className="h-5 w-5"
+                                                        fill="none"
+                                                        viewBox="0 0 24 24"
+                                                        stroke="currentColor"
+                                                    >
+                                                        <path
+                                                            strokeLinecap="round"
+                                                            strokeLinejoin="round"
+                                                            strokeWidth={2}
+                                                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                                                        />
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            {stats[subject.id]?.pending || "0"}
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            {stats[subject.id]?.completed || "0"}
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            {stats[subject.id]?.rejected || "0"}
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            {stats[subject.id]?.no_certificate || "0"}
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <button
+                                                disabled={disabled}
+                                                onClick={() =>
+                                                    handleRefresh(subject.id)
+                                                }
+                                                className={`inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 transition-all duration-200 group ${
+                                                    disabled
+                                                        ? "text-gray-400 bg-gray-100 cursor-not-allowed"
+                                                        : "cursor-pointer"
+                                                }`}
+                                            >
+                                                <RefreshCw className="w-4 h-4 group-hover:rotate-180 transition-transform duration-300" />
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    {totalPages > 1 && (
+                        <Pagination
+                            currentPage={currentPage}
+                            totalPages={totalPages}
+                            onPageChange={(page) => setCurrentPage(page)}
+                            itemsPerPage={itemsPerPage}
+                            totalItems={totalItems}
+                        />
+                    )}
+                </>
             )}
         </div>
     );

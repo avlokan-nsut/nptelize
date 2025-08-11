@@ -1,19 +1,29 @@
 import { useState, useRef } from 'react';
 import { useMutation } from "@tanstack/react-query";
 import axios from "axios";
+import { toast } from 'react-toastify';
 
 interface TeacherForm {
   name: string;
   email: string;
   password: string;
-  employee_id: string;
+  employee_id?: string; 
 }
 
+type teacher = {
+  employee_id: string;
+  email: string;
+  success: boolean;
+  message: string;
+}
 
+type ApiResponse = {
+  results: teacher[]
+}
 
 const postTeachers = async (teachers: TeacherForm[]) => {
   const apiUrl = import.meta.env.VITE_API_URL;
-  const response = await axios.post(
+  const response = await axios.post<ApiResponse>(
     `${apiUrl}/admin/create/teachers`,
     teachers,
     {
@@ -38,19 +48,43 @@ const CreateFaculty = () => {
   }]);
   
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [apiCalled, setApiCalled] = useState(false);
+  const [successCount, setSuccessCount] = useState(0);
+  const [errorTeachers, setErrorTeachers] = useState<teacher[]>([]);
 
   // React Query mutation for creating faculty
   const mutation = useMutation({
     mutationFn: postTeachers,
-    onSuccess: () => {
-      setSuccessMessage(`Successfully created faculty members`);
+    onSuccess: (data) => {
+      setApiCalled(true);
+      
+      // Use local variables instead of immediate state updates
+      let localSuccessCount = 0;
+      const failedTeachers:teacher[] = [];
+
+      // Process response data
+      data.results.forEach((teacher) => {
+        if (teacher.success) {
+          localSuccessCount += 1;
+        } else {
+          failedTeachers.push(teacher);
+        }
+      });
+
+      // Update state with final counts
+      setSuccessCount(localSuccessCount);
+      setErrorTeachers(failedTeachers);
+
+      // Use local variable for toast (this will work correctly)
+      if (localSuccessCount > 0) {
+        toast.success(`Successfully created ${localSuccessCount} faculty members`);
+      }
+      
       setTeachers([{ name: '', email: '', password: '', employee_id: '' }]);
       setIsSubmitting(false);
     },
     onError: () => {
-      setError("Failed to create faculty members");
+      toast.error("Failed to create faculty members");
       setIsSubmitting(false);
     },
   });
@@ -75,26 +109,24 @@ const CreateFaculty = () => {
     };
     setTeachers(updatedTeachers);
   };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validate form
+    // Validate form - removed employee_id from required fields
     const isValid = teachers.every(teacher => 
       teacher.name.trim() !== '' && 
       teacher.email.trim() !== '' && 
-      teacher.password.trim() !== '' && 
-      teacher.employee_id.trim() !== ''
+      teacher.password.trim() !== ''
     );
     
     if (!isValid) {
-      setError('Please fill in all fields for each faculty member.');
+      toast.error('Please fill in all required fields for each faculty member.');
       return;
     }
 
     // Form submission
     setIsSubmitting(true);
-    setError(null);
-    
     mutation.mutate(teachers);
   };
 
@@ -118,7 +150,6 @@ const CreateFaculty = () => {
         headers.forEach((header, i) => {
           teacher[header] = values[i];
         });
-        console.log(teacher);
         return teacher;
       });
       setIsSubmitting(true);
@@ -131,17 +162,55 @@ const CreateFaculty = () => {
     <div>
       <h2 className="text-xl font-semibold mb-4">Create Faculty</h2>
       
-      {/* Success message */}
-      {successMessage && (
-        <div className="mb-4 p-3 bg-green-100 border border-green-300 rounded">
-          <p className="text-green-700">{successMessage}</p>
+      {apiCalled && (
+        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">
+          <strong className="font-bold">Successfully Created: </strong>
+          <span className="block sm:inline">{successCount} faculty members</span>
         </div>
       )}
 
-      {/* Error message */}
-      {error && (
-        <div className="mb-4 p-3 bg-red-100 border border-red-300 text-red-600 rounded">
-          {error}
+      {mutation.isPending && (
+        <div className="flex items-center justify-center py-4">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+          <span className="ml-2">Processing...</span>
+        </div>
+      )}
+
+      {errorTeachers.length > 0 && (
+        <div className="mt-6 bg-white p-6 rounded-lg shadow-md">
+          <h3 className="text-lg font-medium mb-4 text-red-600">Failed Creations ({errorTeachers.length})</h3>
+          <div className="border rounded-md overflow-hidden">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Employee ID
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Email
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Error Message
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {errorTeachers.map((teacher, index) => (
+                  <tr key={index} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      {teacher.employee_id}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {teacher.email}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-red-600">
+                      {teacher.message}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
@@ -253,10 +322,9 @@ const CreateFaculty = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Employee ID</label>
                 <input
                   type="text"
-                  value={teacher.employee_id}
+                  value={teacher.employee_id || ''}
                   onChange={(e) => handleChange(index, 'employee_id', e.target.value)}
                   className="w-full p-2 border border-gray-300 rounded"
-                  required
                 />
               </div>
             </div>

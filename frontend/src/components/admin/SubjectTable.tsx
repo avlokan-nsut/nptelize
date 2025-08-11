@@ -3,6 +3,9 @@ import axios from "axios";
 import SubjectStudentsTable from "./SubjectStudentsTable";
 import Pagination from "../faculty/Pagination";
 import SearchBar from "../faculty/SearchBar";
+import { useAuthStore } from "../../store/useAuthStore";
+import { TenureSelector } from "../ui/DropDown";
+import TableSkeleton from "../ui/TableSkeleton";
 
 interface Subject {
     id: string;
@@ -30,6 +33,10 @@ const SubjectTable = () => {
     const [itemsPerPage] = useState(10);
     const [searchTerm, setSearchTerm] = useState("");
 
+    const { tenure } = useAuthStore();
+        const year = tenure?.year;
+        const sem = tenure?.is_even;
+
     useEffect(() => {
         const fetchData = async () => {
             try {
@@ -37,8 +44,9 @@ const SubjectTable = () => {
                 const apiUrl = import.meta.env.VITE_API_URL;
 
                 const [subjectsResponse, teachersResponse] = await Promise.all([
-                    axios.get(`${apiUrl}/admin/get/subjects`, {
+                    axios.get(`${apiUrl}/admin/get/session-subjects`, {
                         withCredentials: true,
+                        params:{year,sem}
                     }),
                     axios.get(`${apiUrl}/admin/get/teachers`, {
                         withCredentials: true,
@@ -57,7 +65,7 @@ const SubjectTable = () => {
         };
 
         fetchData();
-    }, []);
+    }, [year,sem]);
 
     useEffect(() => {
         setCurrentPage(1);
@@ -91,13 +99,7 @@ const SubjectTable = () => {
         return teacher ? teacher.name : "Unknown";
     };
 
-    if (loading) {
-        return (
-            <div className="flex justify-center items-center py-8">
-                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500"></div>
-            </div>
-        );
-    }
+    
 
     if (error) {
         return (
@@ -114,102 +116,113 @@ const SubjectTable = () => {
     return (
         <div>
             <h2 className="text-xl font-semibold mb-4">Subject List</h2>
-            {!selectedSubject && (
-                <div className="mb-4">
-                    <SearchBar
-                        value={searchTerm}
-                        onChange={setSearchTerm}
-                        placeholder="Search subjects..."
-                    />
-                </div>
-            )}
-            {selectedSubject ? (
-                <div className="mb-6">
-                    <button
-                        onClick={() => setSelectedSubject(null)}
-                        className="mb-4 px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md flex items-center"
-                    >
-                        <span className="mr-1">←</span> Back to subjects
-                    </button>
-                    <SubjectStudentsTable
-                        subjectId={selectedSubject.id}
-                        subjectName={selectedSubject.name}
-                    />
-                </div>
+            <div className="flex justify-center md:justify-end mb-6 max-w-7xl mx-auto">
+                <TenureSelector />
+            </div>
+            
+            {loading ? (
+                <TableSkeleton rows={5} cols={7} className="max-w-7xl mx-auto" />
             ) : (
                 <div>
-                    <div className="overflow-x-auto">
-                        <table className="min-w-full bg-white rounded-lg overflow-hidden">
-                            <thead className="bg-gray-100">
-                                <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Subject Name
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Subject Code
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Assigned Faculty
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Actions
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-200">
-                                {paginatedSubjects.length > 0 ? (
-                                    paginatedSubjects.map((subject) => (
-                                        <tr
-                                            key={subject.id}
-                                            className="hover:bg-gray-50"
-                                        >
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                                {subject.name}
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                {subject.subject_code}
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                {getTeacherName(
-                                                    subject.teacher_id
-                                                )}
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                <button
-                                                    onClick={() =>
-                                                        setSelectedSubject(
-                                                            subject
-                                                        )
-                                                    }
-                                                    className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                                                >
-                                                    View Students
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    ))
-                                ) : (
-                                    <tr>
-                                        <td
-                                            colSpan={4}
-                                            className="px-6 py-4 text-center text-sm text-gray-500"
-                                        >
-                                            No subjects found
-                                        </td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
+                    {!selectedSubject && (
+                        <div className="mb-4">
+                            <SearchBar
+                                value={searchTerm}
+                                onChange={setSearchTerm}
+                                placeholder="Search subjects..."
+                            />
+                        </div>
+                    )}
 
-                    {/* Pagination Component */}
-                    <Pagination
-                        currentPage={currentPage}
-                        totalPages={totalPages}
-                        onPageChange={handlePageChange}
-                        itemsPerPage={itemsPerPage}
-                        totalItems={filteredSubjects.length}
-                    />
+                    {selectedSubject ? (
+                        <div className="mb-6">
+                            <button
+                                onClick={() => setSelectedSubject(null)}
+                                className="mb-4 px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md flex items-center"
+                            >
+                                <span className="mr-1">←</span> Back to subjects
+                            </button>
+                            <SubjectStudentsTable
+                                subjectId={selectedSubject.id}
+                                subjectName={selectedSubject.name}
+                            />
+                        </div>
+                    ) : (
+                        <div>
+                            <div className="overflow-x-auto">
+                                <table className="min-w-full bg-white rounded-lg overflow-hidden">
+                                    <thead className="bg-gray-100">
+                                        <tr>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Subject Name
+                                            </th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Subject Code
+                                            </th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Assigned Faculty
+                                            </th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Actions
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-200">
+                                        {paginatedSubjects.length > 0 ? (
+                                            paginatedSubjects.map((subject) => (
+                                                <tr
+                                                    key={subject.id}
+                                                    className="hover:bg-gray-50"
+                                                >
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                                        {subject.name}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                        {subject.subject_code}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                        {getTeacherName(
+                                                            subject.teacher_id
+                                                        )}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                        <button
+                                                            onClick={() =>
+                                                                setSelectedSubject(
+                                                                    subject
+                                                                )
+                                                            }
+                                                            className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                                                        >
+                                                            View Students
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        ) : (
+                                            <tr>
+                                                <td
+                                                    colSpan={4}
+                                                    className="px-6 py-4 text-center text-sm text-gray-500"
+                                                >
+                                                    No subjects found
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            {/* Pagination Component */}
+                            <Pagination
+                                currentPage={currentPage}
+                                totalPages={totalPages}
+                                onPageChange={handlePageChange}
+                                itemsPerPage={itemsPerPage}
+                                totalItems={filteredSubjects.length}
+                            />
+                        </div>
+                    )}
                 </div>
             )}
         </div>
