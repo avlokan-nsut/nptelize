@@ -39,7 +39,7 @@ function formatDateOnly(isoString: string): string {
   return adjustedDate.toLocaleDateString("en-US", options);
 }
 
-// Replace fixed fetchData with parameterized version
+
 const fetchData = async (year: number, sem: number) => {
   const apiUrl = import.meta.env.VITE_API_URL;
   const reqType = { request_types: ["pending", "rejected", "error", "no_certificate"] };
@@ -88,7 +88,7 @@ const RequestedTable = () => {
 
   const { tenure } = useAuthStore();
   const year = tenure?.year;
-  const sem = tenure?.is_even; // 0 = Odd, 1 = Even
+  const sem = tenure?.is_even; 
 
   const { data, error, isLoading, refetch } = useQuery({
     queryKey: ["myData", year, sem],
@@ -334,9 +334,6 @@ const RequestedTable = () => {
       </div>
     );
   }
-  if (isLoading) {
-    return <TableSkeleton rows={5} cols={7} className="max-w-7xl mx-auto" />;
-  }
 
   return (<>
       <div className="flex justify-center md:justify-end mb-6 max-w-7xl mx-auto">
@@ -344,6 +341,11 @@ const RequestedTable = () => {
       </div>
       <div className="overflow-x-auto rounded-lg shadow-sm border border-gray-100 bg-white max-w-7xl mx-auto">
 
+        {isLoading ? (
+
+          <TableSkeleton rows={5} cols={7} className="max-w-7xl mx-auto" />
+        ): data && (
+          
         <table className="table w-full">
           <thead className="bg-gray-200">
             <tr className="text-gray-600 text-sm font-medium">
@@ -355,15 +357,6 @@ const RequestedTable = () => {
             </tr>
           </thead>
 
-          {isLoading ? (
-            <tbody>
-              <tr>
-                <td colSpan={headings.length} className="text-center py-8">
-                  <span className="loading loading-ring loading-xl"></span>
-                </td>
-              </tr>
-            </tbody>
-          ) : data && (
             <tbody className="divide-y divide-gray-100">
               {data.requests.map((row, idx) => (
                 <tr
@@ -443,8 +436,8 @@ const RequestedTable = () => {
                   </td>
                 </tr>
               ))}
-            </tbody>)}
-        </table>
+            </tbody>
+        </table>)}
       </div>
       <AlertDialog
         isClosed={alertOpen}

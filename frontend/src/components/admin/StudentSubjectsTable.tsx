@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useAuthStore } from '../../store/useAuthStore';
+import { TenureSelector } from '../ui/DropDown';
+import TableSkeleton from '../ui/TableSkeleton';
 
 interface Subject {
   id: string;
@@ -27,6 +30,10 @@ const StudentSubjectsTable = ({ studentId, studentName }: StudentSubjectsTablePr
   const [error, setError] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
 
+   const { tenure } = useAuthStore();
+      const year = tenure?.year;
+      const sem = tenure?.is_even;
+
   const fetchData = async () => {
     if (!studentId) {
       setError('Student ID is required');
@@ -42,6 +49,7 @@ const StudentSubjectsTable = ({ studentId, studentName }: StudentSubjectsTablePr
       const [subjectsResponse, teachersResponse] = await Promise.all([
         axios.get(`${apiUrl}/admin/get/student-subjects/${studentId}`, {
           withCredentials: true,
+          params:{year,sem}
         }),
         axios.get(`${apiUrl}/admin/get/teachers`, { 
           withCredentials: true 
@@ -61,7 +69,7 @@ const StudentSubjectsTable = ({ studentId, studentName }: StudentSubjectsTablePr
 
   useEffect(() => {
     fetchData();
-  }, [studentId]);
+  }, [studentId,year,sem]);
 
   const getTeacherName = (teacherId: string) => {
     const teacher = teachers.find(t => t.id === teacherId);
@@ -77,7 +85,9 @@ const StudentSubjectsTable = ({ studentId, studentName }: StudentSubjectsTablePr
       await axios.delete(`${apiUrl}/admin/delete/student-subject`, {
         params: {
           student_id: studentId,
-          subject_id: subjectId
+          subject_id: subjectId,
+          year,
+          sem
         },
         withCredentials: true
       });
@@ -91,13 +101,6 @@ const StudentSubjectsTable = ({ studentId, studentName }: StudentSubjectsTablePr
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center py-8">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500"></div>
-      </div>
-    );
-  }
 
   if (error) {
     return (
@@ -122,6 +125,14 @@ const StudentSubjectsTable = ({ studentId, studentName }: StudentSubjectsTablePr
       <h2 className="text-xl font-semibold mb-4">
         {studentName ? `Subjects Enrolled by ${studentName}` : 'Student Subjects'}
       </h2>
+
+      <div className="flex justify-center md:justify-end mb-6 max-w-7xl mx-auto">
+                    <TenureSelector />
+        </div>
+
+      {loading ? (
+        <TableSkeleton rows={5} cols={7} className="max-w-7xl mx-auto" />
+      ):subjects && (
       <div className="overflow-x-auto">
         <table className="min-w-full bg-white rounded-lg overflow-hidden">
           <thead className="bg-gray-100">
@@ -159,7 +170,7 @@ const StudentSubjectsTable = ({ studentId, studentName }: StudentSubjectsTablePr
             )}
           </tbody>
         </table>
-      </div>
+      </div>)}
     </div>
   );
 };

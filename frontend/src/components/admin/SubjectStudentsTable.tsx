@@ -2,6 +2,8 @@ import { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import Pagination from '../faculty/Pagination';
 import SearchBar from '../faculty/SearchBar';
+import { useAuthStore } from '../../store/useAuthStore';
+import TableSkeleton from '../ui/TableSkeleton';
 
 interface Student {
   id: string;
@@ -23,6 +25,10 @@ const SubjectStudentsTable = ({ subjectId, subjectName }: SubjectStudentsTablePr
   const [itemsPerPage] = useState(10);
   const [searchTerm, setSearchTerm] = useState("");
 
+  const { tenure } = useAuthStore();
+    const year = tenure?.year;
+    const sem = tenure?.is_even;
+
   useEffect(() => {
     const fetchSubjectStudents = async () => {
       if (!subjectId) {
@@ -36,6 +42,7 @@ const SubjectStudentsTable = ({ subjectId, subjectName }: SubjectStudentsTablePr
         const apiUrl = import.meta.env.VITE_API_URL;
         const response = await axios.get(`${apiUrl}/admin/get/subject-students/${subjectId}`, {
           withCredentials: true,
+          params:{year,sem}
         });
         setStudents(response.data.students);
         setError(null);
@@ -48,7 +55,7 @@ const SubjectStudentsTable = ({ subjectId, subjectName }: SubjectStudentsTablePr
     };
 
     fetchSubjectStudents();
-  }, [subjectId]);
+  }, [subjectId,year,sem]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -76,13 +83,6 @@ const SubjectStudentsTable = ({ subjectId, subjectName }: SubjectStudentsTablePr
     setCurrentPage(page);
   };
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center py-8">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500"></div>
-      </div>
-    );
-  }
 
   if (error) {
     return (
@@ -107,6 +107,10 @@ const SubjectStudentsTable = ({ subjectId, subjectName }: SubjectStudentsTablePr
         />
       </div>
 
+    {loading ? (
+        <TableSkeleton rows={5} cols={7} className="max-w-7xl mx-auto" />
+      ):paginatedStudents && (
+      
       <div className="overflow-x-auto">
         <table className="min-w-full bg-white rounded-lg overflow-hidden">
           <thead className="bg-gray-100">
@@ -134,7 +138,7 @@ const SubjectStudentsTable = ({ subjectId, subjectName }: SubjectStudentsTablePr
             )}
           </tbody>
         </table>
-      </div>
+      </div>)}
 
       {/* Pagination Component */}
       <Pagination

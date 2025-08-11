@@ -8,10 +8,12 @@ from .schemas import (
     TeacherCreate, 
     AdminCreate, 
     CreateUserResponse, 
+    CreateTeacherResponse,
     SubjectCreate, 
     CreateSubjectResponse, 
     AddStudentToSubjectSchema, 
     AddTeacherToSubjectSchema
+
 )
 from app.schemas import TokenData, GenericResponse
 from app.services.utils.hashing import generate_password_hash
@@ -109,7 +111,7 @@ def get_session_subjects(
         ]
     }
 
-@router.get('/get/subject-students/{student_id}')
+@router.get('/get/subject-students/{subject_id}')
 def get_students_in_a_subject(
     subject_id: str,
     year: int = Query(),
@@ -247,31 +249,47 @@ def create_students(
             'results': results
         }
 
-@router.post('/create/teachers', response_model=GenericResponse)
+@router.post('/create/teachers', response_model=CreateTeacherResponse)
 def create_coordinator(
-    teacher_data: TeacherCreate, 
+    teacher_data_list: List[TeacherCreate],  
     current_admin: TokenData = Depends(get_current_admin), 
     db: Session = Depends(get_db)
 ):
+    results = []
+    
+    for teacher_data in teacher_data_list:
+        try:
+            teacher_password_hash = generate_password_hash(teacher_data.password)
+            db_teacher = User(
+                name=teacher_data.name,
+                email=teacher_data.email,
+                password_hash=teacher_password_hash,
+                role=UserRole.teacher,
+                employee_id=teacher_data.employee_id
+            )
+            
+            db.add(db_teacher)
+            db.commit()
+            results.append({
+                "employee_id": teacher_data.employee_id,
+                "email": teacher_data.email,
+                "success": True,
+                "message": "Teacher created successfully"
+            })
+        except Exception as e:
+            db.rollback()
+            logger.error(f"Teacher creation error: {e}")
+            results.append({
+                "employee_id": teacher_data.employee_id,
+                "email": teacher_data.email,
+                "success": False,
+                "message": "Failed to create teacher"
+            })
+    
+    return {
+        'results': results
+    }
 
-    try:
-        teacher_password_hash = generate_password_hash(teacher_data.password)
-        db_teacher = User(
-            name=teacher_data.name,
-            email=teacher_data.email,
-            password_hash=teacher_password_hash,
-            role=UserRole.teacher,
-            employee_id=teacher_data.employee_id
-        )
-        db.add(db_teacher)
-        db.commit()
-
-        return {
-            "message": "Teacher created successfully"
-        }
-    except Exception as e:
-        db.rollback()
-        raise e
 
 @router.post('/create/admins', response_model=GenericResponse)
 def create_admins(
