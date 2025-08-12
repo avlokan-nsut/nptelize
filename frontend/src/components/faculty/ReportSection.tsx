@@ -6,6 +6,7 @@ import Pagination from "./Pagination";
 import { RefreshCw } from "lucide-react";
 import { useAuthStore } from "../../store/useAuthStore";
 import { TenureSelector } from "../ui/DropDown";
+import TableSkeleton from "../ui/TableSkeleton";
 
 const headings = [
     "Subject Code",
@@ -352,9 +353,7 @@ const ReportSection = function () {
             </div>
 
             {isLoading ? (
-                <div className="flex justify-center items-center h-64">
-                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-                </div>
+                <TableSkeleton rows={5} cols={7} className="max-w-7xl mx-auto" />
             ) : error ? (
                 <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg shadow-sm">
                     <p>Error loading subjects: {(error as Error).message}</p>

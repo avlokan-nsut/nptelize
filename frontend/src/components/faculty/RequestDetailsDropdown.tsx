@@ -48,43 +48,59 @@ const RequestDetailsDropdown = ({ request, colSpan, subjectId, onClose }: Reques
   const { data: certData, isFetching: certLoading } = useQuery(certQueries);
 
   const handleAccept = async () => {
-    setIsAcceptLoading(true);
-    try {
-      const marks = certData?.data?.uploaded_certificate?.marks ||
-        certData?.data?.verification_certificate?.marks ||
-        parseInt(request.verified_total_marks) || 0;
+  setIsAcceptLoading(true);
+  try {
+    const marks = certData?.data?.uploaded_certificate?.marks ||
+      certData?.data?.verification_certificate?.marks ||
+      parseInt(request.verified_total_marks) || 0;
 
-      await axios.post(`${apiUrl}/teacher/verify/certificate/manual/unsafe`, {
-        request_id: request.id,
-        student_id: request.student.id,
-        subject_id: request.subject.id,
-        marks: marks
-      }, { withCredentials: true });
-      queryClient.invalidateQueries({ queryKey: ["teacherRequestsStudents", subjectId] });
-      onClose();
-
-      toast.success("Mannual Verification Done!")
-    } catch (e) {
-      console.error('Accept failed:', e);
-      toast.error("Error!")
-    } finally {
-      setIsAcceptLoading(false);
+    await axios.post(`${apiUrl}/teacher/verify/certificate/manual/unsafe`, {
+      request_id: request.id,
+      student_id: request.student.id,
+      subject_id: request.subject.id,
+      marks: marks
+    }, { withCredentials: true });
+    
+    queryClient.invalidateQueries({ queryKey: ["teacherRequestsStudents", subjectId] });
+    onClose();
+    toast.success("Manual Verification Done!");
+    
+  } catch (error) {
+    console.error('Accept failed:', error);
+    
+    
+    if (axios.isAxiosError(error) && error.response?.status === 401) {
+      toast.error("Unauthorized");
+    } else {
+      toast.error("Failed to verify certificate");
     }
-  };
+  } finally {
+    setIsAcceptLoading(false);
+  }
+};
 
-  const handleReject = async () => {
-    setIsRejectLoading(true);
-    try {
-      await axios.put(`${apiUrl}/teacher/reject/certificate?request_id=${request.id}`, {}, { withCredentials: true });
-      queryClient.invalidateQueries({ queryKey: ["teacherRequestsStudents", subjectId] });
-      onClose();
-      toast.success("Rejected Successfully")
-    } catch (e) {
-      toast.error("Error!")
-    } finally {
-      setIsRejectLoading(false);
+const handleReject = async () => {
+  setIsRejectLoading(true);
+  try {
+    await axios.put(`${apiUrl}/teacher/reject/certificate?request_id=${request.id}`, {}, { withCredentials: true });
+    queryClient.invalidateQueries({ queryKey: ["teacherRequestsStudents", subjectId] });
+    onClose();
+    toast.success("Rejected Successfully");
+    
+  } catch (error) {
+    console.error('Reject failed:', error);
+    
+   
+    if (axios.isAxiosError(error) && error.response?.status === 401) {
+      toast.error("Unauthorized");
+    } else {
+      toast.error("Failed to reject certificate");
     }
-  };
+  } finally {
+    setIsRejectLoading(false);
+  }
+};
+
 
   // Create a mapping for certificate field labels
   const certificateFields = [
