@@ -6,6 +6,7 @@ import { Request } from "./StudentStatus";
 import { CertificateApiResponse } from "../../types/faculty/MannualVerification";
 import MannualAlert from "./MannualAlert";
 import { toast } from "react-toastify";
+import { useAuthStore } from "../../store/useAuthStore";
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -14,13 +15,19 @@ interface RequestDetailsDropdownProps {
   colSpan: number;
   subjectId: string;
   onClose: () => void;
+  showReject?:boolean;
 }
 
-const RequestDetailsDropdown = ({ request, colSpan, subjectId, onClose }: RequestDetailsDropdownProps) => {
+const RequestDetailsDropdown = ({ request, colSpan, onClose,showReject }: RequestDetailsDropdownProps) => {
   const queryClient = useQueryClient();
   const [isVisible, setIsVisable] = useState<string | null>(null);
   const [isAcceptLoading, setIsAcceptLoading] = useState(false);
   const [isRejectLoading, setIsRejectLoading] = useState(false);
+  
+  // Get year and sem from auth store
+  const { tenure } = useAuthStore();
+  const year = tenure?.year;
+  const sem = tenure?.is_even;
 
   const fetchCertInfo = async (requestId: string) => {
     try {
@@ -48,58 +55,85 @@ const RequestDetailsDropdown = ({ request, colSpan, subjectId, onClose }: Reques
   const { data: certData, isFetching: certLoading } = useQuery(certQueries);
 
   const handleAccept = async () => {
-  setIsAcceptLoading(true);
-  try {
-    const marks = certData?.data?.uploaded_certificate?.marks ||
-      certData?.data?.verification_certificate?.marks ||
-      parseInt(request.verified_total_marks) || 0;
+    setIsAcceptLoading(true);
+    try {
+      const marks = certData?.data?.uploaded_certificate?.marks ||
+        certData?.data?.verification_certificate?.marks ||
+        parseInt(request.verified_total_marks) || 0;
 
-    await axios.post(`${apiUrl}/teacher/verify/certificate/manual/unsafe`, {
-      request_id: request.id,
-      student_id: request.student.id,
-      subject_id: request.subject.id,
-      marks: marks
-    }, { withCredentials: true });
-    
-    queryClient.invalidateQueries({ queryKey: ["teacherRequestsStudents", subjectId] });
-    onClose();
-    toast.success("Manual Verification Done!");
-    
-  } catch (error) {
-    console.error('Accept failed:', error);
-    
-    
-    if (axios.isAxiosError(error) && error.response?.status === 401) {
-      toast.error("Unauthorized");
-    } else {
-      toast.error("Failed to verify certificate");
+      await axios.post(`${apiUrl}/teacher/verify/certificate/manual/unsafe`, {
+        request_id: request.id,
+        student_id: request.student.id,
+        subject_id: request.subject.id,
+        marks: marks
+      }, { withCredentials: true });
+      
+      // Optimistically update the cache for MannualVerification
+      queryClient.setQueryData(
+        ["teacherRequestsByStatus", year, sem], 
+        (oldData: any) => {
+          if (!oldData) return oldData;
+          return {
+            ...oldData,
+            requests: oldData.requests.filter((req: any) => req.id !== request.id)
+          };
+        }
+      );
+      
+      // Also invalidate StudentStatus query to refresh it
+      queryClient.invalidateQueries({ queryKey: ["teacherRequestsStudentsStatus"] });
+      
+      onClose();
+      toast.success("Manual Verification Done!");
+    } catch (error) {
+      console.error('Accept failed:', error);
+      
+      
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        toast.error("Unauthorized");
+      } else {
+        toast.error("Failed to verify certificate");
+      }
+    } finally {
+      setIsAcceptLoading(false);
     }
-  } finally {
-    setIsAcceptLoading(false);
-  }
-};
+  };
 
-const handleReject = async () => {
-  setIsRejectLoading(true);
-  try {
-    await axios.put(`${apiUrl}/teacher/reject/certificate?request_id=${request.id}`, {}, { withCredentials: true });
-    queryClient.invalidateQueries({ queryKey: ["teacherRequestsStudents", subjectId] });
-    onClose();
-    toast.success("Rejected Successfully");
-    
-  } catch (error) {
-    console.error('Reject failed:', error);
-    
-   
-    if (axios.isAxiosError(error) && error.response?.status === 401) {
-      toast.error("Unauthorized");
-    } else {
-      toast.error("Failed to reject certificate");
+  const handleReject = async () => {
+    setIsRejectLoading(true);
+    try {
+      await axios.put(`${apiUrl}/teacher/reject/certificate?request_id=${request.id}`, {}, { withCredentials: true });
+      
+      // Optimistically update the cache for MannualVerification
+      queryClient.setQueryData(
+        ["teacherRequestsByStatus", year, sem], 
+        (oldData: any) => {
+          if (!oldData) return oldData;
+          return {
+            ...oldData,
+            requests: oldData.requests.filter((req: any) => req.id !== request.id)
+          };
+        }
+      );
+      
+      // Also invalidate StudentStatus query to refresh it
+      queryClient.invalidateQueries({ queryKey: ["teacherRequestsStudentsStatus"] });
+      
+      onClose();
+      toast.success("Rejected Successfully");
+    } catch (error) {
+      console.error('Reject failed:', error);
+      
+     
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        toast.error("Unauthorized");
+      } else {
+        toast.error("Failed to reject certificate");
+      }
+    } finally {
+      setIsRejectLoading(false);
     }
-  } finally {
-    setIsRejectLoading(false);
-  }
-};
+  };
 
 
   // Create a mapping for certificate field labels
@@ -276,7 +310,7 @@ const handleReject = async () => {
 
             {/* Action Buttons */}
             <div className="flex gap-3 justify-end mt-6 pt-4 border-t border-gray-200">
-              <button 
+              {showReject && (<button 
                 onClick={handleReject} 
                 disabled={isRejectLoading || isAcceptLoading}
                 className="btn btn-error btn-sm gap-2 text-white"
@@ -287,7 +321,7 @@ const handleReject = async () => {
                   <FaTimes className="w-4 h-4 text-white" />
                 )}
                 {isRejectLoading ? 'Rejecting...' : 'Reject'}
-              </button>
+              </button>)}
 
               {certData?.data?.uploaded_certificate && certData?.data?.verification_certificate && 
                 <button 
@@ -305,17 +339,20 @@ const handleReject = async () => {
               }
 
               {!certData?.data?.uploaded_certificate && !certData?.data?.verification_certificate &&
-                <div><button onClick={() => { setIsVisable(request.id) }} className="btn btn-success btn-sm gap-2 text-white">
-                  <FaCheck className="w-4 h-4 text-white" />
-                  Accept Manually
-                </button>
-
+                <div>
+                  <button 
+                    onClick={() => { setIsVisable(request.id) }} 
+                    className="btn btn-success btn-sm gap-2 text-white"
+                  >
+                    <FaCheck className="w-4 h-4 text-white" />
+                    Accept Manually
+                  </button>
                   <MannualAlert
+                    isVisible={isVisible === request.id}
+                    onClose={() => setIsVisable(null)}
                     request_id={request.id}
                     subject_id={request.subject.id}
                     student_id={request.student.id}
-                    isVisible={isVisible === request.id}
-                    onClose={() => setIsVisable(null)}
                     student_name={request.student.name}
                     subject_name={request.subject.name}
                   />

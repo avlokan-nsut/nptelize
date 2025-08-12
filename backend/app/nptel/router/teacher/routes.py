@@ -103,7 +103,7 @@ def get_student_requests_for_a_subject(
         ]
     }
 
-@router.get('/subject/requests')
+@router.post('/subject/requests')
 def get_all_requests_by_status(
     request_types: List[RequestStatus] = Body(embed=True),
     year: int = Query(),

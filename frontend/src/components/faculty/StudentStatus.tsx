@@ -96,10 +96,13 @@ const StudentStatus = function () {
     error,
     isLoading,
   } = useQuery({
-    queryKey: ["teacherRequestsStudents", subjectId,year,sem],
+    queryKey: ["teacherRequestsStudentsStatus", subjectId,year,sem],
     queryFn: ()=>fetchData(year as number,sem as number),
+    
     refetchOnWindowFocus: false,
   });
+
+  
 
   // Calculate statistics and filtered data
   const statisticsAndFilteredData = useMemo(() => {
@@ -611,6 +614,7 @@ const StudentStatus = function () {
                                   colSpan={headings.length}
                                   subjectId={subjectId}
                                   onClose={() => setOpenDropdownId(null)}
+                                  showReject={true}
                                 />
                               )}
                             </>
