@@ -15,7 +15,7 @@ interface RequestDetailsDropdownProps {
   colSpan: number;
   subjectId: string;
   onClose: () => void;
-  showReject?:boolean;
+  showReject:boolean;
 }
 
 const RequestDetailsDropdown = ({ request, colSpan, onClose,showReject }: RequestDetailsDropdownProps) => {
