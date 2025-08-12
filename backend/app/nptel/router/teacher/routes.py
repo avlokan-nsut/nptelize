@@ -103,6 +103,75 @@ def get_student_requests_for_a_subject(
         ]
     }
 
+@router.get('/subject/requests')
+def get_all_requests_by_status(
+    request_types: List[RequestStatus] = Body(embed=True),
+    year: int = Query(),
+    sem: int = Query(),
+    db: Session = Depends(get_db),
+    current_teacher: TokenData = Depends(get_current_teacher),
+    is_coordinator: bool = Depends(check_coordinator)
+):
+    request_types = list(set(request_types))
+    try: 
+
+        is_sem_odd = bool(sem & 1)
+
+        queries = [
+            TeacherSubjectAllotment.year == year,
+            TeacherSubjectAllotment.is_sem_odd == is_sem_odd,
+        ]
+
+        if not is_coordinator:
+            queries.append(TeacherSubjectAllotment.teacher_id == current_teacher.user_id)
+
+        enrollments = (
+            db.query(StudentSubjectEnrollment).filter(
+                StudentSubjectEnrollment.teacher_subject_allotment.has(
+                    and_(
+                        *queries
+                    )
+                ),
+                StudentSubjectEnrollment.request.has(),  # scalar relationship check
+            ).all()
+        )
+
+        filtered_requests = [
+            cast(Request, t.request) 
+            for t in enrollments if cast(Request, t.request).status in request_types
+        ]
+
+        return {
+            'requests': [
+                {
+                    'id': request.id,
+                    'student': {
+                        'id': request.student_subject_enrollment.student.id,
+                        'name': request.student_subject_enrollment.student.name,
+                        'email': request.student_subject_enrollment.student.email,
+                        'roll_number': request.student_subject_enrollment.student.roll_number,
+                    },
+                    'subject': {
+                        'id': request.student_subject_enrollment.teacher_subject_allotment.subject.id,
+                        'name': request.student_subject_enrollment.teacher_subject_allotment.subject.name,
+                        'subject_code': request.student_subject_enrollment.teacher_subject_allotment.subject.subject_code,
+                        'nptel_course_code': request.student_subject_enrollment.teacher_subject_allotment.subject.nptel_course_code,
+                        'teacher_id': request.student_subject_enrollment.teacher_subject_allotment.teacher_id,
+                    },
+                    'verified_total_marks': request.certificate.verified_total_marks if request.certificate else None,
+                    'status': request.status,
+                    'created_at': request.created_at,
+                    'updated_at': request.updated_at,
+                    'due_date': request.due_date,
+                }
+                for request in filtered_requests
+            ]
+        } 
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error getting certificate requests: {e}")
+        raise e
+    
 
 @router.get('/students/{subject_id}', response_model=EnrolledStudentResponse)
 def get_students_enrolled_in_a_subject(
