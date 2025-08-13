@@ -91,7 +91,8 @@ class TeacherSubjectAllotment(Base):
     enrolled_students: Mapped[Optional[List["StudentSubjectEnrollment"]]] = relationship("StudentSubjectEnrollment", back_populates="teacher_subject_allotment")
 
     __table_args__ = (
-        UniqueConstraint('teacher_id', 'subject_id', 'year', 'is_sem_odd'),
+        # UniqueConstraint('teacher_id', 'subject_id', 'year', 'is_sem_odd'),
+        UniqueConstraint('subject_id', 'year', 'is_sem_odd'),
     )
 
 
