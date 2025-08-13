@@ -513,6 +513,7 @@ def reject_certificate_under_review(
         
         # Update certificate details
         db_certificate.verified = False
+        db_certificate.verified_total_marks = None  # Reset marks when rejected
         db_certificate.remark = "Manually rejected by teacher after review"
         
         # Commit the changes
