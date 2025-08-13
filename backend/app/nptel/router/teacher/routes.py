@@ -103,7 +103,7 @@ def get_student_requests_for_a_subject(
         ]
     }
 
-@router.get('/subject/requests')
+@router.post('/subject/requests')
 def get_all_requests_by_status(
     request_types: List[RequestStatus] = Body(embed=True),
     year: int = Query(),
@@ -513,6 +513,7 @@ def reject_certificate_under_review(
         
         # Update certificate details
         db_certificate.verified = False
+        db_certificate.verified_total_marks = None  # Reset marks when rejected
         db_certificate.remark = "Manually rejected by teacher after review"
         
         # Commit the changes

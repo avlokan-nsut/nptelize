@@ -2,6 +2,7 @@ export type Subject = {
   id: string;
   name: string;
   subject_code: string;
+  nptel_course_code:string,
   teacher_id: string;
 };
 

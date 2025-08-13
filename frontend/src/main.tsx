@@ -20,10 +20,10 @@ import PublicRoute from "./components/PublicRoutes";
 import StudentStatus from "./components/faculty/StudentStatus";
 import Developers from "./components/Developers";
 import ReportSection from "./components/faculty/ReportSection";
-import RejectedVerification from "./components/faculty/RejectedVerification";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import LandingApp from "./components/new-landing/LandingApp";
+import MannualVerification from "./components/faculty/MannualVerification";
 
 const queryClient = new QueryClient();
 
@@ -66,9 +66,13 @@ const routes = createBrowserRouter(
           path="faculty/manual-verification"
           element={<ManualVerification />}
         /> */}
-        <Route
+        {/* <Route
           path="faculty/verify-rejected"
           element={<RejectedVerification />}
+        /> */}
+        <Route
+          path="faculty/verify-rejected"
+          element={<MannualVerification/>}
         />
       </Route>
 

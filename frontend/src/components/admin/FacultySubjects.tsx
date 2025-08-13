@@ -5,8 +5,6 @@ import { toast } from 'react-toastify';
 import axios from 'axios';
 import Papa from 'papaparse';
 
-
-
 // Define Zod schema for validation
 const TeacherSubjectSchema = z.object({
     email: z.string().email("Invalid email address"),
@@ -22,12 +20,16 @@ const AllotmentFormSchema = z.object({
 type TeacherSubject = z.infer<typeof TeacherSubjectSchema>;
 type AllotmentForm = z.infer<typeof AllotmentFormSchema>;
 
-type AllotmentResponse = {
+type AllotmentResult = {
     email: string;
     success: boolean;
     message: string;
     course_code: string;
-}[];
+};
+
+type ApiResponse = {
+    results: AllotmentResult[]
+};
 
 const FacultySubjects: React.FC = () => {
     const [teacherSubjects, setTeacherSubjects] = useState<TeacherSubject[]>([
@@ -35,9 +37,14 @@ const FacultySubjects: React.FC = () => {
     ]);
     const [year, setYear] = useState<number>(new Date().getFullYear());
     const [semester, setSemester] = useState<number>(0);
-    const [allotmentResults, setAllotmentResults] = useState<AllotmentResponse | null>(null);
     const [inputMode, setInputMode] = useState<'manual' | 'csv'>('manual');
     const [csvData, setCsvData] = useState<TeacherSubject[]>([]);
+    
+    // API state management
+    const [apiCalled, setApiCalled] = useState(false);
+    const [successCount, setSuccessCount] = useState(0);
+    const [errorResults, setErrorResults] = useState<AllotmentResult[]>([]);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Generate years array from 2025 to current year
     const currentYear = new Date().getFullYear();
@@ -48,7 +55,7 @@ const FacultySubjects: React.FC = () => {
 
     // Mutation for allotting teacher to subject
     const allotMutation = useMutation<
-        AllotmentResponse,
+        ApiResponse,
         Error,
         AllotmentForm
     >({
@@ -64,20 +71,45 @@ const FacultySubjects: React.FC = () => {
                     },
                     headers: {
                         'Content-Type': 'application/json',
-                    }
+                    },
+                    withCredentials: true,
                 }
             );
 
             return response.data;
         },
         onSuccess: (data) => {
-            toast.success('Teacher allotment completed');
-            setTeacherSubjects([{ email: '', course_code: '' }]);
+            setApiCalled(true);
+            
+            // Use local variables instead of immediate state updates
+            let localSuccessCount = 0;
+            const failedResults:AllotmentResult[] = [];
 
-            setAllotmentResults(data);
+            // Process response data
+            data.results.forEach((result) => {
+                if (result.success) {
+                    localSuccessCount += 1;
+                } else {
+                    failedResults.push(result);
+                }
+            });
+
+            // Update state with final counts
+            setSuccessCount(localSuccessCount);
+            setErrorResults(failedResults);
+
+            // Use local variable for toast (this will work correctly)
+            if (localSuccessCount > 0) {
+                toast.success(`Successfully allotted ${localSuccessCount} teacher-subject pairs`);
+            }
+            
+            setTeacherSubjects([{ email: '', course_code: '' }]);
+            setCsvData([]);
+            setIsSubmitting(false);
         },
         onError: (error) => {
-            toast.error(`Error: ${error.message}`);
+            toast.error(`Failed to allot teachers: ${error.message}`);
+            setIsSubmitting(false);
         },
     });
 
@@ -114,6 +146,7 @@ const FacultySubjects: React.FC = () => {
             AllotmentFormSchema.parse(formData);
 
             // Submit data if validation passes
+            setIsSubmitting(true);
             allotMutation.mutate(formData);
         } catch (error) {
             if (error instanceof z.ZodError) {
@@ -209,6 +242,58 @@ const FacultySubjects: React.FC = () => {
     return (
         <div className="p-6 bg-white rounded-lg shadow-md">
             <h2 className="text-2xl font-bold mb-6">Allot Teachers to Subjects</h2>
+
+            {apiCalled && (
+                <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">
+                    <strong className="font-bold">Successfully Allotted: </strong>
+                    <span className="block sm:inline">{successCount} teacher-subject pairs</span>
+                </div>
+            )}
+
+            {allotMutation.isPending && (
+                <div className="flex items-center justify-center py-4">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                    <span className="ml-2">Processing allotments...</span>
+                </div>
+            )}
+
+            {errorResults.length > 0 && (
+                <div className="mt-6 bg-white p-6 rounded-lg shadow-md mb-6">
+                    <h3 className="text-lg font-medium mb-4 text-red-600">Failed Allotments ({errorResults.length})</h3>
+                    <div className="border rounded-md overflow-hidden">
+                        <table className="min-w-full divide-y divide-gray-200">
+                            <thead className="bg-gray-50">
+                                <tr>
+                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Teacher Email
+                                    </th>
+                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Course Code
+                                    </th>
+                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Error Message
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-gray-200">
+                                {errorResults.map((result, index) => (
+                                    <tr key={index} className="hover:bg-gray-50">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                            {result.email}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                            {result.course_code}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-red-600">
+                                            {result.message}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
 
             <form onSubmit={handleSubmit}>
                 <div className="mb-6 grid grid-cols-2 gap-4">
@@ -380,44 +465,16 @@ const FacultySubjects: React.FC = () => {
 
                 <button
                     type="submit"
-                    className="w-full py-2 bg-green-500 text-white rounded-md hover:bg-green-600 disabled:bg-gray-400"
-                    disabled={allotMutation.isPending || teacherSubjects.length === 0 || !teacherSubjects[0].email}
+                    className={`w-full py-2 rounded-md transition-colors ${
+                        isSubmitting 
+                            ? 'bg-gray-400 text-gray-700 cursor-not-allowed' 
+                            : 'bg-green-500 text-white hover:bg-green-600'
+                    }`}
+                    disabled={isSubmitting || teacherSubjects.length === 0 || !teacherSubjects[0].email}
                 >
-                    {allotMutation.isPending ? 'Processing...' : 'Allot Teachers to Subjects'}
+                    {isSubmitting ? 'Processing...' : 'Allot Teachers to Subjects'}
                 </button>
             </form>
-
-            {allotmentResults && (
-                <div className="mt-6">
-                    <h3 className="text-lg font-semibold mb-3">Allotment Results</h3>
-                    <div className="border border-gray-200 rounded-md overflow-hidden">
-                        <table className="min-w-full divide-y divide-gray-200">
-                            <thead className="bg-gray-50">
-                                <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Teacher Email</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subject Code</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Message</th>
-                                </tr>
-                            </thead>
-                            <tbody className="bg-white divide-y divide-gray-200">
-                                {allotmentResults.map((result, index) => (
-                                    <tr key={index}>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{result.email}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{result.course_code}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${result.success ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                                                {result.success ? 'Success' : 'Failed'}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{result.message}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            )}
         </div>
     );
 };

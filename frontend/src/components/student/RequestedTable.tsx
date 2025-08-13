@@ -114,6 +114,11 @@ const RequestedTable = () => {
   // Handle certificate submission
   const handleSubmit = async (requestId: string) => {
     const file = fileUploads[requestId];
+
+    setUploadStatus((prev) => ({
+    ...prev,
+    [requestId]: null,
+  }));
     if (!file) {
       setUploadStatus((prev) => ({
         ...prev,
@@ -159,7 +164,7 @@ const RequestedTable = () => {
       }));
 
       // Short delay to show the uploading stage
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      await new Promise((resolve) => setTimeout(resolve, 5000));
 
       // Update loading stage
       setLoadingStage((prev) => ({
