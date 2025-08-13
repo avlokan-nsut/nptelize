@@ -394,6 +394,23 @@ def allot_teacher_to_subject(
                     'course_code': teacher.course_code,
                 })
                 continue
+                
+            db_allotment = db.query(TeacherSubjectAllotment).filter(
+                TeacherSubjectAllotment.teacher_id == db_teacher.id,
+                TeacherSubjectAllotment.subject_id == db_subject.id,
+                TeacherSubjectAllotment.year == year,
+                TeacherSubjectAllotment.is_sem_odd == is_sem_odd
+            ).first()
+
+
+            if db_allotment:
+                allotment_status.append({
+                    'email': teacher.email,
+                    'success': False,
+                    'message': 'Teacher already allotted to this subject',
+                    'course_code': teacher.course_code
+                })
+                continue
 
             # Create the allotment
             allotment = TeacherSubjectAllotment(
