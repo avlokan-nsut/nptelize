@@ -7,6 +7,8 @@ import Pagination from "./Pagination";
 import SearchBar from "./SearchBar";
 import { useAuthStore } from "../../store/useAuthStore";
 import { TenureSelector } from "../ui/DropDown";
+import TableSkeleton from "../ui/TableSkeleton";
+import { toast } from "react-toastify";
 
 const headings = ["Select", "Student Name", "NSUT Roll No.", "Email"];
 
@@ -37,7 +39,6 @@ export default function StudentTable() {
     const { subjectCode: urlSubjectCode } = useParams<{
         subjectCode: string;
     }>();
-    const [error, setError] = useState(false);
     const [submitted, setSubmitted] = useState(0);
     const [isLoadingPost, setIsLoadingPost] = useState(false);
     const [apiCalled, setApiCalled] = useState(false);
@@ -97,74 +98,99 @@ export default function StudentTable() {
 
     // Function to handle form submission (updated to use selected due date)
     const handleSubmit = async () => {
-        if (selectedStudents.length === 0) {
-            alert("Please select at least one student");
-            return;
-        }
+    if (selectedStudents.length === 0) {
+        toast.error("Please select at least one student");
+        return;
+    }
 
-        if (!dueDate) {
-            alert("Please select a due date");
-            return;
-        }
+    if (!dueDate) {
+        toast.error("Please select a due date");
+        return;
+    }
 
-        const dueDateObj = new Date(dueDate);
-        dueDateObj.setMinutes(dueDateObj.getMinutes() - 330);
+    const dueDateObj = new Date(dueDate);
+    dueDateObj.setMinutes(dueDateObj.getMinutes() - 330);
 
-        const formattedData = {
-            student_request_data_list: selectedStudents.map((studentId) => ({
-                student_id: studentId,
-                subject_id: subjectId,
-                due_date: dueDateObj.toISOString(),
-            })),
-        };
-
-        const apiUrl = import.meta.env.VITE_API_URL;
-        setIsLoadingPost(true);
-        try {
-            
-            setStudentsNotSubmitted([])
-            const response = await axios.post<FileUploadResponse>(
-                `${apiUrl}/teacher/students/request`,
-                formattedData,
-                {
-                    withCredentials: true,
-                    headers: { "Content-Type": "application/json" },
-                }
-            );
-
-
-            response.data.results.forEach((obj) => {
-                if (obj.success === false) {
-                    setStudentsNotSubmitted((prev) => [
-                        ...prev,
-                        obj.student_id,
-                    ]);
-                }
-
-                if (obj.success === true) {
-                    setSubmitted((prev) => prev + 1);
-                }
-            });
-            
-            setApiCalled(true);
-            setSelectedStudents([]);
-        } catch (error) {
-            console.error("Error submitting request:", error);
-            setError(true);
-        }
-        setIsLoadingPost(false);
+    const formattedData = {
+        student_request_data_list: selectedStudents.map((studentId) => ({
+            student_id: studentId,
+            subject_id: subjectId,
+            due_date: dueDateObj.toISOString(),
+        })),
     };
 
-    const fetchData = async (year:number,sem:number) => {
+    const apiUrl = import.meta.env.VITE_API_URL;
+    setIsLoadingPost(true);
+    
+    try {
+        setStudentsNotSubmitted([]);
+        
+        const response = await axios.post<FileUploadResponse>(
+            `${apiUrl}/teacher/students/request`,
+            formattedData,
+            {
+                withCredentials: true,
+                headers: { "Content-Type": "application/json" },
+                params: { year, sem }
+            }
+        );
+
+        // Use local variables instead of immediate state updates
+        let localSuccessCount = 0;
+        const failedStudentIds:string[] = [];
+
+        // Process response data
+        response.data.results.forEach((obj) => {
+            if (obj.success === false) {
+                failedStudentIds.push(obj.student_id);
+            } else if (obj.success === true) {
+                localSuccessCount += 1;
+            }
+        });
+
+        // Update state with final counts
+        setStudentsNotSubmitted(failedStudentIds);
+        setSubmitted(prev => prev + localSuccessCount);
+
+        // Use local variables for toast (this will work correctly)
+        if (localSuccessCount > 0) {
+            toast.success(`Successfully sent requests to ${localSuccessCount} students`);
+        }
+        
+        if (failedStudentIds.length > 0) {
+            toast.error(`Failed to send requests to ${failedStudentIds.length} students`);
+        }
+
+        setApiCalled(true);
+        setSelectedStudents([]);
+        
+    } catch (error) {
+    console.error("Error submitting request:", error);
+    
+    // Type guard for AxiosError
+    if (axios.isAxiosError(error) && error.response?.status === 401) {
+        toast.error("Unauthorized");
+    } else {
+        toast.error("Failed to submit");
+    }
+
+}
+
+    
+    setIsLoadingPost(false);
+};
+
+
+    const fetchData = async (year: number, sem: number) => {
         const apiUrl = import.meta.env.VITE_API_URL;
 
         const { data } = await axios.get<ApiResponse>(
             `${apiUrl}/teacher/students/${subjectId}`,
             {
                 withCredentials: true,
-                params :{year,sem}
+                params: { year, sem }
             }
-            
+
 
         );
 
@@ -180,8 +206,8 @@ export default function StudentTable() {
         error: apiError,
         isLoading,
     } = useQuery({
-        queryKey: ["teacherRequestsStudents", subjectId,year,sem],
-        queryFn:() => fetchData(year as number, sem as number),
+        queryKey: ["teacherRequestsStudents", subjectId, year, sem],
+        queryFn: () => fetchData(year as number, sem as number),
         refetchOnWindowFocus: false,
     });
 
@@ -193,7 +219,7 @@ export default function StudentTable() {
                 totalItems: 0,
             };
         }
-        
+
         const filteredStudents = apiData.enrolled_students.filter(
             (student) =>
                 student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -216,7 +242,7 @@ export default function StudentTable() {
             totalItems,
             filteredStudents
         };
-    }, [apiData?.enrolled_students, currentPage, itemsPerPage,searchTerm]);
+    }, [apiData?.enrolled_students, currentPage, itemsPerPage, searchTerm]);
 
     // Check if all students on current page are selected
     const areAllCurrentPageSelected = useMemo(() => {
@@ -233,13 +259,13 @@ export default function StudentTable() {
                     Student List
                 </h1>
 
-                 <div className="flex justify-center md:justify-end mb-6  max-w-7xl mx-auto">
-            <TenureSelector />
-      </div>
+                <div className="flex justify-center md:justify-end mb-6  max-w-7xl mx-auto">
+                    <TenureSelector />
+                </div>
 
-                
 
-                                {apiCalled && submitted > 0 && (
+
+                {apiCalled && submitted > 0 && (
                     <div
                         className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4"
                         role="alert"
@@ -261,16 +287,6 @@ export default function StudentTable() {
                     </div>
                 )}
 
-                {error && (
-                    <div
-                        className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4"
-                        role="alert"
-                    >
-                        <strong className="font-bold">Error: </strong>
-                        <span className="block sm:inline">{error}</span>
-                    </div>
-                )}
-
                 <div className="overflow-hidden rounded-lg shadow-md border border-gray-100 bg-white max-w-7xl mx-auto">
                     <div className="flex items-center justify-between p-4 border-b bg-gray-50">
                         <div className="flex items-center">
@@ -286,7 +302,7 @@ export default function StudentTable() {
                         </div>
 
                         <div className="flex flex-col items-center gap-2 md:flex-row">
-                            
+
                             <span className="text-sm text-gray-600 mr-2">
                                 Due Date:
                             </span>
@@ -312,9 +328,7 @@ export default function StudentTable() {
                     </div>
 
                     {isLoading ? (
-                        <div className="flex justify-center items-center h-64">
-                            Loading
-                        </div>
+                        <TableSkeleton rows={5} cols={7} className="max-w-7xl mx-auto" />
                     ) : apiError ? (
                         <div className="p-6 text-center text-red-500">
                             Error loading student data. Please try again.
@@ -366,20 +380,19 @@ export default function StudentTable() {
                                     </thead>
                                     <tbody className="bg-white divide-y divide-gray-200">
                                         {paginationData.currentPageData.length >
-                                        0 ? (
+                                            0 ? (
                                             paginationData.currentPageData.map(
                                                 (student) => (
                                                     <tr
                                                         key={student.id}
                                                         className={`
                             hover:bg-gray-50 transition-colors duration-150 cursor-pointer
-                            ${
-                                selectedStudents.includes(student.id)
-                                    ? "bg-blue-50"
-                                    : studentsNotSubmitted.includes(student.id)
-                                    ? "bg-red-200 hover:bg-red-300 "
-                                    : ""
-                            }
+                            ${selectedStudents.includes(student.id)
+                                                                ? "bg-blue-50"
+                                                                : studentsNotSubmitted.includes(student.id)
+                                                                    ? "bg-red-200 hover:bg-red-300 "
+                                                                    : ""
+                                                            }
                           `}
                                                         onClick={() =>
                                                             handleStudentSelection(
@@ -393,7 +406,7 @@ export default function StudentTable() {
                                                                 checked={selectedStudents.includes(
                                                                     student.id
                                                                 )}
-                                                                onChange={() => {}}
+                                                                onChange={() => { }}
                                                                 className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                                                             />
                                                         </td>
@@ -453,8 +466,8 @@ export default function StudentTable() {
                                                 selectedStudents.length === 0 ||
                                                 !dueDate || isLoadingPost
                                             }
-                                            className= "inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed"
-                                                
+                                            className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed"
+
                                         >
                                             {isLoadingPost
                                                 ? "Submitting Request"

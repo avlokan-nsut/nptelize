@@ -78,11 +78,15 @@ const queryClient = useQueryClient();
 
     
   } catch (error) {
+    console.log(error);
     
-    toast.error("Error!")
-    console.log(error)
-    
-  }
+    if (axios.isAxiosError(error) && error.response?.status === 401) {
+        toast.error("Unauthorized");
+    } else {
+        toast.error("Error!");
+    }
+}
+
 };
 
 

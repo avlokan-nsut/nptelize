@@ -8,6 +8,7 @@ import SearchBar from "./SearchBar";
 import RequestDetailsDropdown from "./RequestDetailsDropdown";
 import { useAuthStore } from "../../store/useAuthStore";
 import { TenureSelector } from "../ui/DropDown";
+import TableSkeleton from "../ui/TableSkeleton";
 
 const headings = [
   "Student Name",
@@ -95,10 +96,13 @@ const StudentStatus = function () {
     error,
     isLoading,
   } = useQuery({
-    queryKey: ["teacherRequestsStudents", subjectId,year,sem],
+    queryKey: ["teacherRequestsStudentsStatus", subjectId,year,sem],
     queryFn: ()=>fetchData(year as number,sem as number),
+    
     refetchOnWindowFocus: false,
   });
+
+  
 
   // Calculate statistics and filtered data
   const statisticsAndFilteredData = useMemo(() => {
@@ -510,7 +514,7 @@ const StudentStatus = function () {
           </div>
 
           {isLoading ? (
-            <div className="flex justify-center items-center h-64">Loading</div>
+            <TableSkeleton rows={5} cols={7} className="max-w-7xl mx-auto" />
           ) : error ? (
             <div className="p-6 text-center text-red-500">
               Error loading student data. Please try again.
@@ -610,6 +614,7 @@ const StudentStatus = function () {
                                   colSpan={headings.length}
                                   subjectId={subjectId}
                                   onClose={() => setOpenDropdownId(null)}
+                                  showReject={true}
                                 />
                               )}
                             </>
