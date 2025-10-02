@@ -364,6 +364,7 @@ def allot_teacher_to_subject(
     year: int = Query(),
     sem: int = Query(),
     db: Session = Depends(get_db),
+    current_admin: TokenData = Depends(get_current_admin), 
 ):
     is_sem_odd = bool(sem & 1)
     allotment_status = []
@@ -449,6 +450,7 @@ def change_teacher_for_subject(
     year: int = Query(),
     sem: int = Query(),
     db: Session = Depends(get_db),
+    current_admin: TokenData = Depends(get_current_admin)
 ):
     is_sem_odd = bool(sem & 1)
     change_status = []
