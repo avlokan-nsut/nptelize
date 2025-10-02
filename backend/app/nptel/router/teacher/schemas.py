@@ -20,6 +20,10 @@ class UnsafeManualVerificationRequest(BaseModel):
     subject_id: str
     student_id: str
     marks: int
+    
+class UpdateDueDateRequest(BaseModel):
+    subject_id: str
+    due_date: datetime
 
 # -----------------------------------------------------------------------
 # Response Schemas

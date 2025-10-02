@@ -18,7 +18,8 @@ from .schemas import (
     GetRequestByIdResponse, 
     MakeCertificateRequestResponse, 
     CertificateResponse,
-    UnsafeManualVerificationRequest
+    UnsafeManualVerificationRequest,
+    UpdateDueDateRequest
 )
 from app.database.models import User, StudentSubjectEnrollment, Request, RequestStatus, Certificate, TeacherSubjectAllotment
 from app.services.log_service import setup_logger
@@ -377,7 +378,55 @@ def make_certificate_request_to_student(
     return {
         'results': results
     }
-            
+     
+@router.put("/subject/update-due-date", response_model=GenericResponse)
+def update_due_date_for_subject_requests(
+    req: UpdateDueDateRequest = Body(...),
+    year: int = Query(...),
+    sem: int = Query(...),
+    db: Session = Depends(get_db),
+    current_teacher: TokenData = Depends(get_current_teacher),
+    current_coordinator: TokenData = Depends(role_based_access(['coordinator']))
+):
+    is_sem_odd = bool(sem & 1)
+    if not current_coordinator:
+        allotment = db.query(TeacherSubjectAllotment).filter(
+            TeacherSubjectAllotment.subject_id == req.subject_id,
+            TeacherSubjectAllotment.teacher_id == current_teacher.user_id,
+            TeacherSubjectAllotment.year == year,
+            TeacherSubjectAllotment.is_sem_odd == is_sem_odd,
+        ).first()
+        if not allotment:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, 
+                detail="Allotment not found for this subject and teacher"
+            )
+    else:
+        allotment = db.query(TeacherSubjectAllotment).filter(
+            TeacherSubjectAllotment.subject_id == req.subject_id,
+            TeacherSubjectAllotment.year == year,
+            TeacherSubjectAllotment.is_sem_odd == is_sem_odd,
+        ).first()
+        if not allotment:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, 
+                detail="Allotment not found for this subject"
+            )
+
+    enrollments = db.query(StudentSubjectEnrollment).filter(
+        StudentSubjectEnrollment.teacher_subject_allotment_id == allotment.id
+    ).all()
+
+    count = 0
+    for enrollment in enrollments:
+        req_obj = db.query(Request).filter(Request.student_subject_enrollment_id == enrollment.id).first()
+        if req_obj:
+            req_obj.due_date = req.due_date
+            count += 1
+    db.commit()
+
+    return {"message": f"Due date updated for {count} requests for this subject"}
+       
 
 @router.post('/stray/requests')
 async def get_stray_certificates(
