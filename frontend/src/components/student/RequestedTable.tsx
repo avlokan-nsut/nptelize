@@ -88,7 +88,7 @@ const RequestedTable = () => {
 
   const { tenure } = useAuthStore();
   const year = tenure?.year;
-  const sem = tenure?.is_even; 
+  const sem = tenure?.is_odd; 
 
   const { data, error, isLoading, refetch } = useQuery({
     queryKey: ["myData", year, sem],

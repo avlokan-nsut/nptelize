@@ -150,7 +150,7 @@ const ReportSection = function () {
     const [stats, setStats] = useState<Stats>({});
     const { tenure } = useAuthStore();
         const year = tenure?.year;
-        const sem = tenure?.is_even;
+        const sem = tenure?.is_odd;
 
     const {
         data: apiData,

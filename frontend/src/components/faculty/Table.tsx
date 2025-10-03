@@ -39,7 +39,7 @@ const fetchData = async (year: number, sem: number) => {
 const Table = function () {
   const { tenure } = useAuthStore();
   const year = tenure?.year;
-  const sem = tenure?.is_even;
+  const sem = tenure?.is_odd;
   const {
     data: apiData,
     error,

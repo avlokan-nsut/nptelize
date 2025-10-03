@@ -10,7 +10,7 @@ interface User {
 
 interface Tenure {
   year:number;
-  is_even:number;
+  is_odd:number;
 }
 
 interface Credentials {
@@ -37,8 +37,8 @@ const getCurrentTenure = (): Tenure => {
   const now = new Date();
   const year = now.getFullYear();
   const month = now.getMonth(); // 0-indexed, 0 = January, 6 = July
-  const is_even = month < 6 ? 0 : 1;
-  return { year, is_even };
+  const is_odd= month > 6 ? 1 : 0;
+  return { year, is_odd };
 };
 
 export const useAuthStore = create<AuthState>()(

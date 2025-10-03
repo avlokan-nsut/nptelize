@@ -47,7 +47,7 @@ const EnrollStudents = () => {
 
   const { tenure } = useAuthStore();
       const year = tenure?.year;
-      const sem = tenure?.is_even;
+      const sem = tenure?.is_odd;
 
   const mutation = useMutation({
   mutationFn: (students: EnrollmentData[]) => enrollApi(students, year as number, sem as number),
