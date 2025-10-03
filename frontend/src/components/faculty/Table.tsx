@@ -95,6 +95,11 @@ const Table = function () {
       </div>
       <div className="max-w-7xl mx-auto">
         <div className="w-full flex justify-center md:justify-end space-x-2 mt-4 md:flex-row md:mt-0">
+         <Link to="/faculty/bulk-due-date-update">
+            <button className="p-3 text-sm rounded-2xl my-4 transition-colors duration-200 md:p-4 md:text-md bg-blue-900 text-white hover:bg-blue-800 cursor-pointer">
+              Bulk Due Date Update  
+            </button>
+          </Link>
           <Link to="/faculty/verify-rejected">
             <button className="p-3 text-sm rounded-2xl my-4 transition-colors duration-200 md:p-4 md:text-md bg-blue-900 text-white hover:bg-blue-800 cursor-pointer">
               Manual Verification

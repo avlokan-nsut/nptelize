@@ -24,6 +24,7 @@ import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import LandingApp from "./components/new-landing/LandingApp";
 import MannualVerification from "./components/faculty/MannualVerification";
+import BulkDueDateUpdate from "./components/faculty/BulkDueDateUpdate";
 
 const queryClient = new QueryClient();
 
@@ -61,6 +62,7 @@ const routes = createBrowserRouter(
           path="faculty/students/requests/:subjectCode"
           element={<StudentStatus />}
         />
+        <Route path="/faculty/bulk-due-date-update" element={<BulkDueDateUpdate />} />
         <Route path="faculty/report-section" element={<ReportSection />} />
         {/* <Route
           path="faculty/manual-verification"
