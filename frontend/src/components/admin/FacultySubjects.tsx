@@ -38,6 +38,7 @@ const FacultySubjects: React.FC = () => {
     const [year, setYear] = useState<number>(new Date().getFullYear());
     const [semester, setSemester] = useState<number>(0);
     const [inputMode, setInputMode] = useState<'manual' | 'csv'>('manual');
+    const [operationMode, setOperationMode] = useState<'allot' | 'change'>('allot');
     const [csvData, setCsvData] = useState<TeacherSubject[]>([]);
     
     // API state management
@@ -53,7 +54,7 @@ const FacultySubjects: React.FC = () => {
         (_, i) => currentYear - i
     ).reverse();
 
-    // Mutation for allotting teacher to subject
+    // Mutation for allotting teacher to subject (POST)
     const allotMutation = useMutation<
         ApiResponse,
         Error,
@@ -79,39 +80,74 @@ const FacultySubjects: React.FC = () => {
             return response.data;
         },
         onSuccess: (data) => {
-            setApiCalled(true);
-            
-            // Use local variables instead of immediate state updates
-            let localSuccessCount = 0;
-            const failedResults:AllotmentResult[] = [];
-
-            // Process response data
-            data.results.forEach((result) => {
-                if (result.success) {
-                    localSuccessCount += 1;
-                } else {
-                    failedResults.push(result);
-                }
-            });
-
-            // Update state with final counts
-            setSuccessCount(localSuccessCount);
-            setErrorResults(failedResults);
-
-            // Use local variable for toast (this will work correctly)
-            if (localSuccessCount > 0) {
-                toast.success(`Successfully allotted ${localSuccessCount} teacher-subject pairs`);
-            }
-            
-            setTeacherSubjects([{ email: '', course_code: '' }]);
-            setCsvData([]);
-            setIsSubmitting(false);
+            handleMutationSuccess(data);
         },
         onError: (error) => {
             toast.error(`Failed to allot teachers: ${error.message}`);
             setIsSubmitting(false);
         },
     });
+
+    // Mutation for changing teacher for subject (PUT)
+    const changeMutation = useMutation<
+        ApiResponse,
+        Error,
+        AllotmentForm
+    >({
+        mutationFn: async (data) => {
+            const apiUrl = import.meta.env.VITE_API_URL;
+            const response = await axios.put(
+                `${apiUrl}/admin/allot/teacher-subject`,
+                data.teachers_data,
+                {
+                    params: {
+                        year: data.year,
+                        sem: data.sem
+                    },
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    withCredentials: true,
+                }
+            );
+
+            return response.data;
+        },
+        onSuccess: (data) => {
+            handleMutationSuccess(data);
+        },
+        onError: (error) => {
+            toast.error(`Failed to change teachers: ${error.message}`);
+            setIsSubmitting(false);
+        },
+    });
+
+    const handleMutationSuccess = (data: ApiResponse) => {
+        setApiCalled(true);
+        
+        let localSuccessCount = 0;
+        const failedResults: AllotmentResult[] = [];
+
+        data.results.forEach((result) => {
+            if (result.success) {
+                localSuccessCount += 1;
+            } else {
+                failedResults.push(result);
+            }
+        });
+
+        setSuccessCount(localSuccessCount);
+        setErrorResults(failedResults);
+
+        if (localSuccessCount > 0) {
+            const action = operationMode === 'allot' ? 'allotted' : 'changed';
+            toast.success(`Successfully ${action} ${localSuccessCount} teacher-subject pairs`);
+        }
+        
+        setTeacherSubjects([{ email: '', course_code: '' }]);
+        setCsvData([]);
+        setIsSubmitting(false);
+    };
 
     const handleAddTeacherSubject = () => {
         setTeacherSubjects([...teacherSubjects, { email: '', course_code: '' }]);
@@ -127,7 +163,7 @@ const FacultySubjects: React.FC = () => {
         const updatedTeacherSubjects = [...teacherSubjects];
         updatedTeacherSubjects[index] = {
             ...updatedTeacherSubjects[index],
-            [field]: value,
+            [field]: field === 'email' ? value.toLowerCase() : value,
         };
         setTeacherSubjects(updatedTeacherSubjects);
     };
@@ -136,7 +172,6 @@ const FacultySubjects: React.FC = () => {
         e.preventDefault();
 
         try {
-            // Validate form data
             const formData: AllotmentForm = {
                 teachers_data: teacherSubjects,
                 year,
@@ -145,9 +180,24 @@ const FacultySubjects: React.FC = () => {
 
             AllotmentFormSchema.parse(formData);
 
-            // Submit data if validation passes
+            // Show confirmation for change operation
+            if (operationMode === 'change') {
+                const confirmChange = window.confirm(
+                    'This will replace existing teacher assignments for these subjects. Are you sure you want to continue?'
+                );
+                if (!confirmChange) {
+                    return;
+                }
+            }
+
             setIsSubmitting(true);
-            allotMutation.mutate(formData);
+            
+            // Call appropriate mutation based on operation mode
+            if (operationMode === 'allot') {
+                allotMutation.mutate(formData);
+            } else {
+                changeMutation.mutate(formData);
+            }
         } catch (error) {
             if (error instanceof z.ZodError) {
                 error.errors.forEach(err => {
@@ -176,13 +226,12 @@ const FacultySubjects: React.FC = () => {
 
                     parsedData.forEach((row, index) => {
                         try {
-                            // Check if required columns exist
                             if (!row.email || !row.course_code) {
                                 throw new Error(`Row ${index + 1}: Missing required columns (email, course_code)`);
                             }
 
                             const validatedRow = TeacherSubjectSchema.parse({
-                                email: row.email.trim(),
+                                email: row.email.trim().toLowerCase(),
                                 course_code: row.course_code.trim()
                             });
                             validatedData.push(validatedRow);
@@ -209,7 +258,6 @@ const FacultySubjects: React.FC = () => {
             }
         });
 
-        // Reset file input
         event.target.value = '';
     };
 
@@ -239,27 +287,31 @@ const FacultySubjects: React.FC = () => {
         }
     };
 
+    const isPending = allotMutation.isPending || changeMutation.isPending;
+
     return (
         <div className="p-6 bg-white rounded-lg shadow-md">
-            <h2 className="text-2xl font-bold mb-6">Allot Teachers to Subjects</h2>
+            <h2 className="text-2xl font-bold mb-6">
+                {operationMode === 'allot' ? 'Allot Teachers to Subjects' : 'Change Teacher for Subjects'}
+            </h2>
 
             {apiCalled && (
                 <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">
-                    <strong className="font-bold">Successfully Allotted: </strong>
+                    <strong className="font-bold">Successfully {operationMode === 'allot' ? 'Allotted' : 'Changed'}: </strong>
                     <span className="block sm:inline">{successCount} teacher-subject pairs</span>
                 </div>
             )}
 
-            {allotMutation.isPending && (
+            {isPending && (
                 <div className="flex items-center justify-center py-4">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-                    <span className="ml-2">Processing allotments...</span>
+                    <span className="ml-2">Processing {operationMode === 'allot' ? 'allotments' : 'changes'}...</span>
                 </div>
             )}
 
             {errorResults.length > 0 && (
                 <div className="mt-6 bg-white p-6 rounded-lg shadow-md mb-6">
-                    <h3 className="text-lg font-medium mb-4 text-red-600">Failed Allotments ({errorResults.length})</h3>
+                    <h3 className="text-lg font-medium mb-4 text-red-600">Failed Operations ({errorResults.length})</h3>
                     <div className="border rounded-md overflow-hidden">
                         <table className="min-w-full divide-y divide-gray-200">
                             <thead className="bg-gray-50">
@@ -296,6 +348,36 @@ const FacultySubjects: React.FC = () => {
             )}
 
             <form onSubmit={handleSubmit}>
+                {/* Operation Mode Toggle */}
+                <div className="mb-6">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Operation Type</label>
+                    <div className="flex space-x-4">
+                        <button
+                            type="button"
+                            onClick={() => setOperationMode('allot')}
+                            className={`px-4 py-2 rounded-md ${operationMode === 'allot' 
+                                ? 'bg-blue-500 text-white' 
+                                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+                        >
+                            Allot New Teacher
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setOperationMode('change')}
+                            className={`px-4 py-2 rounded-md ${operationMode === 'change' 
+                                ? 'bg-blue-500 text-white' 
+                                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+                        >
+                            Change Teacher
+                        </button>
+                    </div>
+                    {operationMode === 'change' && (
+                        <p className="text-sm text-orange-600 mt-2">
+                            ⚠️ This will replace existing teacher assignments for the selected subjects
+                        </p>
+                    )}
+                </div>
+
                 <div className="mb-6 grid grid-cols-2 gap-4">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Academic Year</label>
@@ -472,7 +554,11 @@ const FacultySubjects: React.FC = () => {
                     }`}
                     disabled={isSubmitting || teacherSubjects.length === 0 || !teacherSubjects[0].email}
                 >
-                    {isSubmitting ? 'Processing...' : 'Allot Teachers to Subjects'}
+                    {isSubmitting 
+                        ? 'Processing...' 
+                        : operationMode === 'allot' 
+                            ? 'Allot Teachers to Subjects' 
+                            : 'Change Teachers for Subjects'}
                 </button>
             </form>
         </div>
