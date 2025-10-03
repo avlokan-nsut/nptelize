@@ -111,6 +111,11 @@ const CreateStudent = () => {
         const student: any = {};
         headers.forEach((header, i) => {
           student[header] = values[i];
+           let value = values[i] || "";
+                if (header === "email") {
+                    value = value.toLowerCase();
+                }
+                student[header] = value;
         });
         return student;
       });
@@ -140,6 +145,9 @@ const CreateStudent = () => {
     value: string
   ) => {
     const updatedStudents = [...students];
+    if(field === "email") {
+      value = value.toLowerCase();
+    }
     updatedStudents[index] = {
       ...updatedStudents[index],
       [field]: value,
