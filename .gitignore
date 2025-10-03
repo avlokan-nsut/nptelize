@@ -64,3 +64,6 @@ temp.*
 
 # postgres
 postgres_data
+
+*.egg-info/
+build/
