@@ -168,12 +168,12 @@ export default function StudentTable() {
     const apiUrl = import.meta.env.VITE_API_URL;
     setIsLoadingPost(true);
 
-    
-    console.log("➡️ Sending request to backend:", {
-  url: `${apiUrl}/teacher/students/request`,
-  params: { year, sem },
-  body: formattedData,
-});
+//        console.log("➡️ Sending request to backend:", {
+//   url: `${apiUrl}/teacher/students/request`,
+//   params: { year, sem },
+//   body: formattedData,
+// }); 
+
 
     
     try {

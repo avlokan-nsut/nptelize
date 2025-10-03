@@ -123,7 +123,7 @@ const CreateAdmin = () => {
           }
           admin[header] = value;
         });
-        console.log(admin);
+        // console.log(admin);
         return admin;
       });
       setIsSubmitting(true);
