@@ -158,7 +158,7 @@ const LoginForm: FC = () => {
                             }`}
                             onClick={() => setRole(type)}
                         >
-                            {type.charAt(0).toUpperCase() + type.slice(1)}
+                            {type === "student" ? "Student" : "Faculty"}
                         </button>
                     ))}
                 </div>
@@ -168,7 +168,7 @@ const LoginForm: FC = () => {
                     Login
                 </h2>
                 <p className="mb-6 text-center text-gray-500">
-                    Login as {role === "student" ? "Student" : "Teacher"}
+                    Login as {role === "student" ? "Student" : "Faculty"}
                 </p>
 
                 {/* Login Form */}
