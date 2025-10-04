@@ -12,7 +12,7 @@ const TeacherSubjectSchema = z.object({
 });
 
 const AllotmentFormSchema = z.object({
-    teachers_data: z.array(TeacherSubjectSchema).min(1, "At least one teacher-subject pair is required"),
+    teachers_data: z.array(TeacherSubjectSchema).min(1, "At least one faculty-subject pair is required"),
     year: z.number().int().min(2025, "Year must be 2025 or later").max(new Date().getFullYear(), "Year cannot be in the future"),
     sem: z.number().int().min(0, "Invalid semester value").max(1, "Invalid semester value")
 });
@@ -83,12 +83,12 @@ const FacultySubjects: React.FC = () => {
             handleMutationSuccess(data);
         },
         onError: (error) => {
-            toast.error(`Failed to allot teachers: ${error.message}`);
+            toast.error(`Failed to allot faculty: ${error.message}`);
             setIsSubmitting(false);
         },
     });
 
-    // Mutation for changing teacher for subject (PUT)
+    // Mutation for changing faculty for subject (PUT)
     const changeMutation = useMutation<
         ApiResponse,
         Error,
@@ -117,7 +117,7 @@ const FacultySubjects: React.FC = () => {
             handleMutationSuccess(data);
         },
         onError: (error) => {
-            toast.error(`Failed to change teachers: ${error.message}`);
+            toast.error(`Failed to change faculty: ${error.message}`);
             setIsSubmitting(false);
         },
     });
@@ -141,7 +141,7 @@ const FacultySubjects: React.FC = () => {
 
         if (localSuccessCount > 0) {
             const action = operationMode === 'allot' ? 'allotted' : 'changed';
-            toast.success(`Successfully ${action} ${localSuccessCount} teacher-subject pairs`);
+            toast.success(`Successfully ${action} ${localSuccessCount} faculty-subject pairs`);
         }
         
         setTeacherSubjects([{ email: '', course_code: '' }]);
@@ -183,7 +183,7 @@ const FacultySubjects: React.FC = () => {
             // Show confirmation for change operation
             if (operationMode === 'change') {
                 const confirmChange = window.confirm(
-                    'This will replace existing teacher assignments for these subjects. Are you sure you want to continue?'
+                    'This will replace existing faculty assignments for these subjects. Are you sure you want to continue?'
                 );
                 if (!confirmChange) {
                     return;
@@ -247,7 +247,7 @@ const FacultySubjects: React.FC = () => {
                     if (validatedData.length > 0) {
                         setCsvData(validatedData);
                         setTeacherSubjects(validatedData);
-                        toast.success(`Successfully parsed ${validatedData.length} teacher-subject pairs from CSV`);
+                        toast.success(`Successfully parsed ${validatedData.length} faculty-subject pairs from CSV`);
                     }
                 } catch (error) {
                     toast.error('Error parsing CSV file');
@@ -263,8 +263,8 @@ const FacultySubjects: React.FC = () => {
 
     const downloadCsvTemplate = () => {
         const template = [
-            { email: 'teacher1@example.com', course_code: 'CS101' },
-            { email: 'teacher2@example.com', course_code: 'CS102' }
+            { email: 'faculty1@example.com', course_code: 'CS101' },
+            { email: 'faculty2@example.com', course_code: 'CS102' }
         ];
 
         const csv = Papa.unparse(template);
@@ -272,7 +272,7 @@ const FacultySubjects: React.FC = () => {
         const link = document.createElement('a');
         const url = URL.createObjectURL(blob);
         link.setAttribute('href', url);
-        link.setAttribute('download', 'teacher_subjects_template.csv');
+        link.setAttribute('download', 'faculty_subjects_template.csv');
         link.style.visibility = 'hidden';
         document.body.appendChild(link);
         link.click();
@@ -292,13 +292,13 @@ const FacultySubjects: React.FC = () => {
     return (
         <div className="p-6 bg-white rounded-lg shadow-md">
             <h2 className="text-2xl font-bold mb-6">
-                {operationMode === 'allot' ? 'Allot Teachers to Subjects' : 'Change Teacher for Subjects'}
+                {operationMode === 'allot' ? 'Allot Faculty to Subjects' : 'Change Faculty for Subjects'}
             </h2>
 
             {apiCalled && (
                 <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">
                     <strong className="font-bold">Successfully {operationMode === 'allot' ? 'Allotted' : 'Changed'}: </strong>
-                    <span className="block sm:inline">{successCount} teacher-subject pairs</span>
+                    <span className="block sm:inline">{successCount} faculty-subject pairs</span>
                 </div>
             )}
 
@@ -317,7 +317,7 @@ const FacultySubjects: React.FC = () => {
                             <thead className="bg-gray-50">
                                 <tr>
                                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Teacher Email
+                                        Faculty Email
                                     </th>
                                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         Course Code
@@ -359,7 +359,7 @@ const FacultySubjects: React.FC = () => {
                                 ? 'bg-blue-500 text-white' 
                                 : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
                         >
-                            Allot New Teacher
+                            Allot New Faculty
                         </button>
                         <button
                             type="button"
@@ -368,12 +368,12 @@ const FacultySubjects: React.FC = () => {
                                 ? 'bg-blue-500 text-white' 
                                 : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
                         >
-                            Change Teacher
+                            Change Faculty
                         </button>
                     </div>
                     {operationMode === 'change' && (
                         <p className="text-sm text-orange-600 mt-2">
-                            ⚠️ This will replace existing teacher assignments for the selected subjects
+                            ⚠️ This will replace existing faculty assignments for the selected subjects
                         </p>
                     )}
                 </div>
@@ -459,7 +459,7 @@ const FacultySubjects: React.FC = () => {
                         {csvData.length > 0 && (
                             <div className="mt-3">
                                 <p className="text-sm text-green-600">
-                                    ✓ {csvData.length} teacher-subject pairs loaded from CSV
+                                    ✓ {csvData.length} faculty-subject pairs loaded from CSV
                                 </p>
                             </div>
                         )}
@@ -470,7 +470,7 @@ const FacultySubjects: React.FC = () => {
                 {inputMode === 'manual' && (
                     <div className="mb-6">
                         <div className="flex justify-between items-center mb-3">
-                            <h3 className="text-lg font-semibold">Teacher-Subject Pairs</h3>
+                            <h3 className="text-lg font-semibold">Faculty-Subject Pairs</h3>
                             <button
                                 type="button"
                                 onClick={handleAddTeacherSubject}
@@ -490,7 +490,7 @@ const FacultySubjects: React.FC = () => {
                                             value={pair.email}
                                             onChange={(e) => handleTeacherSubjectChange(index, 'email', e.target.value)}
                                             className="w-full p-2 border border-gray-300 rounded-md"
-                                            placeholder="teacher@example.com"
+                                            placeholder="faculty@example.com"
                                         />
                                     </div>
 
@@ -557,8 +557,8 @@ const FacultySubjects: React.FC = () => {
                     {isSubmitting 
                         ? 'Processing...' 
                         : operationMode === 'allot' 
-                            ? 'Allot Teachers to Subjects' 
-                            : 'Change Teachers for Subjects'}
+                            ? 'Allot Faculty to Subjects' 
+                            : 'Change Faculty for Subjects'}
                 </button>
             </form>
         </div>
