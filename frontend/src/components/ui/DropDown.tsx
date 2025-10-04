@@ -49,8 +49,8 @@ export const TenureSelector: React.FC = () => {
   
   // Semester options
   const semesterOptions = [
-    { value: 1, label: 'Odd Semester' },
-    { value: 0, label: 'Even Semester' }
+    { value: 0, label: 'Even Semester' },
+    { value: 1, label: 'Odd Semester' }
   ];
   
   const handleYearChange = (value: string | number) => {
@@ -61,7 +61,7 @@ export const TenureSelector: React.FC = () => {
   
   const handleSemesterChange = (value: string | number) => {
     if (tenure) {
-      updateTenure({ ...tenure, is_even: Number(value) });
+      updateTenure({ ...tenure, is_odd: Number(value) });
     }
   };
   
@@ -78,7 +78,7 @@ export const TenureSelector: React.FC = () => {
       <DropDown
         label="Semester"
         options={semesterOptions}
-        value={tenure.is_even}
+        value={tenure.is_odd}
         onChange={handleSemesterChange}
       />
     </div>

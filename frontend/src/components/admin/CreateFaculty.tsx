@@ -103,6 +103,9 @@ const CreateFaculty = () => {
 
   const handleChange = (index: number, field: keyof TeacherForm, value: string) => {
     const updatedTeachers = [...teachers];
+    if(field === "email") {
+      value = value.toLowerCase();
+    }
     updatedTeachers[index] = {
       ...updatedTeachers[index],
       [field]: value
@@ -148,7 +151,11 @@ const CreateFaculty = () => {
         const values = line.split(",").map((v) => v.trim());
         const teacher: any = {};
         headers.forEach((header, i) => {
-          teacher[header] = values[i];
+          let value = values[i] || "";
+          if (header === "email") {
+            value = value.toLowerCase();
+          }
+          teacher[header] = value;
         });
         return teacher;
       });

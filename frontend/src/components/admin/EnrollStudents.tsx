@@ -47,7 +47,7 @@ const EnrollStudents = () => {
 
   const { tenure } = useAuthStore();
       const year = tenure?.year;
-      const sem = tenure?.is_even;
+      const sem = tenure?.is_odd;
 
   const mutation = useMutation({
   mutationFn: (students: EnrollmentData[]) => enrollApi(students, year as number, sem as number),
@@ -108,37 +108,43 @@ const EnrollStudents = () => {
       return;
     }
 
-    Papa.parse<EnrollmentData>(csvFile, {
-      header: true,
-      skipEmptyLines: true,
-      complete: (result) => {
-        const { data, errors, meta } = result;
+Papa.parse<EnrollmentData>(csvFile, {
+  header: true,
+  skipEmptyLines: true,
+  complete: (result) => {
+    const { data, errors, meta } = result;
 
-        if (errors.length > 0) {
-          toast.error(`Error parsing CSV: ${errors[0].message}`);
-          return;
-        }
+    if (errors.length > 0) {
+      toast.error(`Error parsing CSV: ${errors[0].message}`);
+      return;
+    }
 
-        const headers = (meta.fields || []).map(field => field.trim().toLowerCase());
-        const requiredHeaders = ['email', 'course_code'];
-        const missingHeaders = requiredHeaders.filter(header => !headers.includes(header));
+    const headers = (meta.fields || []).map(field => field.trim().toLowerCase());
+    const requiredHeaders = ['email', 'course_code'];
+    const missingHeaders = requiredHeaders.filter(header => !headers.includes(header));
 
-        if (missingHeaders.length > 0) {
-          toast.error(`CSV is missing required headers: ${missingHeaders.join(', ')}`);
-          return;
-        }
+    if (missingHeaders.length > 0) {
+      toast.error(`CSV is missing required headers: ${missingHeaders.join(', ')}`);
+      return;
+    }
 
-        if (data.length === 0) {
-          toast.error('CSV file has no data rows');
-          return;
-        }
+    if (data.length === 0) {
+      toast.error('CSV file has no data rows');
+      return;
+    }
 
-        mutation.mutate(data);
-      },
-      error: (error) => {
-        toast.error(`Error reading the CSV file: ${error.message}`);
-      }
-    });
+    // Normalize emails to lowercase
+    const normalizedData = data.map(student => ({
+      ...student,
+      email: student.email.trim().toLowerCase(),
+    }));
+
+    mutation.mutate(normalizedData);
+  },
+  error: (error) => {
+    toast.error(`Error reading the CSV file: ${error.message}`);
+  }
+});
   };
 
   return (

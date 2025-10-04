@@ -9,6 +9,7 @@ import { useAuthStore } from "../../store/useAuthStore";
 import { TenureSelector } from "../ui/DropDown";
 import TableSkeleton from "../ui/TableSkeleton";
 import { toast } from "react-toastify";
+import Papa from "papaparse";
 
 const headings = ["Select", "Student Name", "NSUT Roll No.", "Email"];
 
@@ -55,6 +56,9 @@ export default function StudentTable() {
 
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage] = useState(10);
+    const [isUploadingCSV, setIsUploadingCSV] = useState(false);
+    const [csvFile, setCsvFile] = useState<File | null>(null);
+    const [isUpdatingDueDate, setIsUpdatingDueDate] = useState(false);
 
     function getDefaultDueDate() {
         const today = new Date();
@@ -96,6 +100,48 @@ export default function StudentTable() {
         });
     };
 
+
+        const handleUpdateAllDueDates = async () => {
+        if (!dueDate) {
+            toast.error("Please select a due date");
+            return;
+        }
+
+        const dueDateObj = new Date(dueDate);
+        dueDateObj.setMinutes(dueDateObj.getMinutes() - 330);
+
+        const apiUrl = import.meta.env.VITE_API_URL;
+        setIsUpdatingDueDate(true);
+
+        try {
+            const response = await axios.put(
+                `${apiUrl}/teacher/subject/update-due-date`,
+                {
+                    subject_id: subjectId,
+                    due_date: dueDateObj.toISOString(),
+                },
+                {
+                    withCredentials: true,
+                    params: { year, sem },
+                }
+            );
+
+            toast.success(
+                response.data.message || "Due dates updated successfully"
+            );
+        } catch (error) {
+            console.error("Error updating due dates:", error);
+
+            if (axios.isAxiosError(error) && error.response?.status === 401) {
+                toast.error("Unauthorized");
+            } else {
+                toast.error("Failed to update due dates");
+            }
+        }
+
+        setIsUpdatingDueDate(false);
+    };
+
     // Function to handle form submission (updated to use selected due date)
     const handleSubmit = async () => {
     if (selectedStudents.length === 0) {
@@ -121,6 +167,14 @@ export default function StudentTable() {
 
     const apiUrl = import.meta.env.VITE_API_URL;
     setIsLoadingPost(true);
+
+//        console.log("➡️ Sending request to backend:", {
+//   url: `${apiUrl}/teacher/students/request`,
+//   params: { year, sem },
+//   body: formattedData,
+// }); 
+
+
     
     try {
         setStudentsNotSubmitted([]);
@@ -180,6 +234,67 @@ export default function StudentTable() {
     setIsLoadingPost(false);
 };
 
+    const handleCSVUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+        setCsvFile(file);
+        setIsUploadingCSV(true);
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const text = e.target?.result as string;
+            const parsed = Papa.parse(text, { 
+                header: true, 
+                skipEmptyLines: true 
+            });
+
+            try {
+                const emails = (parsed.data as any[])
+                    .map((row) => row.email?.trim().toLowerCase())
+                    .filter(Boolean);
+
+                if (emails.length === 0) {
+                    toast.error("No valid emails found in CSV");
+                    setIsUploadingCSV(false);
+                    return;
+                }
+
+                const matchedStudentIds = apiData?.enrolled_students
+                    .filter((student) =>
+                        emails.includes(student.email.toLowerCase())
+                    )
+                    .map((student) => student.id) || [];
+
+                if (matchedStudentIds.length === 0) {
+                    toast.warning("No matching students found");
+                } else {
+                    setSelectedStudents(matchedStudentIds);
+                    toast.success(
+                        `${matchedStudentIds.length} student${matchedStudentIds.length !== 1 ? 's' : ''} selected from CSV`
+                    );
+                }
+
+                const notFound = emails.length - matchedStudentIds.length;
+                if (notFound > 0) {
+                    toast.info(`${notFound} email${notFound !== 1 ? 's' : ''} not found in enrollment`);
+                }
+
+                setIsUploadingCSV(false);
+            } catch (error) {
+                toast.error("Error processing CSV file");
+                setIsUploadingCSV(false);
+            }
+        };
+        
+        reader.onerror = () => {
+            toast.error("Failed to read CSV file");
+            setIsUploadingCSV(false);
+        };
+        
+        reader.readAsText(file);
+        event.target.value = "";
+    };
+
 
     const fetchData = async (year: number, sem: number) => {
         const apiUrl = import.meta.env.VITE_API_URL;
@@ -199,7 +314,7 @@ export default function StudentTable() {
 
     const { tenure } = useAuthStore();
     const year = tenure?.year;
-    const sem = tenure?.is_even;
+    const sem = tenure?.is_odd;
 
     const {
         data: apiData,
@@ -451,8 +566,33 @@ export default function StudentTable() {
                             />
 
                             <div className="p-4 bg-gray-50 border-t border-gray-200">
-                                <div className="flex flex-wrap items-center justify-end gap-4">
-                                    <div className="flex items-center gap-2">
+                                <div className="flex flex-wrap items-center justify-between gap-4">
+                                    <div className="flex flex-col gap-2">
+                                        <div className="flex items-center gap-2">
+                                            <label className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer disabled:bg-gray-200 disabled:cursor-not-allowed">
+                                                <input
+                                                    type="file"
+                                                    accept=".csv"
+                                                    onChange={handleCSVUpload}
+                                                    disabled={isUploadingCSV}
+                                                    className="hidden"
+                                                    id="csv-upload"
+                                                />
+                                                {isUploadingCSV
+                                                    ? "Uploading..."
+                                                    : "Upload CSV"}
+                                            </label>
+                                            {csvFile && (
+                                                <div className="px-3 py-1.5 bg-gray-100 border border-gray-300 rounded-md text-sm text-gray-700 truncate max-w-xs">
+                                                    {csvFile.name}
+                                                </div>
+                                            )}
+                                        </div>
+                                        <span className="text-xs text-gray-500">
+                                            CSV must include header: email
+                                        </span>
+                                    </div>
+                                    <div className="flex flex-col sm:flex-row items-center gap-3">
                                         <span className="text-sm text-gray-600">
                                             {selectedStudents.length} student
                                             {selectedStudents.length !== 1
@@ -460,19 +600,36 @@ export default function StudentTable() {
                                                 : ""}{" "}
                                             selected
                                         </span>
-                                        <button
-                                            onClick={handleSubmit}
-                                            disabled={
-                                                selectedStudents.length === 0 ||
-                                                !dueDate || isLoadingPost
-                                            }
-                                            className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed"
-
-                                        >
-                                            {isLoadingPost
-                                                ? "Submitting Request"
-                                                : "Submit Request"}
-                                        </button>
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={
+                                                    handleUpdateAllDueDates
+                                                }
+                                                disabled={
+                                                    !dueDate ||
+                                                    isUpdatingDueDate
+                                                }
+                                                className="inline-flex justify-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-200 disabled:cursor-not-allowed"
+                                            >
+                                                {isUpdatingDueDate
+                                                    ? "Updating..."
+                                                    : "Update All Due Dates"}
+                                            </button>
+                                            <button
+                                                onClick={handleSubmit}
+                                                disabled={
+                                                    selectedStudents.length ===
+                                                        0 ||
+                                                    !dueDate ||
+                                                    isLoadingPost
+                                                }
+                                                className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                                            >
+                                                {isLoadingPost
+                                                    ? "Submitting Request"
+                                                    : "Submit Request"}
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

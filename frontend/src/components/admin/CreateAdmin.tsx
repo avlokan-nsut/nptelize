@@ -67,6 +67,9 @@ const CreateAdmin = () => {
 
   const handleChange = (index: number, field: keyof AdminForm, value: string) => {
     const updatedAdmins = [...admins];
+    if(field === "email") {
+      value = value.toLowerCase();
+    }
     updatedAdmins[index] = {
       ...updatedAdmins[index],
       [field]: value
@@ -114,9 +117,13 @@ const CreateAdmin = () => {
         const values = line.split(",").map((v) => v.trim());
         const admin: any = {};
         headers.forEach((header, i) => {
-          admin[header] = values[i];
+          let value = values[i] || "";
+          if (header === "email") {
+            value = value.toLowerCase();
+          }
+          admin[header] = value;
         });
-        console.log(admin);
+        // console.log(admin);
         return admin;
       });
       setIsSubmitting(true);

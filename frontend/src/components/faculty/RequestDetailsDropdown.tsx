@@ -27,7 +27,7 @@ const RequestDetailsDropdown = ({ request, colSpan, onClose,showReject }: Reques
   // Get year and sem from auth store
   const { tenure } = useAuthStore();
   const year = tenure?.year;
-  const sem = tenure?.is_even;
+  const sem = tenure?.is_odd;
 
   const fetchCertInfo = async (requestId: string) => {
     try {
