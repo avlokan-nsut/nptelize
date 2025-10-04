@@ -10,13 +10,12 @@ import { TenureSelector } from "../ui/DropDown";
 import TableSkeleton from "../ui/TableSkeleton";
 import { toast } from "react-toastify";
 
-const headings = ["Select", "Subject Name", "Subject Code", "Current Due Date"];
+const headings = ["Select", "Subject Name", "Subject Code"];
 
 export type Subject = {
     id: string;
     name: string;
     subject_code: string;
-    due_date: string | null;
 };
 
 export type SubjectsApiResponse = {
@@ -336,9 +335,6 @@ export default function BulkDueDateUpdate() {
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-gray-700">
                                                         {subject.subject_code}
-                                                    </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-gray-700">
-                                                        {formatDate(subject.due_date)}
                                                     </td>
                                                 </tr>
                                             )

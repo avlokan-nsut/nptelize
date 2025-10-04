@@ -49,8 +49,8 @@ export const TenureSelector: React.FC = () => {
   
   // Semester options
   const semesterOptions = [
-    { value: 1, label: 'Odd Semester' },
-    { value: 0, label: 'Even Semester' }
+    { value: 0, label: 'Even Semester' },
+    { value: 1, label: 'Odd Semester' }
   ];
   
   const handleYearChange = (value: string | number) => {
