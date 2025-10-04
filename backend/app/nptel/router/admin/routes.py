@@ -443,7 +443,8 @@ def allot_teacher_to_subject(
     return {
         'results': allotment_status
     }
-
+    
+    
 @router.put('/allot/teacher-subject')
 def change_teacher_for_subject(
     teachers_data: List[AddTeacherToSubjectSchema],
@@ -457,7 +458,6 @@ def change_teacher_for_subject(
 
     for teacher in teachers_data:
         try:
-            # Check if teacher exists
             db_teacher = db.query(User).filter(
                 User.email == teacher.email,
                 User.role == UserRole.teacher
@@ -471,7 +471,6 @@ def change_teacher_for_subject(
                 })
                 continue
 
-            # Check if subject exists
             db_subject = db.query(Subject).filter(Subject.subject_code == teacher.course_code).first()
             if not db_subject:
                 change_status.append({
@@ -482,25 +481,31 @@ def change_teacher_for_subject(
                 })
                 continue
 
-            # Find and remove any existing allotment for this subject, year, sem
-            db_old_allotment = db.query(TeacherSubjectAllotment).filter(
+            db_allotment = db.query(TeacherSubjectAllotment).filter(
                 TeacherSubjectAllotment.subject_id == db_subject.id,
                 TeacherSubjectAllotment.year == year,
                 TeacherSubjectAllotment.is_sem_odd == is_sem_odd
             ).first()
 
-            if db_old_allotment:
-                db.delete(db_old_allotment)
-                db.commit()
-
-            # Allot the new teacher
-            new_allotment = TeacherSubjectAllotment(
-                teacher_id=db_teacher.id,
-                subject_id=db_subject.id,
-                year=year,
-                is_sem_odd=is_sem_odd
-            )
-            db.add(new_allotment)
+            if db_allotment:
+                if db_allotment.teacher_id == db_teacher.id:
+                    change_status.append({
+                        'email': teacher.email,
+                        'success': False,
+                        'message': 'Teacher is already allotted to this subject',
+                        'course_code': teacher.course_code
+                    })
+                    continue
+                db_allotment.teacher_id = db_teacher.id
+            else:
+                db_allotment = TeacherSubjectAllotment(
+                    teacher_id=db_teacher.id,
+                    subject_id=db_subject.id,
+                    year=year,
+                    is_sem_odd=is_sem_odd
+                )
+                db.add(db_allotment)
+            
             db.commit()
 
             change_status.append({
@@ -520,7 +525,6 @@ def change_teacher_for_subject(
             })
 
     return {'results': change_status}
-
 
 @router.post('/enroll/students')
 def enroll_students_to_subject(
