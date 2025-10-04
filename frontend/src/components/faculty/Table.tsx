@@ -10,7 +10,7 @@ import { TenureSelector } from "../ui/DropDown";
 import TableSkeleton from "../ui/TableSkeleton";
 
 
-const headings = ["Subject Code", "Subject Name", "Actions", "Request Status"];
+// const headings = ["Subject Code", "Subject Name", "Actions", "Request Status"];
 
 export type Subject = {
   id: string;
