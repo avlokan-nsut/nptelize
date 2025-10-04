@@ -193,15 +193,15 @@ export default function BulkDueDateUpdate() {
         );
     }, [paginationData.currentPageData, selectedSubjects]);
 
-    const formatDate = (dateString: string | null) => {
-        if (!dateString) return "Not set";
-        const date = new Date(dateString);
-        return date.toLocaleDateString("en-IN", {
-            year: "numeric",
-            month: "short",
-            day: "numeric",
-        });
-    };
+    // const formatDate = (dateString: string | null) => {
+    //     if (!dateString) return "Not set";
+    //     const date = new Date(dateString);
+    //     return date.toLocaleDateString("en-IN", {
+    //         year: "numeric",
+    //         month: "short",
+    //         day: "numeric",
+    //     });
+    // };
 
     return (
         <div className="px-4 py-8 max-w-7xl mx-auto">
