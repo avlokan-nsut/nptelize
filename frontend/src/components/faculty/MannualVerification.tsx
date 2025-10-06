@@ -47,7 +47,7 @@ const MannualVerification = () => {
     const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
     const { tenure } = useAuthStore();
     const year = tenure?.year;
-    const sem = tenure?.is_even;
+    const sem = tenure?.is_odd;
 
     const {
         data: apiData,

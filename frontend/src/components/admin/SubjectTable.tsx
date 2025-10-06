@@ -35,7 +35,7 @@ const SubjectTable = () => {
 
     const { tenure } = useAuthStore();
         const year = tenure?.year;
-        const sem = tenure?.is_even;
+        const sem = tenure?.is_odd;
 
     useEffect(() => {
         const fetchData = async () => {

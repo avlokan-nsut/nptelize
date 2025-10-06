@@ -9,7 +9,8 @@ import { useAuthStore } from "../../store/useAuthStore";
 import { TenureSelector } from "../ui/DropDown";
 import TableSkeleton from "../ui/TableSkeleton";
 
-const headings = ["Subject Code", "Subject Name", "Actions", "Request Status"];
+
+// const headings = ["Subject Code", "Subject Name", "Actions", "Request Status"];
 
 export type Subject = {
   id: string;
@@ -37,9 +38,12 @@ const fetchData = async (year: number, sem: number) => {
 };
 
 const Table = function () {
+  const { user } = useAuthStore();
+const isCoordinator = user?.service_role_dict && 
+  Object.values(user.service_role_dict).flat().includes("coordinator");
   const { tenure } = useAuthStore();
   const year = tenure?.year;
-  const sem = tenure?.is_even;
+  const sem = tenure?.is_odd;
   const {
     data: apiData,
     error,
@@ -95,6 +99,13 @@ const Table = function () {
       </div>
       <div className="max-w-7xl mx-auto">
         <div className="w-full flex justify-center md:justify-end space-x-2 mt-4 md:flex-row md:mt-0">
+          {(isCoordinator) &&
+          <Link to="/faculty/bulk-due-date-update">
+              <button className="p-3 text-sm rounded-2xl my-4 transition-colors duration-200 md:p-4 md:text-md bg-blue-900 text-white hover:bg-blue-800 cursor-pointer">
+                Bulk Due Date Update  
+              </button>
+            </Link>
+          }
           <Link to="/faculty/verify-rejected">
             <button className="p-3 text-sm rounded-2xl my-4 transition-colors duration-200 md:p-4 md:text-md bg-blue-900 text-white hover:bg-blue-800 cursor-pointer">
               Manual Verification
@@ -126,59 +137,61 @@ const Table = function () {
             <table className="w-full">
               <thead className="bg-gray-50">
                 <tr className="text-sm font-medium text-gray-700">
-                  {headings.map((heading, idx) => (
-                    <th key={idx} className="px-6 py-4 text-left">
-                      {heading}
-                    </th>
-                  ))}
+                  <th className="px-6 py-4 text-left">Subject Code</th>
+                  <th className="px-6 py-4 text-left">Subject Name</th>
+                  {isCoordinator && <th className="px-6 py-4 text-left">Actions</th>}
+                  <th className="px-6 py-4 text-left">Request Status</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
-                {paginatedSubjects.length > 0 ? (
-                  paginatedSubjects.map((subject) => (
-                    <tr
-                      key={subject.id}
-                      className="hover:bg-gray-50 transition-colors duration-200"
-                    >
-                      <td className="px-6 py-4">{subject.subject_code}</td>
-                      <td className="px-6 py-4">{subject.name}</td>
-                      <td className="px-6 py-4">
-                        <Link
-                          to={`/faculty/students/${subject.subject_code}`}
-                          state={{ subjectId: subject.id }}
-                          className="inline-flex items-center px-4 py-2 bg-black text-white text-sm font-medium rounded-md shadow-sm transition-colors duration-200"
-                        >
-                          View Students
-                          <FaArrowRight className="ml-2 text-sm" />
-                        </Link>
-                      </td>
-                      <td className="px-6 py-4">
-                        <Link
-                          to={`/faculty/students/requests/${subject.subject_code}`}
-                          state={{
-                            subjectId: subject.id,
-                            subjectName: subject.name,
-                          }}
-                          className="inline-flex items-center px-4 py-2 bg-slate-600 hover:bg-black text-white text-sm font-medium rounded-md shadow-sm transition-colors duration-200"
-                        >
-                          Request Status
-                          <FaArrowRight className="ml-2 text-sm" />
-                        </Link>
+                <tbody className="divide-y divide-gray-100">
+                  {paginatedSubjects.length > 0 ? (
+                    paginatedSubjects.map((subject) => (
+                      <tr
+                        key={subject.id}
+                        className="hover:bg-gray-50 transition-colors duration-200"
+                      >
+                        <td className="px-6 py-4">{subject.subject_code}</td>
+                        <td className="px-6 py-4">{subject.name}</td>
+
+                        {isCoordinator && (
+                          <td className="px-6 py-4">
+                            <Link
+                              to={`/faculty/students/${subject.subject_code}`}
+                              state={{ subjectId: subject.id }}
+                              className="inline-flex items-center px-4 py-2 bg-black text-white text-sm font-medium rounded-md shadow-sm transition-colors duration-200"
+                            >
+                              View Students
+                              <FaArrowRight className="ml-2 text-sm" />
+                            </Link>
+                          </td>
+                        )}
+
+                        <td className="px-6 py-4">
+                          <Link
+                            to={`/faculty/students/requests/${subject.subject_code}`}
+                            state={{
+                              subjectId: subject.id,
+                              subjectName: subject.name,
+                            }}
+                            className="inline-flex items-center px-4 py-2 bg-slate-600 hover:bg-black text-white text-sm font-medium rounded-md shadow-sm transition-colors duration-200"
+                          >
+                            Request Status
+                            <FaArrowRight className="ml-2 text-sm" />
+                          </Link>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td
+                        colSpan={isCoordinator ? 4 : 3}
+                        className="px-6 py-4 text-center text-gray-500"
+                      >
+                        No subjects found. Please select a different tenure or try another search.
                       </td>
                     </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td
-                      colSpan={4}
-                      className="px-6 py-4 text-center text-gray-500"
-                    >
-                      No subjects found. Please select a different tenure or try
-                      another search.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
+                  )}
+                </tbody>
             </table>
           )}
         </div>

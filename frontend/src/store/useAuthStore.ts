@@ -6,11 +6,12 @@ interface User {
   user_id: string;
   name : string;
   role : string
+  service_role_dict?: Record<string, string[]>;
 }
 
 interface Tenure {
   year:number;
-  is_even:number;
+  is_odd:number;
 }
 
 interface Credentials {
@@ -37,8 +38,8 @@ const getCurrentTenure = (): Tenure => {
   const now = new Date();
   const year = now.getFullYear();
   const month = now.getMonth(); // 0-indexed, 0 = January, 6 = July
-  const is_even = month < 6 ? 0 : 1;
-  return { year, is_even };
+  const is_odd= month > 6 ? 1 : 0;
+  return { year, is_odd };
 };
 
 export const useAuthStore = create<AuthState>()(
@@ -72,7 +73,7 @@ export const useAuthStore = create<AuthState>()(
 
           const data = await response.json();
           // console.log(data.message);
-          set({ user: { user_id: data.user_id , name:data.name, role:credentials.role }, loading: false });
+          set({ user: { user_id: data.user_id , name:data.name, role:credentials.role,service_role_dict: data.service_role_dict || {}, }, loading: false });
           set({ tenure: getCurrentTenure() });
         } catch (error: any) {
           set({ error: error.message, loading: false });
@@ -115,7 +116,7 @@ export const useAuthStore = create<AuthState>()(
             throw new Error("Session invalid");
           }
           const data = await response.json();
-          set({ user: { user_id: data.user_id, name: data.name, role: data.role }, loading: false });
+          set({ user: { user_id: data.user_id, name: data.name, role: data.role, service_role_dict: data.service_role_dict || {}, }, loading: false });
           set({ tenure: getCurrentTenure() });
         } catch (error: any) {
           set({ user: null, error: error.message, loading: false, tenure: null });
