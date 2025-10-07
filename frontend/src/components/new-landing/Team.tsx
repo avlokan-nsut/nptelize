@@ -5,25 +5,26 @@ import { Link } from "react-router-dom"
 const Team = () => {
     return (
         <>
-            <section className="w-full py-10  px-4 md:py-12  md:px-18">
-
-                <div className='text-3xl text-center lg:text-4xl'>
-                    <span className='font-bold italic bg-blue-200 px-1 mr-2'>Meet the team behind</span>
-                    <span className='font-bold italic'>AVLOKAN</span>
-                </div>
-                <div className="w-full flex justify-center items-center text-white mt-12 ">
-
-                    <Link to="/developers">
-                        <button
-                            className="bg-gradient-to-r from-white via-blue-200 to-blue-500
-                   text-black py-2 px-6 md:px-12 rounded-2xl text-lg md:text-xl
-                   flex items-center gap-2 font-semibold shadow-lg
-                   hover:shadow-xl transition-shadow border border-black hover:cursor-pointer"
-                        >
-                            Check Now <FaArrowRight />
-                        </button>
-                    </Link>
-
+            <section className="w-full py-16 px-4 md:py-20 md:px-18 bg-white">
+                <div className="max-w-4xl mx-auto text-center">
+                    <h2 className="text-4xl md:text-5xl lg:text-6xl mb-10 md:mb-12 font-inter">
+                        Meet the team behind AVLOKAN
+                    </h2>
+                    
+                    <div className="flex justify-center items-center mt-8">
+                        <Link to="/developers">
+                            <button
+                                className="bg-blue-200 hover:bg-blue-300
+                                text-gray-900 font-semibold text-lg md:text-xl
+                                py-4 px-10 md:px-16 rounded-full
+                                flex items-center gap-3
+                                transition-all duration-300 ease-in-out
+                                hover:shadow-lg hover:scale-105"
+                            >
+                                Check Now <FaArrowRight className="text-base" />
+                            </button>
+                        </Link>
+                    </div>
                 </div>
             </section>
         </>
