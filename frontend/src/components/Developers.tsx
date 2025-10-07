@@ -139,7 +139,7 @@ const developers: Developer[] = [
         category: "developer",
         linkedinUrl: "https://www.linkedin.com/in/greatnerve",
         imageUrl:
-            "/Team/Dheeraj.png",
+            "/Team/Dheeraj.jpg",
     },
     {
         id: 9,
