@@ -6,6 +6,7 @@ interface Developer {
     id: number;
     name: string;
     role: string;
+    extra?:string
     category: "professor" | "product_manager" | "developer";
     linkedinUrl?: string;
     websiteUrl?: string;
@@ -109,6 +110,7 @@ const developers: Developer[] = [
         id: 5,
         name: "Lakshay Gupta",
         role: "Developer",
+        extra : "Hope nothing breaks!",
         category: "developer",
         linkedinUrl: "https://www.linkedin.com/in/lakshay-gupta-529a1428a/",
         imageUrl:
@@ -266,7 +268,11 @@ const TeamMemberCard: React.FC<TeamMemberCardProps> = ({ developer }) => {
                             <FaLink />
                         </a>
                     )}
+                    
                 </div>
+                {developer.extra && (
+                        <p className="text-[8px] text-white">{developer.extra}</p>
+                    )}
             </div>
         </div>
     );
