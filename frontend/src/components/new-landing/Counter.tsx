@@ -41,10 +41,10 @@ const Counter = () => {
 
     return (
         <>
-            <section className="w-full py-6 my-10 px-10 lg:px-24 md:py-20 md:mb-0 ">
-                <div className=" flex flex-col space-y-14 justify-between font-hero text-black  rounded-xl text-center text-[22px] font-medium lg:flex-row ">
+            <section className="max-w-7xl py-6 my-10 px-10 lg:px-24 md:py-20 md:mb-0 mx-auto">
+                <div className="flex flex-col space-y-14 justify-between font-hero text-black rounded-xl text-center text-[22px] font-medium lg:flex-row lg:space-y-0 lg:gap-8">
                     {counters.map((counter, index) => (
-                        <div key={index}>
+                        <div key={index} className="flex-1">
                             <GradientText
                                 colors = {["#0f9960", "#1a4fd1", "#0f9960", "#1a4fd1", "#0f9960"]}
                                 animationSpeed={3}
