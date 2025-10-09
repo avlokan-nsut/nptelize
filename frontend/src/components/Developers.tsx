@@ -120,6 +120,7 @@ const developers: Developer[] = [
         id: 6,
         name: "Shrey Singh",
         role: "Developer",
+        extra: "I speak JSON",
         category: "developer",
         linkedinUrl: "https://www.linkedin.com/in/shrey-singh7/",
         imageUrl:
