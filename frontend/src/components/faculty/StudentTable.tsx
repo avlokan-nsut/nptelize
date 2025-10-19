@@ -255,6 +255,7 @@ export default function StudentTable() {
 
                 if (emails.length === 0) {
                     toast.error("No valid emails found in CSV");
+                    
                     setIsUploadingCSV(false);
                     return;
                 }
@@ -278,10 +279,11 @@ export default function StudentTable() {
                 if (notFound > 0) {
                     toast.info(`${notFound} email${notFound !== 1 ? 's' : ''} not found in enrollment`);
                 }
-
+                setCsvFile(null);
                 setIsUploadingCSV(false);
             } catch (error) {
                 toast.error("Error processing CSV file");
+                setCsvFile(null);
                 setIsUploadingCSV(false);
             }
         };

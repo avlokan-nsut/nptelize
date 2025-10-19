@@ -11,6 +11,7 @@ from app.database.core import get_db, get_async_db
 from app.oauth2 import get_current_teacher
 from app.schemas import TokenData, GenericResponse
 from .schemas import (
+    BulkSendRequestsRequest,
     SubjectResponse, 
     EnrolledStudentResponse, 
     CreateCertificateRequestFields, 
@@ -363,7 +364,6 @@ def make_certificate_request_to_student(
                 'message': 'Certificate request created successfully',
                 'request_id': certificate_request.id
             })
-
         except Exception as e:
             db.rollback()
             results.append({
@@ -372,11 +372,129 @@ def make_certificate_request_to_student(
                 'success': False,
                 'message': str(e)
             })
-
     return {
         'results': results
     }
-     
+    
+    
+@router.post("/subject/bulk-send-requests", response_model=GenericResponse)
+def bulk_send_certificate_requests_for_subject(
+    req: BulkSendRequestsRequest = Body(...),
+    year: int = Query(...),
+    sem: int = Query(...),
+    db: Session = Depends(get_db),
+    current_teacher: TokenData = Depends(get_current_teacher),
+    current_coordinator: TokenData = Depends(role_based_access(['coordinator']))
+):
+    is_sem_odd = bool(sem & 1)
+    
+    # Authorization logic - same as /students/request
+    if not current_coordinator:
+        allotment = db.query(TeacherSubjectAllotment).filter(
+            TeacherSubjectAllotment.subject_id == req.subject_id,
+            TeacherSubjectAllotment.teacher_id == current_teacher.user_id,
+            TeacherSubjectAllotment.year == year,
+            TeacherSubjectAllotment.is_sem_odd == is_sem_odd,
+        ).first()
+        if not allotment:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, 
+                detail="Allotment not found for this subject and teacher"
+            )
+    else:
+        allotment = db.query(TeacherSubjectAllotment).filter(
+            TeacherSubjectAllotment.subject_id == req.subject_id,
+            TeacherSubjectAllotment.year == year,
+            TeacherSubjectAllotment.is_sem_odd == is_sem_odd,
+        ).first()
+        if not allotment:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, 
+                detail="Allotment not found for this subject"
+            )
+
+    # Get all enrollments for this subject
+    enrollments = db.query(StudentSubjectEnrollment).filter(
+        StudentSubjectEnrollment.teacher_subject_allotment_id == allotment.id
+    ).all()
+
+    # Use EXACT same logic as /students/request for each student
+    results = []
+    for enrollment in enrollments:
+        try:
+            # EXACT same logic from /students/request
+            db_subject_enrollment = db.query(StudentSubjectEnrollment).filter(
+                StudentSubjectEnrollment.student_id == enrollment.student_id,
+                StudentSubjectEnrollment.teacher_subject_allotment.has(
+                    and_(
+                        TeacherSubjectAllotment.subject_id == req.subject_id,
+                        TeacherSubjectAllotment.year == year,
+                        TeacherSubjectAllotment.is_sem_odd == is_sem_odd
+                    )
+                )
+            ).first()
+
+            if not db_subject_enrollment:
+                results.append({
+                    'student_id': enrollment.student_id,
+                    'success': False,
+                    'message': 'Subject does not exist'
+                })
+                continue
+            
+            # EXACT same duplicate check from /students/request
+            existing_request = db.query(Request).filter(
+                Request.status == RequestStatus.pending,
+                Request.student_subject_enrollment_id == db_subject_enrollment.id,
+            ).first()
+
+            if existing_request:
+                results.append({
+                    'student_id': enrollment.student_id,
+                    'success': False,
+                    'message': 'Student has already been requested for certificate',
+                    'request_id': existing_request.id
+                })
+                continue
+                
+            # EXACT same request creation from /students/request
+            certificate_request = Request(
+                student_subject_enrollment_id=db_subject_enrollment.id,
+                due_date=req.due_date,
+                status=RequestStatus.pending,
+            )
+
+            db.add(certificate_request)
+            db.commit()
+            db.refresh(certificate_request)
+
+            results.append({
+                'student_id': enrollment.student_id,
+                'success': True,
+                'message': 'Certificate request created successfully',
+                'request_id': certificate_request.id
+            })
+            
+        except Exception as e:
+            db.rollback()
+            results.append({
+                'student_id': enrollment.student_id,
+                'success': False,
+                'message': str(e)
+            })
+    
+    # Count results for summary message
+    successful_requests = [r for r in results if r['success']]
+    already_requested = [r for r in results if not r['success'] and 'already been requested' in r['message']]
+    
+    success_count = len(successful_requests)
+    already_requested_count = len(already_requested)
+    
+    return {
+        "message": f"Certificate requests sent successfully. {success_count} new requests created, {already_requested_count} students already had requests."
+    }
+    
+
 @router.put("/subject/update-due-date", response_model=GenericResponse)
 def update_due_date_for_subject_requests(
     req: UpdateDueDateRequest = Body(...),

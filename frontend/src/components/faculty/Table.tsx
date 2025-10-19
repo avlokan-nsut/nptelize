@@ -1,4 +1,4 @@
-import { FaArrowRight } from "react-icons/fa";
+import { FaArrowRight, FaChevronDown, FaCalendarAlt, FaPaperPlane, FaFileAlt, FaUserCheck } from "react-icons/fa";
 import { Link } from "react-router-dom";
 import axios from "axios";
 import { useQuery } from "@tanstack/react-query";
@@ -8,9 +8,6 @@ import Pagination from "./Pagination";
 import { useAuthStore } from "../../store/useAuthStore";
 import { TenureSelector } from "../ui/DropDown";
 import TableSkeleton from "../ui/TableSkeleton";
-
-
-// const headings = ["Subject Code", "Subject Name", "Actions", "Request Status"];
 
 export type Subject = {
   id: string;
@@ -39,11 +36,17 @@ const fetchData = async (year: number, sem: number) => {
 
 const Table = function () {
   const { user } = useAuthStore();
-const isCoordinator = user?.service_role_dict && 
-  Object.values(user.service_role_dict).flat().includes("coordinator");
+  const isCoordinator = user?.service_role_dict && 
+    Object.values(user.service_role_dict).flat().includes("coordinator");
   const { tenure } = useAuthStore();
   const year = tenure?.year;
   const sem = tenure?.is_odd;
+  
+  const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const itemsPerPage = 10;
+
   const {
     data: apiData,
     error,
@@ -58,10 +61,6 @@ const isCoordinator = user?.service_role_dict &&
     },
     refetchOnWindowFocus: false,
   });
-
-  const [searchTerm, setSearchTerm] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
 
   useEffect(() => {
     setCurrentPage(1);
@@ -92,33 +91,103 @@ const isCoordinator = user?.service_role_dict &&
     startIndex + itemsPerPage
   );
 
+  const dropdownActions = [
+    {
+      title: "Update Due Dates",
+      description: "Bulk update due dates for multiple subjects",
+      href: "/faculty/bulk-due-date-update",
+      icon: <FaCalendarAlt className="w-4 h-4" />,
+      color: "text-blue-600",
+      show: isCoordinator
+    },
+    {
+      title: "Send Requests",
+      description: "Send certificate requests to all students",
+      href: "/faculty/bulk-send-requests", 
+      icon: <FaPaperPlane className="w-4 h-4" />,
+      color: "text-green-600",
+      show: isCoordinator
+    },
+    {
+      title: "Reports",
+      description: "Generate and view subject reports",
+      href: "/faculty/report-section",
+      icon: <FaFileAlt className="w-4 h-4" />,
+      color: "text-purple-600",
+      show: true
+    },
+    {
+      title: "Verify Rejected",
+      description: "Manual verification for rejected requests",
+      href: "/faculty/verify-rejected",
+      icon: <FaUserCheck className="w-4 h-4" />,
+      color: "text-orange-600",
+      show: true
+    }
+  ].filter(action => action.show);
+
   return (
-    <>
-      <div className="flex justify-center md:justify-end  max-w-7xl mx-auto">
-        <TenureSelector />
-      </div>
+    <div className="mx-auto px-4 py-8">
       <div className="max-w-7xl mx-auto">
-        <div className="w-full flex justify-center md:justify-end space-x-2 mt-4 md:flex-row md:mt-0">
-          {(isCoordinator) &&
-          <Link to="/faculty/bulk-due-date-update">
-              <button className="p-3 text-sm rounded-2xl my-4 transition-colors duration-200 md:p-4 md:text-md bg-blue-900 text-white hover:bg-blue-800 cursor-pointer">
-                Bulk Due Date Update  
+        <div className="flex justify-between items-end mb-6">
+          <h1 className="text-xl md:text-2xl font-semibold text-gray-800 tracking-wider">
+            Alloted Subjects
+          </h1>
+          
+          <div className="flex items-end gap-3">
+            {/* Bulk Actions Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className="inline-flex items-center justify-between px-3 py-2.5 text-sm font-medium text-gray-900 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 h-10"
+              >
+                <span>Bulk Actions</span>
+                <FaChevronDown className={`w-3 h-3 ml-2 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
               </button>
-            </Link>
-          }
-          <Link to="/faculty/verify-rejected">
-            <button className="p-3 text-sm rounded-2xl my-4 transition-colors duration-200 md:p-4 md:text-md bg-blue-900 text-white hover:bg-blue-800 cursor-pointer">
-              Manual Verification
-            </button>
-          </Link>
 
-          <Link to="/faculty/report-section">
-            <button className="p-3 text-sm rounded-2xl my-4 transition-colors duration-200 md:p-4 md:text-md bg-black text-white cursor-pointer hover:bg-gray-500">
-              Report Section
-            </button>
-          </Link>
+              {isDropdownOpen && (
+                <>
+                  <div 
+                    className="fixed inset-0 z-10" 
+                    onClick={() => setIsDropdownOpen(false)}
+                  />
+                  
+                  <div className="absolute right-0 z-20 mt-1 w-80 bg-white rounded-lg shadow-lg border border-gray-200 py-1">
+                    {dropdownActions.map((action, index) => (
+                      <Link
+                        key={index}
+                        to={action.href}
+                        onClick={() => setIsDropdownOpen(false)}
+                        className="block px-4 py-3 hover:bg-gray-50 transition-colors"
+                      >
+                        <div className="flex items-start">
+                          <div className={`mt-0.5 ${action.color}`}>
+                            {action.icon}
+                          </div>
+                          <div className="ml-3">
+                            <div className="text-sm font-medium text-gray-900">
+                              {action.title}
+                            </div>
+                            <div className="text-xs text-gray-500 mt-1">
+                              {action.description}
+                            </div>
+                          </div>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* TenureSelector */}
+            <TenureSelector />
+          </div>
         </div>
+      </div>
 
+      {/* Rest of the content */}
+      <div className="max-w-7xl mx-auto">
         <div className="mb-4">
           <SearchBar
             value={searchTerm}
@@ -143,55 +212,55 @@ const isCoordinator = user?.service_role_dict &&
                   <th className="px-6 py-4 text-left">Request Status</th>
                 </tr>
               </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {paginatedSubjects.length > 0 ? (
-                    paginatedSubjects.map((subject) => (
-                      <tr
-                        key={subject.id}
-                        className="hover:bg-gray-50 transition-colors duration-200"
-                      >
-                        <td className="px-6 py-4">{subject.subject_code}</td>
-                        <td className="px-6 py-4">{subject.name}</td>
+              <tbody className="divide-y divide-gray-100">
+                {paginatedSubjects.length > 0 ? (
+                  paginatedSubjects.map((subject) => (
+                    <tr
+                      key={subject.id}
+                      className="hover:bg-gray-50 transition-colors duration-200"
+                    >
+                      <td className="px-6 py-4">{subject.subject_code}</td>
+                      <td className="px-6 py-4">{subject.name}</td>
 
-                        {isCoordinator && (
-                          <td className="px-6 py-4">
-                            <Link
-                              to={`/faculty/students/${subject.subject_code}`}
-                              state={{ subjectId: subject.id }}
-                              className="inline-flex items-center px-4 py-2 bg-black text-white text-sm font-medium rounded-md shadow-sm transition-colors duration-200"
-                            >
-                              View Students
-                              <FaArrowRight className="ml-2 text-sm" />
-                            </Link>
-                          </td>
-                        )}
-
+                      {isCoordinator && (
                         <td className="px-6 py-4">
                           <Link
-                            to={`/faculty/students/requests/${subject.subject_code}`}
-                            state={{
-                              subjectId: subject.id,
-                              subjectName: subject.name,
-                            }}
-                            className="inline-flex items-center px-4 py-2 bg-slate-600 hover:bg-black text-white text-sm font-medium rounded-md shadow-sm transition-colors duration-200"
+                            to={`/faculty/students/${subject.subject_code}`}
+                            state={{ subjectId: subject.id }}
+                            className="inline-flex items-center px-4 py-2 bg-black text-white text-sm font-medium rounded-md shadow-sm transition-colors duration-200"
                           >
-                            Request Status
+                            View Students
                             <FaArrowRight className="ml-2 text-sm" />
                           </Link>
                         </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td
-                        colSpan={isCoordinator ? 4 : 3}
-                        className="px-6 py-4 text-center text-gray-500"
-                      >
-                        No subjects found. Please select a different tenure or try another search.
+                      )}
+
+                      <td className="px-6 py-4">
+                        <Link
+                          to={`/faculty/students/requests/${subject.subject_code}`}
+                          state={{
+                            subjectId: subject.id,
+                            subjectName: subject.name,
+                          }}
+                          className="inline-flex items-center px-4 py-2 bg-slate-600 hover:bg-black text-white text-sm font-medium rounded-md shadow-sm transition-colors duration-200"
+                        >
+                          Request Status
+                          <FaArrowRight className="ml-2 text-sm" />
+                        </Link>
                       </td>
                     </tr>
-                  )}
-                </tbody>
+                  ))
+                ) : (
+                  <tr>
+                    <td
+                      colSpan={isCoordinator ? 4 : 3}
+                      className="px-6 py-4 text-center text-gray-500"
+                    >
+                      No subjects found. Please select a different tenure or try another search.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
             </table>
           )}
         </div>
@@ -205,7 +274,7 @@ const isCoordinator = user?.service_role_dict &&
           />
         )}
       </div>
-    </>
+    </div>
   );
 };
 
