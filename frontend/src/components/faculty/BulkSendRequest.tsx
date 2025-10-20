@@ -1,3 +1,4 @@
+// BulkSendRequest.tsx
 import { FaArrowLeft } from "react-icons/fa";
 import { Link } from "react-router-dom";
 import axios from "axios";
@@ -10,8 +11,6 @@ import { TenureSelector } from "../ui/DropDown";
 import TableSkeleton from "../ui/TableSkeleton";
 import { toast } from "react-toastify";
 import Papa from "papaparse";
-import DatePicker from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
 
 const headings = ["Select", "Subject Name", "Subject Code"];
 
@@ -25,21 +24,27 @@ export type SubjectsApiResponse = {
     subjects: Subject[];
 };
 
-export default function BulkDueDateUpdate() {
+export default function BulkSendRequest() {
     const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
-    const [newDueDate, setNewDueDate] = useState<Date | null>(() => {
-        const today = new Date();
-        const futureDate = new Date(today);
-        futureDate.setDate(today.getDate() + 7);
-        return futureDate;
-    });
+    const [newDueDate, setNewDueDate] = useState(getDefaultDueDate());
     const [searchTerm, setSearchTerm] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage] = useState(10);
-    const [isUpdating, setIsUpdating] = useState(false);
-
+    const [isSending, setIsSending] = useState(false); // Changed from isUpdating
+    
     const [isUploadingCSV, setIsUploadingCSV] = useState(false);
     const [csvFile, setCsvFile] = useState<File | null>(null);
+
+    const [requestSent, setRequestSent] = useState(false);
+    const [totalNewRequests, setTotalNewRequests] = useState(0);
+    const [totalExistingRequests, setTotalExistingRequests] = useState(0);
+
+    function getDefaultDueDate() {
+        const today = new Date();
+        const futureDate = new Date(today);
+        futureDate.setDate(today.getDate() + 7);
+        return futureDate.toISOString().split("T")[0];
+    }
 
     const handlePageChange = (page: number) => {
         setCurrentPage(page);
@@ -64,6 +69,93 @@ export default function BulkDueDateUpdate() {
             ]);
         }
     };
+
+    const handleBulkSendRequests = async () => {
+        if (selectedSubjects.length === 0) {
+            toast.error("Please select at least one subject");
+            return;
+        }
+
+        if (!newDueDate) {
+            toast.error("Please select a due date");
+            return;
+        }
+
+        // Reset counters
+        setRequestSent(false);
+        setTotalNewRequests(0);
+        setTotalExistingRequests(0);
+
+        const dueDateObj = new Date(newDueDate);
+        dueDateObj.setMinutes(dueDateObj.getMinutes() - 330);
+
+        const apiUrl = import.meta.env.VITE_API_URL;
+        setIsSending(true);
+
+        let successCount = 0;
+        let failCount = 0;
+        let totalNew = 0;
+        let totalExisting = 0;
+
+        for (const subjectId of selectedSubjects) {
+            try {
+                const response = await axios.post(
+                    `${apiUrl}/teacher/subject/bulk-send-requests`,
+                    {
+                        subject_id: subjectId,
+                        due_date: dueDateObj.toISOString(),
+                    },
+                    {
+                        withCredentials: true,
+                        params: { year, sem },
+                    }
+                );
+                
+                // Parse the message to extract numbers
+                const message = response.data.message;
+                console.log(`Subject ${subjectId}:`, message);
+                
+                // Extract numbers from message like "27 new requests created, 4 students already had requests"
+                const newRequestsMatch = message.match(/(\d+) new requests created/);
+                const existingRequestsMatch = message.match(/(\d+) students already had requests/);
+                
+                if (newRequestsMatch) {
+                    totalNew += parseInt(newRequestsMatch[1]);
+                }
+                if (existingRequestsMatch) {
+                    totalExisting += parseInt(existingRequestsMatch[1]);
+                }
+                
+                successCount++;
+            } catch (error) {
+                console.error(`Error sending requests for subject ${subjectId}:`, error);
+                failCount++;
+            }
+        }
+
+        setIsSending(false);
+        
+        // Update state with totals
+        setTotalNewRequests(totalNew);
+        setTotalExistingRequests(totalExisting);
+        setRequestSent(true);
+
+        if (successCount > 0) {
+            toast.success(
+                `Successfully processed ${successCount} subject${successCount !== 1 ? "s" : ""}`
+            );
+        }
+
+        if (failCount > 0) {
+            toast.error(
+                `Failed to process ${failCount} subject${failCount !== 1 ? "s" : ""}`
+            );
+        }
+
+        setSelectedSubjects([]);
+        refetch();
+    };
+
 
     const handleCSVUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -109,10 +201,11 @@ export default function BulkDueDateUpdate() {
                 if (notFound > 0) {
                     toast.info(`${notFound} subject code${notFound !== 1 ? 's' : ''} not found`);
                 }
-
+                setCsvFile(null);
                 setIsUploadingCSV(false);
             } catch (error) {
                 toast.error("Error processing CSV file");
+                setCsvFile(null);
                 setIsUploadingCSV(false);
             }
         };
@@ -136,60 +229,7 @@ export default function BulkDueDateUpdate() {
         });
     };
 
-    const handleBulkUpdateDueDates = async () => {
-        if (selectedSubjects.length === 0) {
-            toast.error("Please select at least one subject");
-            return;
-        }
 
-        if (!newDueDate) {
-            toast.error("Please select a new due date");
-            return;
-        }
-
-        const apiUrl = import.meta.env.VITE_API_URL;
-        setIsUpdating(true);
-
-        let successCount = 0;
-        let failCount = 0;
-
-        for (const subjectId of selectedSubjects) {
-            try {
-                await axios.put(
-                    `${apiUrl}/teacher/subject/update-due-date`,
-                    {
-                        subject_id: subjectId,
-                        due_date: newDueDate.toISOString(),
-                    },
-                    {
-                        withCredentials: true,
-                        params: { year, sem },
-                    }
-                );
-                successCount++;
-            } catch (error) {
-                console.error(`Error updating subject ${subjectId}:`, error);
-                failCount++;
-            }
-        }
-
-        setIsUpdating(false);
-
-        if (successCount > 0) {
-            toast.success(
-                `Successfully updated ${successCount} subject${successCount !== 1 ? "s" : ""}`
-            );
-        }
-
-        if (failCount > 0) {
-            toast.error(
-                `Failed to update ${failCount} subject${failCount !== 1 ? "s" : ""}`
-            );
-        }
-
-        setSelectedSubjects([]);
-        refetch();
-    };
 
     const fetchData = async (year: number, sem: number) => {
         const apiUrl = import.meta.env.VITE_API_URL;
@@ -255,20 +295,40 @@ export default function BulkDueDateUpdate() {
         );
     }, [paginationData.currentPageData, selectedSubjects]);
 
-   
-
     return (
         <div className="px-4 py-8 max-w-7xl mx-auto">
             <h1 className="text-center text-2xl font-semibold text-gray-800 mb-10 tracking-wider">
-                Bulk Due Date Update
+                Bulk Certificate Requests {/* Changed title */}
             </h1>
 
             <div className="flex justify-center md:justify-end mb-6 max-w-7xl mx-auto">
                 <TenureSelector />
             </div>
 
+            {requestSent && totalNewRequests > 0 && (
+    <div
+        className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4 max-w-7xl mx-auto"
+        role="alert"
+    >
+        <span className="block sm:inline">
+            {`Certificate requests sent successfully to ${totalNewRequests} student${totalNewRequests !== 1 ? 's' : ''}`}
+        </span>
+    </div>
+)}
+
+            {requestSent && totalExistingRequests > 0 && (
+                <div
+                    className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded relative mb-4 max-w-7xl mx-auto"
+                    role="alert"
+                >
+                    <span className="block sm:inline">
+                        {`${totalExistingRequests} student${totalExistingRequests !== 1 ? 's' : ''} already had pending requests`}
+                    </span>
+                </div>
+            )}
+
             <div className="overflow-hidden rounded-lg shadow-md border border-gray-100 bg-white max-w-7xl mx-auto">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-4 border-b bg-gray-50">
+                <div className="flex items-center justify-between p-4 border-b bg-gray-50">
                     <div className="flex items-center">
                         <Link
                             to="/faculty/dashboard"
@@ -277,25 +337,20 @@ export default function BulkDueDateUpdate() {
                             <FaArrowLeft className="text-gray-600" />
                         </Link>
                         <h2 className="font-semibold ml-3 text-gray-800 md:text-xl">
-                            Update Due Dates for Multiple Subjects
+                            Send Certificate Requests to All Students {/* Changed subtitle */}
                         </h2>
                     </div>
 
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                        <label className="text-sm text-gray-700 font-medium whitespace-nowrap">
-                            New Due Date & Time:
-                        </label>
-                        <DatePicker
-                            selected={newDueDate}
-                            onChange={(date: Date | null) => setNewDueDate(date)}
-                            showTimeSelect
-                            timeFormat="HH:mm"
-                            timeIntervals={15}
-                            dateFormat="MM/dd/yyyy, h:mm aa"
-                            minDate={new Date()}
-                            portalId="root"
-                            popperPlacement="bottom-end"
-                            className="w-full sm:w-auto border border-gray-300 rounded-lg px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 hover:border-gray-400"
+                    <div className="flex flex-col items-center gap-2 md:flex-row">
+                        <span className="text-sm text-gray-600 mr-2">
+                            Due Date: {/* Changed from "New Due Date" */}
+                        </span>
+                        <input
+                            type="date"
+                            value={newDueDate}
+                            min={new Date().toISOString().split("T")[0]}
+                            onChange={(e) => setNewDueDate(e.target.value)}
+                            className="border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         />
                     </div>
                 </div>
@@ -420,50 +475,50 @@ export default function BulkDueDateUpdate() {
                             totalItems={paginationData.totalItems}
                         />
 
-                    <div className="p-4 bg-gray-50 border-t border-gray-200">
-                        <div className="flex flex-wrap items-center justify-between gap-4">
-                            <div className="flex flex-col gap-2">
-                                <div className="flex items-center gap-2">
-                                    <label className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer disabled:bg-gray-200 disabled:cursor-not-allowed">
-                                        <input
-                                            type="file"
-                                            accept=".csv"
-                                            onChange={handleCSVUpload}
-                                            disabled={isUploadingCSV}
-                                            className="hidden"
-                                            id="csv-upload"
-                                        />
-                                        {isUploadingCSV ? "Uploading..." : "Upload CSV"}
-                                    </label>
-                                    {csvFile && (
-                                        <div className="px-3 py-1.5 bg-gray-100 border border-gray-300 rounded-md text-sm text-gray-700 truncate max-w-xs">
-                                            {csvFile.name}
-                                        </div>
-                                    )}
+                        <div className="p-4 bg-gray-50 border-t border-gray-200">
+                            <div className="flex flex-wrap items-center justify-between gap-4">
+                                <div className="flex flex-col gap-2">
+                                    <div className="flex items-center gap-2">
+                                        <label className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer disabled:bg-gray-200 disabled:cursor-not-allowed">
+                                            <input
+                                                type="file"
+                                                accept=".csv"
+                                                onChange={handleCSVUpload}
+                                                disabled={isUploadingCSV}
+                                                className="hidden"
+                                                id="csv-upload"
+                                            />
+                                            {isUploadingCSV ? "Uploading..." : "Upload CSV"}
+                                        </label>
+                                        {csvFile && (
+                                            <div className="px-3 py-1.5 bg-gray-100 border border-gray-300 rounded-md text-sm text-gray-700 truncate max-w-xs">
+                                                {csvFile.name}
+                                            </div>
+                                        )}
+                                    </div>
+                                    <span className="text-xs text-gray-500">
+                                        CSV must include header: subject_code
+                                    </span>
                                 </div>
-                                <span className="text-xs text-gray-500">
-                                    CSV must include header: subject_code
-                                </span>
-                            </div>
-                            <div className="flex items-center gap-3">
-                                <span className="text-sm text-gray-600">
-                                    {selectedSubjects.length} subject
-                                    {selectedSubjects.length !== 1 ? "s" : ""} selected
-                                </span>
+                                <div className="flex items-center gap-3">
+                                    <span className="text-sm text-gray-600">
+                                        {selectedSubjects.length} subject
+                                        {selectedSubjects.length !== 1 ? "s" : ""} selected
+                                    </span>
                                 <button
-                                    onClick={handleBulkUpdateDueDates}
+                                    onClick={handleBulkSendRequests} // Different function call
                                     disabled={
                                         selectedSubjects.length === 0 ||
                                         !newDueDate ||
-                                        isUpdating
+                                        isSending // Different state variable
                                     }
-                                    className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                                    className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:bg-gray-400 disabled:cursor-not-allowed"
                                 >
-                                    {isUpdating ? "Updating Due Dates..." : "Update Due Dates"}
+                                    {isSending ? "Sending Requests..." : "Send Certificate Requests"}
                                 </button>
+                                </div>
                             </div>
                         </div>
-                    </div>
                     </>
                 )}
             </div>

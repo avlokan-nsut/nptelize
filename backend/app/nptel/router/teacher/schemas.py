@@ -90,3 +90,7 @@ class CertificateResponseData(BaseModel):
 class CertificateResponse(BaseModel):
     message: str
     data: CertificateResponseData
+
+class BulkSendRequestsRequest(BaseModel):
+    subject_id: str
+    due_date: datetime

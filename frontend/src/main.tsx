@@ -19,12 +19,13 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import PublicRoute from "./components/PublicRoutes";
 import StudentStatus from "./components/faculty/StudentStatus";
 import Developers from "./components/Developers";
-import ReportSection from "./components/faculty/ReportSection";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import LandingApp from "./components/new-landing/LandingApp";
+import ReportSection from "./components/faculty/ReportSection";
 import MannualVerification from "./components/faculty/MannualVerification";
 import BulkDueDateUpdate from "./components/faculty/BulkDueDateUpdate";
+import BulkSendRequest from "./components/faculty/BulkSendRequest";
 
 const queryClient = new QueryClient();
 
@@ -63,7 +64,12 @@ const routes = createBrowserRouter(
           element={<StudentStatus />}
         />
         <Route path="/faculty/bulk-due-date-update" element={<BulkDueDateUpdate />} />
+        <Route path="/faculty/bulk-send-requests" element={<BulkSendRequest />} />
         <Route path="faculty/report-section" element={<ReportSection />} />
+        <Route
+          path="faculty/verify-rejected"
+          element={<MannualVerification/>}
+        />
         {/* <Route
           path="faculty/manual-verification"
           element={<ManualVerification />}
@@ -72,10 +78,6 @@ const routes = createBrowserRouter(
           path="faculty/verify-rejected"
           element={<RejectedVerification />}
         /> */}
-        <Route
-          path="faculty/verify-rejected"
-          element={<MannualVerification/>}
-        />
       </Route>
 
       {/* Admin routes */}
