@@ -10,6 +10,10 @@ import { TenureSelector } from "../ui/DropDown";
 import TableSkeleton from "../ui/TableSkeleton";
 import { toast } from "react-toastify";
 import Papa from "papaparse";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+
+
 
 const headings = ["Select", "Student Name", "NSUT Roll No.", "Email"];
 
@@ -51,7 +55,7 @@ export default function StudentTable() {
     const [studentsNotSubmitted, setStudentsNotSubmitted] = useState<string[]>(
         []
     );
-    const [dueDate, setDueDate] = useState(getDefaultDueDate());
+    const [dueDate, setDueDate] = useState<Date | null>(getDefaultDueDate());
     const [searchTerm, setSearchTerm] = useState("");
 
     const [currentPage, setCurrentPage] = useState(1);
@@ -60,12 +64,15 @@ export default function StudentTable() {
     const [csvFile, setCsvFile] = useState<File | null>(null);
     const [isUpdatingDueDate, setIsUpdatingDueDate] = useState(false);
 
-    function getDefaultDueDate() {
+    function getDefaultDueDate(): Date {
         const today = new Date();
         const futureDate = new Date(today);
         futureDate.setDate(today.getDate() + 7);
-        return futureDate.toISOString().split("T")[0];
+        return futureDate;
     }
+
+
+
 
     const handlePageChange = (page: number) => {
         setCurrentPage(page);
@@ -101,14 +108,11 @@ export default function StudentTable() {
     };
 
 
-        const handleUpdateAllDueDates = async () => {
+    const handleUpdateAllDueDates = async () => {
         if (!dueDate) {
             toast.error("Please select a due date");
             return;
         }
-
-        const dueDateObj = new Date(dueDate);
-        dueDateObj.setMinutes(dueDateObj.getMinutes() - 330);
 
         const apiUrl = import.meta.env.VITE_API_URL;
         setIsUpdatingDueDate(true);
@@ -118,7 +122,7 @@ export default function StudentTable() {
                 `${apiUrl}/teacher/subject/update-due-date`,
                 {
                     subject_id: subjectId,
-                    due_date: dueDateObj.toISOString(),
+                    due_date: dueDate.toISOString(),
                 },
                 {
                     withCredentials: true,
@@ -137,102 +141,90 @@ export default function StudentTable() {
             } else {
                 toast.error("Failed to update due dates");
             }
+        } finally {
+            setIsUpdatingDueDate(false);
         }
-
-        setIsUpdatingDueDate(false);
     };
 
     // Function to handle form submission (updated to use selected due date)
     const handleSubmit = async () => {
-    if (selectedStudents.length === 0) {
-        toast.error("Please select at least one student");
-        return;
-    }
+        if (selectedStudents.length === 0) {
+            toast.error("Please select at least one student");
+            return;
+        }
 
-    if (!dueDate) {
-        toast.error("Please select a due date");
-        return;
-    }
+        if (!dueDate) {
+            toast.error("Please select a due date");
+            return;
+        }
 
-    const dueDateObj = new Date(dueDate);
-    dueDateObj.setMinutes(dueDateObj.getMinutes() - 330);
+        const formattedData = {
+            student_request_data_list: selectedStudents.map((studentId) => ({
+                student_id: studentId,
+                subject_id: subjectId,
+                due_date: dueDate.toISOString(),
+            })),
+        };
 
-    const formattedData = {
-        student_request_data_list: selectedStudents.map((studentId) => ({
-            student_id: studentId,
-            subject_id: subjectId,
-            due_date: dueDateObj.toISOString(),
-        })),
+        const apiUrl = import.meta.env.VITE_API_URL;
+        setIsLoadingPost(true);
+
+        try {
+            setStudentsNotSubmitted([]);
+
+            const response = await axios.post<FileUploadResponse>(
+                `${apiUrl}/teacher/students/request`,
+                formattedData,
+                {
+                    withCredentials: true,
+                    headers: { "Content-Type": "application/json" },
+                    params: { year, sem }
+                }
+            );
+
+            // Use local variables instead of immediate state updates
+            let localSuccessCount = 0;
+            const failedStudentIds: string[] = [];
+
+            // Process response data
+            response.data.results.forEach((obj) => {
+                if (obj.success === false) {
+                    failedStudentIds.push(obj.student_id);
+                } else if (obj.success === true) {
+                    localSuccessCount += 1;
+                }
+            });
+
+            // Update state with final counts
+            setStudentsNotSubmitted(failedStudentIds);
+            setSubmitted(prev => prev + localSuccessCount);
+
+            // Use local variables for toast (this will work correctly)
+            if (localSuccessCount > 0) {
+                toast.success(`Successfully sent requests to ${localSuccessCount} students`);
+            }
+
+            if (failedStudentIds.length > 0) {
+                toast.error(`Failed to send requests to ${failedStudentIds.length} students`);
+            }
+
+            setApiCalled(true);
+            setSelectedStudents([]);
+
+        } catch (error) {
+            console.error("Error submitting request:", error);
+
+            // Type guard for AxiosError
+            if (axios.isAxiosError(error) && error.response?.status === 401) {
+                toast.error("Unauthorized");
+            } else {
+                toast.error("Failed to submit");
+            }
+
+        } finally {
+            setIsLoadingPost(false);
+        }
     };
-
-    const apiUrl = import.meta.env.VITE_API_URL;
-    setIsLoadingPost(true);
-
-//        console.log("➡️ Sending request to backend:", {
-//   url: `${apiUrl}/teacher/students/request`,
-//   params: { year, sem },
-//   body: formattedData,
-// }); 
-
-
-    
-    try {
-        setStudentsNotSubmitted([]);
-        
-        const response = await axios.post<FileUploadResponse>(
-            `${apiUrl}/teacher/students/request`,
-            formattedData,
-            {
-                withCredentials: true,
-                headers: { "Content-Type": "application/json" },
-                params: { year, sem }
-            }
-        );
-
-        // Use local variables instead of immediate state updates
-        let localSuccessCount = 0;
-        const failedStudentIds:string[] = [];
-
-        // Process response data
-        response.data.results.forEach((obj) => {
-            if (obj.success === false) {
-                failedStudentIds.push(obj.student_id);
-            } else if (obj.success === true) {
-                localSuccessCount += 1;
-            }
-        });
-
-        // Update state with final counts
-        setStudentsNotSubmitted(failedStudentIds);
-        setSubmitted(prev => prev + localSuccessCount);
-
-        // Use local variables for toast (this will work correctly)
-        if (localSuccessCount > 0) {
-            toast.success(`Successfully sent requests to ${localSuccessCount} students`);
-        }
-        
-        if (failedStudentIds.length > 0) {
-            toast.error(`Failed to send requests to ${failedStudentIds.length} students`);
-        }
-
-        setApiCalled(true);
-        setSelectedStudents([]);
-        
-    } catch (error) {
-    console.error("Error submitting request:", error);
-    
-    // Type guard for AxiosError
-    if (axios.isAxiosError(error) && error.response?.status === 401) {
-        toast.error("Unauthorized");
-    } else {
-        toast.error("Failed to submit");
-    }
-
-}
-
-    
-    setIsLoadingPost(false);
-};
 
     const handleCSVUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -243,9 +235,9 @@ export default function StudentTable() {
         const reader = new FileReader();
         reader.onload = (e) => {
             const text = e.target?.result as string;
-            const parsed = Papa.parse(text, { 
-                header: true, 
-                skipEmptyLines: true 
+            const parsed = Papa.parse(text, {
+                header: true,
+                skipEmptyLines: true
             });
 
             try {
@@ -255,7 +247,7 @@ export default function StudentTable() {
 
                 if (emails.length === 0) {
                     toast.error("No valid emails found in CSV");
-                    
+
                     setIsUploadingCSV(false);
                     return;
                 }
@@ -287,12 +279,12 @@ export default function StudentTable() {
                 setIsUploadingCSV(false);
             }
         };
-        
+
         reader.onerror = () => {
             toast.error("Failed to read CSV file");
             setIsUploadingCSV(false);
         };
-        
+
         reader.readAsText(file);
         event.target.value = "";
     };
@@ -405,7 +397,8 @@ export default function StudentTable() {
                 )}
 
                 <div className="overflow-hidden rounded-lg shadow-md border border-gray-100 bg-white max-w-7xl mx-auto">
-                    <div className="flex items-center justify-between p-4 border-b bg-gray-50">
+
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-4 border-b bg-gray-50">
                         <div className="flex items-center">
                             <Link
                                 to="/faculty/dashboard"
@@ -413,25 +406,31 @@ export default function StudentTable() {
                             >
                                 <FaArrowLeft className="text-gray-600" />
                             </Link>
-                            <h2 className="font-semibold ml-3 text-gray-800 md:text-xl">
+                            <h2 className="font-semibold ml-3 text-gray-800 text-lg md:text-xl">
                                 {subjectCode}
                             </h2>
                         </div>
 
-                        <div className="flex flex-col items-center gap-2 md:flex-row">
-
-                            <span className="text-sm text-gray-600 mr-2">
-                                Due Date:
-                            </span>
-                            <input
-                                type="date"
-                                value={dueDate}
-                                min={new Date().toISOString().split("T")[0]}
-                                onChange={(e) => setDueDate(e.target.value)}
-                                className="border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                            <label className="text-sm text-gray-700 font-medium whitespace-nowrap">
+                                Due Date & Time:
+                            </label>
+                            <DatePicker
+                                selected={dueDate}
+                                onChange={(date: Date | null) => setDueDate(date)}
+                                showTimeSelect
+                                timeFormat="HH:mm"
+                                timeIntervals={15}
+                                dateFormat="MM/dd/yyyy, h:mm aa"
+                                minDate={new Date()}
+                                portalId="root"
+                                popperPlacement="bottom-end"
+                                className="w-full sm:w-auto border border-gray-300 rounded-lg px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 hover:border-gray-400"
                             />
                         </div>
                     </div>
+
+
 
                     <div className="p-4 border-b bg-gray-50">
                         <SearchBar
@@ -621,7 +620,7 @@ export default function StudentTable() {
                                                 onClick={handleSubmit}
                                                 disabled={
                                                     selectedStudents.length ===
-                                                        0 ||
+                                                    0 ||
                                                     !dueDate ||
                                                     isLoadingPost
                                                 }

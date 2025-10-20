@@ -10,6 +10,8 @@ import { TenureSelector } from "../ui/DropDown";
 import TableSkeleton from "../ui/TableSkeleton";
 import { toast } from "react-toastify";
 import Papa from "papaparse";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
 const headings = ["Select", "Subject Name", "Subject Code"];
 
@@ -25,7 +27,12 @@ export type SubjectsApiResponse = {
 
 export default function BulkDueDateUpdate() {
     const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
-    const [newDueDate, setNewDueDate] = useState(getDefaultDueDate());
+    const [newDueDate, setNewDueDate] = useState<Date | null>(() => {
+        const today = new Date();
+        const futureDate = new Date(today);
+        futureDate.setDate(today.getDate() + 7);
+        return futureDate;
+    });
     const [searchTerm, setSearchTerm] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage] = useState(10);
@@ -33,13 +40,6 @@ export default function BulkDueDateUpdate() {
 
     const [isUploadingCSV, setIsUploadingCSV] = useState(false);
     const [csvFile, setCsvFile] = useState<File | null>(null);
-
-    function getDefaultDueDate() {
-        const today = new Date();
-        const futureDate = new Date(today);
-        futureDate.setDate(today.getDate() + 7);
-        return futureDate.toISOString().split("T")[0];
-    }
 
     const handlePageChange = (page: number) => {
         setCurrentPage(page);
@@ -147,9 +147,6 @@ export default function BulkDueDateUpdate() {
             return;
         }
 
-        const dueDateObj = new Date(newDueDate);
-        dueDateObj.setMinutes(dueDateObj.getMinutes() - 330);
-
         const apiUrl = import.meta.env.VITE_API_URL;
         setIsUpdating(true);
 
@@ -162,7 +159,7 @@ export default function BulkDueDateUpdate() {
                     `${apiUrl}/teacher/subject/update-due-date`,
                     {
                         subject_id: subjectId,
-                        due_date: dueDateObj.toISOString(),
+                        due_date: newDueDate.toISOString(),
                     },
                     {
                         withCredentials: true,
@@ -258,15 +255,7 @@ export default function BulkDueDateUpdate() {
         );
     }, [paginationData.currentPageData, selectedSubjects]);
 
-    // const formatDate = (dateString: string | null) => {
-    //     if (!dateString) return "Not set";
-    //     const date = new Date(dateString);
-    //     return date.toLocaleDateString("en-IN", {
-    //         year: "numeric",
-    //         month: "short",
-    //         day: "numeric",
-    //     });
-    // };
+   
 
     return (
         <div className="px-4 py-8 max-w-7xl mx-auto">
@@ -279,7 +268,7 @@ export default function BulkDueDateUpdate() {
             </div>
 
             <div className="overflow-hidden rounded-lg shadow-md border border-gray-100 bg-white max-w-7xl mx-auto">
-                <div className="flex items-center justify-between p-4 border-b bg-gray-50">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-4 border-b bg-gray-50">
                     <div className="flex items-center">
                         <Link
                             to="/faculty/dashboard"
@@ -292,16 +281,21 @@ export default function BulkDueDateUpdate() {
                         </h2>
                     </div>
 
-                    <div className="flex flex-col items-center gap-2 md:flex-row">
-                        <span className="text-sm text-gray-600 mr-2">
-                            New Due Date:
-                        </span>
-                        <input
-                            type="date"
-                            value={newDueDate}
-                            min={new Date().toISOString().split("T")[0]}
-                            onChange={(e) => setNewDueDate(e.target.value)}
-                            className="border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                        <label className="text-sm text-gray-700 font-medium whitespace-nowrap">
+                            New Due Date & Time:
+                        </label>
+                        <DatePicker
+                            selected={newDueDate}
+                            onChange={(date: Date | null) => setNewDueDate(date)}
+                            showTimeSelect
+                            timeFormat="HH:mm"
+                            timeIntervals={15}
+                            dateFormat="MM/dd/yyyy, h:mm aa"
+                            minDate={new Date()}
+                            portalId="root"
+                            popperPlacement="bottom-end"
+                            className="w-full sm:w-auto border border-gray-300 rounded-lg px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 hover:border-gray-400"
                         />
                     </div>
                 </div>

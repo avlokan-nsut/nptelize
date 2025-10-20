@@ -36,12 +36,12 @@ const fetchData = async (year: number, sem: number) => {
 
 const Table = function () {
   const { user } = useAuthStore();
-  const isCoordinator = user?.service_role_dict && 
+  const isCoordinator = user?.service_role_dict &&
     Object.values(user.service_role_dict).flat().includes("coordinator");
   const { tenure } = useAuthStore();
   const year = tenure?.year;
   const sem = tenure?.is_odd;
-  
+
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -103,7 +103,7 @@ const Table = function () {
     {
       title: "Send Requests",
       description: "Send certificate requests to all students",
-      href: "/faculty/bulk-send-requests", 
+      href: "/faculty/bulk-send-requests",
       icon: <FaPaperPlane className="w-4 h-4" />,
       color: "text-green-600",
       show: isCoordinator
@@ -129,30 +129,29 @@ const Table = function () {
   return (
     <div className="mx-auto px-4 py-8">
       <div className="max-w-7xl mx-auto">
-        <div className="flex justify-between items-end mb-6">
-          <h1 className="text-xl md:text-2xl font-semibold text-gray-800 tracking-wider">
-            Alloted Subjects
-          </h1>
-          
-          <div className="flex items-end gap-3">
+        <div className="flex flex-col md:flex-row justify-end items-end mb-6 gap-4 md:gap-3 w-full">
+          <div className="flex flex-col sm:flex-row items-end gap-3 w-full md:w-auto">
             {/* Bulk Actions Dropdown */}
-            <div className="relative">
+            <div className="relative w-full sm:w-auto">
               <button
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="inline-flex items-center justify-between px-3 py-2.5 text-sm font-medium text-gray-900 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 h-10"
+                className="w-full sm:w-auto inline-flex items-center justify-between px-3 py-2.5 text-sm sm:text-base font-medium text-gray-900 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 h-10"
               >
                 <span>Bulk Actions</span>
-                <FaChevronDown className={`w-3 h-3 ml-2 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
+                <FaChevronDown
+                  className={`w-3 h-3 ml-2 transition-transform duration-200 ${isDropdownOpen ? "rotate-180" : ""
+                    }`}
+                />
               </button>
 
               {isDropdownOpen && (
                 <>
-                  <div 
-                    className="fixed inset-0 z-10" 
+                  <div
+                    className="fixed inset-0 z-10"
                     onClick={() => setIsDropdownOpen(false)}
                   />
-                  
-                  <div className="absolute right-0 z-20 mt-1 w-80 bg-white rounded-lg shadow-lg border border-gray-200 py-1">
+
+                  <div className="absolute right-0 z-20 mt-1 w-full sm:w-80 bg-white rounded-lg shadow-lg border border-gray-200 py-1">
                     {dropdownActions.map((action, index) => (
                       <Link
                         key={index}
@@ -161,9 +160,7 @@ const Table = function () {
                         className="block px-4 py-3 hover:bg-gray-50 transition-colors"
                       >
                         <div className="flex items-start">
-                          <div className={`mt-0.5 ${action.color}`}>
-                            {action.icon}
-                          </div>
+                          <div className={`mt-0.5 ${action.color}`}>{action.icon}</div>
                           <div className="ml-3">
                             <div className="text-sm font-medium text-gray-900">
                               {action.title}
@@ -181,10 +178,15 @@ const Table = function () {
             </div>
 
             {/* TenureSelector */}
-            <TenureSelector />
+            <div className="w-full sm:w-auto">
+              <TenureSelector />
+            </div>
           </div>
         </div>
+
+
       </div>
+
 
       {/* Rest of the content */}
       <div className="max-w-7xl mx-auto">
