@@ -80,6 +80,14 @@ const developers: Developer[] = [
         imageUrl: "/Team/imran-sir.jpg",
     },
     {
+        id: 12,
+        name: "Purnima Singh",
+        role: "Product Manager",
+        category: "product_manager",
+        linkedinUrl: "https://www.linkedin.com/in/purnima-singh-769b621ba/",
+        imageUrl: "/Team/purnima-mam.jpg",
+    },
+    {
         id: 11,
         name: "Aditya Chouksey",
         role: "Product Manager",
@@ -102,6 +110,14 @@ const developers: Developer[] = [
         category: "developer",
         linkedinUrl: "https://www.linkedin.com/in/madhavarora03/",
         imageUrl: "/Team/madhav.jpg",
+    },
+    {
+        id: 14,
+        name: "Deepak Kumar Mandal",
+        role: "Developer",
+        category: "developer",
+        linkedinUrl: "https://www.linkedin.com/in/deepak-kumar-mandal-583850252/",
+        imageUrl: "/Team/deepak-kumar.png",
     },
     {
         id: 5,
