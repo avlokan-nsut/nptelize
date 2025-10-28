@@ -81,10 +81,10 @@ const developers: Developer[] = [
     },
     {
         id: 12,
-        name: "Purnima Singh",
+        name: "Purrnima Singh",
         role: "Product Manager",
         category: "product_manager",
-        linkedinUrl: "https://www.linkedin.com/in/purnima-singh-769b621ba/",
+        linkedinUrl: "https://www.linkedin.com/in/purrnima-singh-44a9651a3/",
         imageUrl: "/Team/purnima-mam.jpg",
     },
     {
