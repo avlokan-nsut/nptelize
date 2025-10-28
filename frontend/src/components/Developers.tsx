@@ -6,7 +6,7 @@ interface Developer {
     id: number;
     name: string;
     role: string;
-    extra?:string
+    extra?: string;
     category: "professor" | "product_manager" | "developer";
     linkedinUrl?: string;
     websiteUrl?: string;
@@ -39,20 +39,20 @@ const developers: Developer[] = [
         imageUrl: "/Team/Anand-sir.png",
     },
     {
-        id: 104,
-        name: "Prof. Arti M.K.",
-        role: "ECE (East Campus)",
-        category: "professor",
-        websiteUrl: "https://www.nsut.ac.in/en/node/852",
-        imageUrl: "/Team/Arti-mam.png",
-    },
-    {
         id: 105,
         name: "Dr. Tarun Rawat",
         role: "ECE",
         category: "professor",
         websiteUrl: "https://www.nsut.ac.in/en/node/271",
         imageUrl: "/Team/Tarun-sir.png",
+    },
+    {
+        id: 104,
+        name: "Prof. Arti M.K.",
+        role: "ECE (East Campus)",
+        category: "professor",
+        websiteUrl: "https://www.nsut.ac.in/en/node/852",
+        imageUrl: "/Team/Arti-mam.png",
     },
     {
         id: 106,
@@ -65,19 +65,27 @@ const developers: Developer[] = [
     {
         id: 107,
         name: "Dr. Anjanee Kumar Mishra",
-        role: "West Campus",
+        role: "ECE (West Campus)",
         category: "professor",
         websiteUrl: "https://www.nsut.ac.in/en/node/1427",
         imageUrl: "/Team/Anjanee-sir.png",
     },
+    // ... managers and developers ...
     {
         id: 2,
         name: "Md Imran Hussain",
         role: "Product Manager",
         category: "product_manager",
         linkedinUrl: "https://www.linkedin.com/in/md-imran-hussain-8139a48b/",
-        imageUrl:
-            "/Team/imran-sir.jpg"
+        imageUrl: "/Team/imran-sir.jpg",
+    },
+    {
+        id: 12,
+        name: "Purrnima Singh",
+        role: "Product Manager",
+        category: "product_manager",
+        linkedinUrl: "https://www.linkedin.com/in/purrnima-singh-44a9651a3/",
+        imageUrl: "/Team/purnima-mam.jpg",
     },
     {
         id: 11,
@@ -85,8 +93,7 @@ const developers: Developer[] = [
         role: "Product Manager",
         category: "product_manager",
         linkedinUrl: "https://www.linkedin.com/in/aditya-chouksey-0b6b70239/",
-        imageUrl:
-            "/Team/Aditya-sir.jpg"
+        imageUrl: "/Team/Aditya-sir.jpg",
     },
     {
         id: 3,
@@ -94,8 +101,7 @@ const developers: Developer[] = [
         role: "Developer",
         category: "developer",
         linkedinUrl: "https://www.linkedin.com/in/ocean-lakra-6014b0253/",
-        imageUrl:
-            "/Team/Ocean.jpg",
+        imageUrl: "/Team/Ocean.jpg",
     },
     {
         id: 4,
@@ -103,18 +109,24 @@ const developers: Developer[] = [
         role: "Developer",
         category: "developer",
         linkedinUrl: "https://www.linkedin.com/in/madhavarora03/",
-        imageUrl:
-            "/Team/madhav.jpg",
+        imageUrl: "/Team/madhav.jpg",
+    },
+    {
+        id: 14,
+        name: "Deepak Kumar Mandal",
+        role: "Developer",
+        category: "developer",
+        linkedinUrl: "https://www.linkedin.com/in/deepak-kumar-mandal-583850252/",
+        imageUrl: "/Team/deepak-kumar.png",
     },
     {
         id: 5,
         name: "Lakshay Gupta",
         role: "Developer",
-        extra : "Hope nothing breaks!",
+        extra: "Hope nothing breaks!",
         category: "developer",
         linkedinUrl: "https://www.linkedin.com/in/lakshay-gupta-529a1428a/",
-        imageUrl:
-            "/Team/lakshay.jpg",
+        imageUrl: "/Team/lakshay.jpg",
     },
     {
         id: 6,
@@ -123,8 +135,7 @@ const developers: Developer[] = [
         extra: "I speak JSON",
         category: "developer",
         linkedinUrl: "https://www.linkedin.com/in/shrey-singh7/",
-        imageUrl:
-            "/Team/shrey.jpg",
+        imageUrl: "/Team/shrey.jpg",
     },
     {
         id: 7,
@@ -132,8 +143,7 @@ const developers: Developer[] = [
         role: "Developer",
         category: "developer",
         linkedinUrl: "https://www.linkedin.com/in/shivam-mishra-67671a17a/",
-        imageUrl:
-            "/Team/Shivam.png",
+        imageUrl: "/Team/Shivam.png",
     },
     {
         id: 8,
@@ -141,8 +151,7 @@ const developers: Developer[] = [
         role: "Developer",
         category: "developer",
         linkedinUrl: "https://www.linkedin.com/in/greatnerve",
-        imageUrl:
-            "/Team/Dheeraj.jpg",
+        imageUrl: "/Team/Dheeraj.jpg",
     },
     {
         id: 9,
@@ -150,17 +159,15 @@ const developers: Developer[] = [
         role: "Developer",
         category: "developer",
         linkedinUrl: "https://www.linkedin.com/in/sujal-info/",
-        imageUrl:
-            "/Team/sujal.jpg",
+        imageUrl: "/Team/sujal.jpg",
     },
     {
         id: 10,
         name: "Pradeep Yadav",
         role: "Developer",
         category: "developer",
-        linkedinUrl: "https://www.linkedin.com/in/me-pradeep-yadav/",
-        imageUrl:
-            "/Team/pradeep.jpg",
+        linkedinUrl: "https://www.linkedin.com/in/me-pradeep/",
+        imageUrl: "/Team/pradeep.jpg",
     },
 ];
 
@@ -173,6 +180,14 @@ const Developers: React.FC = () => {
     );
     const devTeam = developers.filter((dev) => dev.category === "developer");
 
+    // New: Split professors
+    const topProfessors = professorTeam.filter(
+        (dev) => dev.name === "Prof. Smriti Srivastava" || dev.name === "Dr. Ankur Gupta"
+    );
+    const otherProfessors = professorTeam.filter(
+        (dev) => dev.name !== "Prof. Smriti Srivastava" && dev.name !== "Dr. Ankur Gupta"
+    );
+
     return (
         <div className="developers-container">
             <div>
@@ -182,20 +197,23 @@ const Developers: React.FC = () => {
                 </p>
             </div>
             <div className="team-sections-wrapper">
-                {professorTeam.length > 0 && (
-                    <div className="team-section">
-                        <h2 className="section-title">Core Committee</h2>
-                        <div className="leadership-grid">
-                            {professorTeam.map((developer) => (
-                                <TeamMemberCard
-                                    key={developer.id}
-                                    developer={developer}
-                                />
-                            ))}
-                        </div>
+                {/* --- Core Committee --- */}
+                <div className="team-section">
+                    <h2 className="section-title">Core Committee</h2>
+                    {/* Top two */}
+                    <div className="leadership-grid top-leadership">
+                        {topProfessors.map((developer) => (
+                            <TeamMemberCard key={developer.id} developer={developer} />
+                        ))}
                     </div>
-                )}
-
+                    {/* Others in groups of 3 */}
+                    <div className="leadership-grid others-leadership">
+                        {otherProfessors.map((developer) => (
+                            <TeamMemberCard key={developer.id} developer={developer} />
+                        ))}
+                    </div>
+                </div>
+                {/* --- Management and Dev Team --- */}
                 {(devTeam.length > 0 || productManagers.length > 0) && (
                     <div className="team-section">
                         <h2 className="section-title">Management and Development Team</h2>
@@ -239,13 +257,11 @@ const TeamMemberCard: React.FC<TeamMemberCardProps> = ({ developer }) => {
                     loading="lazy"
                 />
             </div>
-
             <div className="developer-info">
                 <h3 className="developer-name">{developer.name}</h3>
                 <span className={`developer-role ${developer.category}`}>
                     {developer.role}
                 </span>
-
                 <div className="social-links">
                     {developer.linkedinUrl && (
                         <a
@@ -269,11 +285,10 @@ const TeamMemberCard: React.FC<TeamMemberCardProps> = ({ developer }) => {
                             <FaLink />
                         </a>
                     )}
-                    
                 </div>
                 {developer.extra && (
-                        <p className="text-[8px] text-white">{developer.extra}</p>
-                    )}
+                    <p className="text-[8px] text-white">{developer.extra}</p>
+                )}
             </div>
         </div>
     );
