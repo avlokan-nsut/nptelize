@@ -1,11 +1,14 @@
-import { FaArrowLeft, FaDownload, FaChevronRight} from "react-icons/fa";
+import { FaArrowLeft, FaDownload, FaChevronRight } from "react-icons/fa";
 import { Link, useParams, useLocation } from "react-router-dom";
 import axios from "axios";
-import { useQuery} from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useState, useMemo } from "react";
 import Pagination from "./Pagination";
 import SearchBar from "./SearchBar";
 import RequestDetailsDropdown from "./RequestDetailsDropdown";
+import { useAuthStore } from "../../store/useAuthStore";
+import { TenureSelector } from "../ui/DropDown";
+import TableSkeleton from "../ui/TableSkeleton";
 
 const headings = [
   "Student Name",
@@ -15,7 +18,7 @@ const headings = [
   "Due Date",
   "Total Marks",
   "Actions",
-  "",
+  "File URL",
 ];
 
 export type Student = {
@@ -50,11 +53,11 @@ export type ApiResponse = {
 const apiUrl = import.meta.env.VITE_API_URL;
 
 const StudentStatus = function () {
-  
+
   const { subjectCode: urlSubjectCode } = useParams<{ subjectCode: string }>();
   const location = useLocation();
   const subjectCode = urlSubjectCode;
-  const subjectId = location.state?.subjectId; 
+  const subjectId = location.state?.subjectId;
   const subjectName = location.state?.subjectName;
   const [searchTerm, setSearchTerm] = useState("");
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
@@ -65,16 +68,17 @@ const StudentStatus = function () {
 
   // Filter state
   const [statusFilter, setStatusFilter] = useState<
-    "all" | "pending" | "completed" | "rejected" | "duplicate" | "no_certificate" |"under_review"
+    "all" | "pending" | "completed" | "rejected" | "duplicate" | "no_certificate" | "under_review"
   >("all");
 
-  const fetchData = async () => {
+  const fetchData = async (year:number,sem:number) => {
     
 
     const { data } = await axios.get<ApiResponse>(
       `${apiUrl}/teacher/subject/requests/${subjectId}`,
       {
         withCredentials: true,
+        params :{year,sem}
       }
     );
     // console.log(data);
@@ -82,15 +86,23 @@ const StudentStatus = function () {
     return data;
   };
 
+   const { tenure } = useAuthStore();
+    const year = tenure?.year;
+    const sem = tenure?.is_odd;
+
+
   const {
     data: apiData,
     error,
     isLoading,
   } = useQuery({
-    queryKey: ["teacherRequestsStudents", subjectId],
-    queryFn: fetchData,
+    queryKey: ["teacherRequestsStudentsStatus", subjectId,year,sem],
+    queryFn: ()=>fetchData(year as number,sem as number),
+    
     refetchOnWindowFocus: false,
   });
+
+  
 
   // Calculate statistics and filtered data
   const statisticsAndFilteredData = useMemo(() => {
@@ -103,7 +115,7 @@ const StudentStatus = function () {
         rejectedCount: 0,
         duplicateNamesCount: 0,
         noCertificateCount: 0,
-        under_review : 0,
+        under_review: 0,
       };
     }
 
@@ -145,8 +157,8 @@ const StudentStatus = function () {
         return nameCount.get(name)! > 1;
       });
 
-       filteredRequests.sort((a, b) => 
-    a.student.name.toLowerCase().trim().localeCompare(b.student.name.toLowerCase().trim())
+      filteredRequests.sort((a, b) =>
+        a.student.name.toLowerCase().trim().localeCompare(b.student.name.toLowerCase().trim())
       );
 
     } else if (statusFilter === "all") {
@@ -287,8 +299,7 @@ const StudentStatus = function () {
         link.setAttribute("href", url);
         link.setAttribute(
           "download",
-          `${subjectCode}_students_${statusFilter}_${
-            new Date().toISOString().split("T")[0]
+          `${subjectCode}_students_${statusFilter}_${new Date().toISOString().split("T")[0]
           }.csv`
         );
         link.style.visibility = "hidden";
@@ -318,16 +329,16 @@ const StudentStatus = function () {
             Rejected
           </span>
         );
-        
+
       case "no_certificate":
         return (
           <span className="px-2 py-1 text-xs font-semibold rounded-full bg-sky-100 text-fuchsia-800">
-  No Certificate
-</span>
+            No Certificate
+          </span>
         );
 
-       case "under_review":
-         return (  
+      case "under_review":
+        return (
           <span className="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
             Under Review
           </span>
@@ -343,7 +354,7 @@ const StudentStatus = function () {
   };
 
 
-  
+
 
   return (
     <>
@@ -351,6 +362,9 @@ const StudentStatus = function () {
         <h1 className="text-center text-2xl font-semibold text-gray-800 mb-10 tracking-wider">
           Student Status
         </h1>
+         <div className="flex justify-center md:justify-end mb-6  max-w-7xl mx-auto">
+                    <TenureSelector />
+              </div>
 
         <div className="overflow-hidden rounded-lg shadow-md border border-gray-100 bg-white max-w-7xl mx-auto">
           <div className="flex items-center justify-between p-4 border-b bg-gray-50">
@@ -424,71 +438,64 @@ const StudentStatus = function () {
             <div className="flex flex-wrap gap-2">
               <button
                 onClick={() => handleFilterChange("all")}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  statusFilter === "all"
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${statusFilter === "all"
                     ? "bg-blue-600 text-white"
                     : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
-                }`}
+                  }`}
               >
                 All ({statisticsAndFilteredData.totalRequests})
               </button>
               <button
                 onClick={() => handleFilterChange("pending")}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  statusFilter === "pending"
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${statusFilter === "pending"
                     ? "bg-yellow-600 text-white"
                     : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
-                }`}
+                  }`}
               >
                 Pending ({statisticsAndFilteredData.pendingCount})
               </button>
               <button
                 onClick={() => handleFilterChange("completed")}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  statusFilter === "completed"
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${statusFilter === "completed"
                     ? "bg-green-600 text-white"
                     : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
-                }`}
+                  }`}
               >
                 Completed ({statisticsAndFilteredData.completedCount})
               </button>
               <button
                 onClick={() => handleFilterChange("rejected")}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  statusFilter === "rejected"
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${statusFilter === "rejected"
                     ? "bg-red-600 text-white"
                     : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
-                }`}
+                  }`}
               >
                 Rejected ({statisticsAndFilteredData.rejectedCount})
               </button>
               <button
                 onClick={() => handleFilterChange("no_certificate")}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  statusFilter === "no_certificate"
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${statusFilter === "no_certificate"
                     ? "bg-fuchsia-600 text-white"
                     : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
-                }`}
+                  }`}
               >
                 No Certificate ({statisticsAndFilteredData.noCertificateCount})
               </button>
               <button
                 onClick={() => handleFilterChange("duplicate")}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  statusFilter === "duplicate"
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${statusFilter === "duplicate"
                     ? "bg-black text-white"
                     : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
-                }`}
+                  }`}
               >
                 Duplicate ({statisticsAndFilteredData.duplicateNamesCount})
               </button>
               <button
                 onClick={() => handleFilterChange("under_review")}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  statusFilter === "under_review"
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${statusFilter === "under_review"
                     ? "bg-yellow-500 text-white"
                     : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
-                }`}
+                  }`}
               >
                 Under Review ({statisticsAndFilteredData.under_review})
               </button>
@@ -507,7 +514,7 @@ const StudentStatus = function () {
           </div>
 
           {isLoading ? (
-            <div className="flex justify-center items-center h-64">Loading</div>
+            <TableSkeleton rows={5} cols={7} className="max-w-7xl mx-auto" />
           ) : error ? (
             <div className="p-6 text-center text-red-500">
               Error loading student data. Please try again.
@@ -532,13 +539,13 @@ const StudentStatus = function () {
                     {paginationData.currentPageData.length > 0 ? (
                       paginationData.currentPageData.map((request) => (
                         <>
-                          {(request.status === "under_review") ? (
+                          {(request.status !== "pending") ? (
                             // Accordion rows for pending/under_review requests
                             <>
-                              <tr 
+                              <tr
                                 key={request.student.id}
                                 className="hover:bg-gray-50 transition-colors duration-150 cursor-pointer"
-                                onClick={() => setOpenDropdownId(openDropdownId === request.id ? null : request.id)}
+
                               >
                                 <td className="px-6 py-4 whitespace-nowrap">
                                   <div className="font-medium text-gray-900">
@@ -561,17 +568,53 @@ const StudentStatus = function () {
                                   {request.verified_total_marks}
                                 </td>
                                 <td className="px-6 py-4 text-center whitespace-nowrap">
-                                  <FaChevronRight 
-                                    className={`w-4 h-4 transition-transform mx-auto ${openDropdownId === request.id ? 'rotate-90' : ''}`} 
-                                  />
+                                  <button
+                                    onClick={() => setOpenDropdownId(openDropdownId === request.id ? null : request.id)}
+                                    className="shadow-md px-5 py-2 rounded-lg transition-all duration-300 transform hover:scale-105 hover:bg-black hover:text-white hover:cursor-pointer"
+                                  >
+                                    <FaChevronRight
+                                      className={`w-4 h-4 transition-transform mx-auto ${openDropdownId === request.id ? 'rotate-90' : ''}`}
+                                    />
+                                  </button>
+                                </td>
+
+                                <td className="px-6 py-4 text-center whitespace-nowrap text-gray-700">
+
+                                  <div>
+                                    <div className=" text-black py-2 rounded-md shadow-md transition-all duration-300 transform hover:scale-105 hover:bg-black hover:text-white">
+                                      <a
+                                        href={`${apiUrl}/user/certificate/file/${request.id}.pdf?download=false`}
+                                        target="_blank"
+                                        className="flex items-center justify-center font-medium"
+                                      >
+                                        <svg
+                                          xmlns="http://www.w3.org/2000/svg"
+                                          className="h-5 w-5"
+                                          fill="none"
+                                          viewBox="0 0 24 24"
+                                          stroke="currentColor"
+                                        >
+                                          <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth={2}
+                                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                                          />
+                                        </svg>
+                                      </a>
+                                    </div>
+                                  </div>
+
+
                                 </td>
                               </tr>
                               {openDropdownId === request.id && (
-                                <RequestDetailsDropdown 
+                                <RequestDetailsDropdown
                                   request={request}
                                   colSpan={headings.length}
                                   subjectId={subjectId}
                                   onClose={() => setOpenDropdownId(null)}
+                                  showReject={true}
                                 />
                               )}
                             </>
@@ -601,36 +644,7 @@ const StudentStatus = function () {
                               <td className="px-6 py-4 text-center whitespace-nowrap text-gray-700">
                                 {request.verified_total_marks}
                               </td>
-                              <td className="px-6 py-4 text-center whitespace-nowrap text-gray-700">
-                                
-                                  <div>
-                                    <div className=" text-black py-2 rounded-md shadow-md transition-all duration-300 transform hover:scale-105 hover:bg-black hover:text-white">
-                                      <a
-                                        href={`${apiUrl}/user/certificate/file/${request.id}.pdf?download=false`}
-                                        target="_blank"
-                                        className="flex items-center justify-center font-medium"
-                                      >
-                                        <svg
-                                          xmlns="http://www.w3.org/2000/svg"
-                                          className="h-5 w-5"
-                                          fill="none"
-                                          viewBox="0 0 24 24"
-                                          stroke="currentColor"
-                                        >
-                                          <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth={2}
-                                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                                          />
-                                        </svg>
-                                      </a>
-                                    </div>
-                                  </div>
-                                
-                                
-                              </td>
-      
+
                             </tr>
                           )}
                         </>
@@ -668,4 +682,3 @@ const StudentStatus = function () {
 };
 
 export default StudentStatus;
-                                         

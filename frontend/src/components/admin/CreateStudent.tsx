@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import { useMutation } from "@tanstack/react-query";
 import axios from "axios";
+import { toast } from 'react-toastify';
 
 interface StudentForm {
   name: string;
@@ -48,37 +49,47 @@ const CreateStudent = () => {
   ]);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  const [error, setError] = useState<string | null>(null);
   const [apiCalled, setApiCalled] = useState(false);
   const [successCount, setSuccessCount] = useState(0);
   const [errorStudents, setErrorStudents] = useState<student[]>([]);
 
   // React Query mutation for creating students
   const mutation = useMutation({
-    mutationFn: postStudents,
-    onSuccess: (data) => {
-      setApiCalled(true);
-      setSuccessCount(0);
-      setErrorStudents([]);
+  mutationFn: postStudents,
+  onSuccess: (data) => {
+    setApiCalled(true);
+    
+    // Use local variables instead of immediate state updates
+    let localSuccessCount = 0;
+    let failedStudents:student[] = [];
 
-      // Process response data
-      data.results.forEach((student) => {
-        if (student.success) {
-          setSuccessCount(prev => prev + 1);
-        } else {
-          setErrorStudents(prev => [...prev, student]);
-        }
-      });
+    // Process response data
+    data.results.forEach((student) => {
+      if (student.success) {
+        localSuccessCount += 1;
+      } else {
+        failedStudents.push(student);
+      }
+    });
 
-      setStudents([{ name: "", email: "", password: "", roll_number: "" }]);
-      setIsSubmitting(false);
-    },
-    onError: () => {
-      setError("Failed to create students");
-      setIsSubmitting(false);
-    },
-  });
+    // Update state with final counts
+    setSuccessCount(localSuccessCount);
+    setErrorStudents(failedStudents);
+
+    // Use local variable for toast (this will work correctly)
+    if (localSuccessCount > 0) {
+      toast.success(`Successfully created ${localSuccessCount} students`);
+    }
+    
+    setStudents([{ name: "", email: "", password: "", roll_number: "" }]);
+    setIsSubmitting(false);
+  },
+  onError: () => {
+    toast.error("Failed to create students");
+    setIsSubmitting(false);
+  },
+});
+
 
   // CSV file upload
 
@@ -100,11 +111,15 @@ const CreateStudent = () => {
         const student: any = {};
         headers.forEach((header, i) => {
           student[header] = values[i];
+           let value = values[i] || "";
+                if (header === "email") {
+                    value = value.toLowerCase();
+                }
+                student[header] = value;
         });
         return student;
       });
       setIsSubmitting(true);
-      setError(null);
       mutation.mutate(studentsFromCSV);
     };
     reader.readAsText(csvFile);
@@ -130,6 +145,9 @@ const CreateStudent = () => {
     value: string
   ) => {
     const updatedStudents = [...students];
+    if(field === "email") {
+      value = value.toLowerCase();
+    }
     updatedStudents[index] = {
       ...updatedStudents[index],
       [field]: value,
@@ -150,25 +168,17 @@ const CreateStudent = () => {
     );
 
     if (!isValid) {
-      setError("Please fill in all fields for each student.");
+      toast.error("Please fill in all fields for each student.");
       return;
     }
 
     setIsSubmitting(true);
-    setError(null);
     mutation.mutate(students);
   };
 
   return (
     <div>
       <h2 className="text-xl font-semibold mb-4">Create Students</h2>
-
-      {error && (
-        <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-600 rounded relative" role="alert">
-          <strong className="font-bold">Error: </strong>
-          <span className="block sm:inline">{error}</span>
-        </div>
-      )}
 
       {apiCalled && (
         <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">
@@ -215,9 +225,6 @@ const CreateStudent = () => {
           </div>
         </div>
       )}
-
-     
-
 
       {/* CSV Upload Section */}
 
@@ -373,5 +380,7 @@ const CreateStudent = () => {
     </div>
   );
 };
+
+
 
 export default CreateStudent;

@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from typing import Tuple, Optional, cast, Dict
 
 from app.config import config
-from app.models import Request, RequestStatus, Certificate
+from app.database.models import Request, RequestStatus, Certificate, StudentSubjectEnrollment
 from app.services.log_service import setup_logger
 
 from .utils.qr_extraction import extract_link
@@ -31,7 +31,9 @@ class Verifier:
         # update db request status to processing
         db_request = self.db.query(Request).filter(
             Request.id == self.request_id,
-            Request.student_id == self.student_id
+            Request.student_subject_enrollment.has(
+                StudentSubjectEnrollment.student_id == self.student_id
+            )
         ).first()
 
         if not db_request:
@@ -98,11 +100,16 @@ class Verifier:
 
             success, output, verified_roll_no, verified_total_marks = self.verify_file(
                 verification_file_path=temp_f.name,
-                subject_name=cast(str, db_request.subject.name),
-                student_name=cast(str, db_request.student.name),
+                subject_name=cast(
+                    str, db_request.student_subject_enrollment.teacher_subject_allotment.subject.name
+                ),
+                student_name=cast(str, db_request.student_subject_enrollment.student.name),
                 course_period_year=COURSE_PERIOD_YEAR,
-                is_subject_name_long=isinstance(db_request.subject.name, str) and (
-                    len(db_request.subject.name.strip()) > COURSE_NAME_SINGLE_LINE_CHARACTER_LIMIT
+                is_subject_name_long=isinstance(
+                    db_request.student_subject_enrollment.teacher_subject_allotment.subject.name, str
+                ) and (
+                    len(db_request.student_subject_enrollment.teacher_subject_allotment.subject.name.strip()) 
+                    > COURSE_NAME_SINGLE_LINE_CHARACTER_LIMIT
                 )
             )
 

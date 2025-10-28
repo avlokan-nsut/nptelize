@@ -78,11 +78,15 @@ const queryClient = useQueryClient();
 
     
   } catch (error) {
+    console.log(error);
     
-    toast.error("Error!")
-    console.log(error)
-    
-  }
+    if (axios.isAxiosError(error) && error.response?.status === 401) {
+        toast.error("Unauthorized");
+    } else {
+        toast.error("Error!");
+    }
+}
+
 };
 
 
@@ -115,7 +119,7 @@ const queryClient = useQueryClient();
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div>
              <div className="text-[12px] bg-yellow-400 p-2  my-4 flex flex-row">
-                <span><InfoIcon className="h-6 w-6"/></span>
+                <span><InfoIcon className="h-6 w-6 mr-2"/></span>
                 Please make sure you are adding right marks! This action can't be undone 
              </div>
 

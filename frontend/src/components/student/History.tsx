@@ -1,5 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
+import TableSkeleton from "../ui/TableSkeleton";
+import { useAuthStore } from "../../store/useAuthStore";
+import { TenureSelector } from "../ui/DropDown";
 
 const headings = [
   "Subject Code",
@@ -36,7 +39,7 @@ export type ApiResponse = {
 };
 const apiUrl = import.meta.env.VITE_API_URL;
 
-const fetchData = async () => {
+const fetchData = async (year:number,sem:number) => {
   const reqType = {
     request_types: ["processing", "completed", "rejected", "error" , "no_certificate" , "under_review"],
   };
@@ -49,11 +52,19 @@ const fetchData = async () => {
       headers: {
         "Content-Type": "application/json",
       },
+      params:{year,sem}
     }
   );
-
-
-  return data;
+ const sortedRequests = data.requests.sort((a, b) => {
+    const dateA = new Date(a.due_date);
+    const dateB = new Date(b.due_date);
+    return dateA.getTime() - dateB.getTime();
+  });
+  
+  return {
+    ...data,
+    requests: sortedRequests
+  };
 };
 
 function formatDateOnly(isoString: string): string {
@@ -117,9 +128,13 @@ function formatDateOnly(isoString: string): string {
   };
 
 const RequestedTable = () => {
+   const { tenure } = useAuthStore();
+    const year = tenure?.year;
+    const sem = tenure?.is_odd;
+
   const { data, error, isLoading } = useQuery({
-    queryKey: ["myDataHistory"],
-    queryFn: fetchData,
+    queryKey: ["myDataHistory",year,sem],
+    queryFn: ()=>fetchData(year as number,sem as number),
     staleTime: 1000 * 60 * 1,
   });
 
@@ -134,17 +149,20 @@ const RequestedTable = () => {
       </div>
     );
   }
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center ">
-        <span className="loading loading-ring loading-xl"></span>
-      </div>
-    );
-  }
 
-  if (data) {
+
     return (
+      <>
+      <div className="flex justify-center md:justify-end mb-6 max-w-7xl mx-auto">
+              <TenureSelector />
+            </div>
+
+
       <div className="overflow-x-auto rounded-lg shadow-sm border border-gray-100 bg-white max-w-7xl mx-auto">
+         {isLoading ? (
+
+          <TableSkeleton rows={5} cols={7} className="max-w-7xl mx-auto" />
+        ): data && (
         <table className="table w-full">
           <thead className="bg-gray-200">
             <tr className="text-gray-600 text-sm font-medium">
@@ -203,10 +221,10 @@ const RequestedTable = () => {
               </tr>
             ))}
           </tbody>
-        </table>
+        </table>)}
       </div>
+      </>
     );
-  }
 };
 
 export default RequestedTable;

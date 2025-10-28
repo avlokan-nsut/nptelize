@@ -2,6 +2,9 @@ import { useState } from 'react';
 import axios from 'axios';
 import { useMutation } from '@tanstack/react-query';
 import Papa from 'papaparse';
+import { TenureSelector } from '../ui/DropDown';
+import { useAuthStore } from '../../store/useAuthStore';
+import { toast } from 'react-toastify';
 
 interface EnrollmentData {
   email: string;
@@ -22,11 +25,12 @@ type ApiResponse = {
 
 }
 
-const enrollApi = async (students : EnrollmentData[]) =>{
+const enrollApi = async (students : EnrollmentData[],year:number,sem:number) =>{
 
   const apiUrl = import.meta.env.VITE_API_URL;
-      const response = await axios.post<ApiResponse>(`${apiUrl}/admin/add/students`, students, {
+      const response = await axios.post<ApiResponse>(`${apiUrl}/admin/enroll/students`, students, {
         withCredentials: true,
+        params:{year,sem}
       });
 
       return response.data;
@@ -37,34 +41,46 @@ const EnrollStudents = () => {
   // const [email, setEmail] = useState('');
   // const [subjectCode, setSubjectCode] = useState('');
   const [csvFile, setCsvFile] = useState<File | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [apiCalled, setApiCalled] = useState(false);
   const [successStudent, setSuccessStudent] = useState(0);
   const [errorStudents, setErrorStudents] = useState<Student[]>([]);
 
+  const { tenure } = useAuthStore();
+      const year = tenure?.year;
+      const sem = tenure?.is_odd;
+
   const mutation = useMutation({
-    mutationFn:enrollApi,
-    onSuccess:(data) =>{
-      setApiCalled(true);
-      setSuccessStudent(0);
-      setErrorStudents([]);
+  mutationFn: (students: EnrollmentData[]) => enrollApi(students, year as number, sem as number),
+  onSuccess: (data) => {
+    setApiCalled(true);
+    
+    // Use local variables instead of immediate state updates
+    let localSuccessCount = 0;
+    const failedStudents:Student[] = [];
 
-      data.results.forEach((obj)=>{
-        if(obj.success===true){
-          setSuccessStudent(prev=>prev+1)
-        }
-        else{
-          setErrorStudents((prev)=>([...prev,obj]))
-        }
+    // Process response data
+    data.results.forEach((obj) => {
+      if (obj.success === true) {
+        localSuccessCount += 1;
+      } else {
+        failedStudents.push(obj);
+      }
+    });
 
-      })
-    },
-    onError:()=>{
-      setError("Failed to enroll student");
+    // Update state with final counts
+    setSuccessStudent(localSuccessCount);
+    setErrorStudents(failedStudents);
 
-
+    // Use local variable for toast (this will work correctly)
+    if (localSuccessCount > 0) {
+      toast.success(`Successfully enrolled ${localSuccessCount} students`);
     }
-  })
+  },
+  onError: () => {
+    toast.error("Failed to enroll students");
+  }
+});
+
   // const handleSingleSubmit = (e: React.FormEvent) => {
   //   e.preventDefault();
   //   if (!email || !subjectCode) {
@@ -85,58 +101,59 @@ const EnrollStudents = () => {
 
 
 
-const handleCSVUpload = (e: React.FormEvent) => {
+  const handleCSVUpload = (e: React.FormEvent) => {
     e.preventDefault();
     if (!csvFile) {
-      setError('Please select a CSV file');
+      toast.error('Please select a CSV file');
       return;
     }
 
-    Papa.parse<EnrollmentData>(csvFile, {
-      header: true,
-      skipEmptyLines: true,
-      complete: (result) => {
-        const { data, errors, meta } = result;
+Papa.parse<EnrollmentData>(csvFile, {
+  header: true,
+  skipEmptyLines: true,
+  complete: (result) => {
+    const { data, errors, meta } = result;
 
-        if (errors.length > 0) {
-          setError(`Error parsing CSV: ${errors[0].message}`);
-          return;
-        }
+    if (errors.length > 0) {
+      toast.error(`Error parsing CSV: ${errors[0].message}`);
+      return;
+    }
 
-        const headers = (meta.fields || []).map(field => field.trim().toLowerCase());
-        const requiredHeaders = ['email', 'course_code'];
-        const missingHeaders = requiredHeaders.filter(header => !headers.includes(header));
+    const headers = (meta.fields || []).map(field => field.trim().toLowerCase());
+    const requiredHeaders = ['email', 'course_code'];
+    const missingHeaders = requiredHeaders.filter(header => !headers.includes(header));
 
-        if (missingHeaders.length > 0) {
-          setError(`CSV is missing required headers: ${missingHeaders.join(', ')}`);
-          return;
-        }
+    if (missingHeaders.length > 0) {
+      toast.error(`CSV is missing required headers: ${missingHeaders.join(', ')}`);
+      return;
+    }
 
-        if (data.length === 0) {
-          setError('CSV file has no data rows');
-          return;
-        }
+    if (data.length === 0) {
+      toast.error('CSV file has no data rows');
+      return;
+    }
 
-        setError(null);
-        mutation.mutate(data);
-      },
-      error: (error) => {
-        setError(`Error reading the CSV file: ${error.message}`);
-      }
-    });
-};
+    // Normalize emails to lowercase
+    const normalizedData = data.map(student => ({
+      ...student,
+      email: student.email.trim().toLowerCase(),
+    }));
 
+    mutation.mutate(normalizedData);
+  },
+  error: (error) => {
+    toast.error(`Error reading the CSV file: ${error.message}`);
+  }
+});
+  };
 
   return (
     <div className="my-6">
       <h2 className="text-xl font-semibold mb-4">Enroll Students in Subjects</h2>
 
-      {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
-          <strong className="font-bold">Error: </strong>
-          <span className="block sm:inline">{error}</span>
-        </div>
-      )}
+      <div className="flex justify-center md:justify-start mb-6 max-w-7xl mx-auto">
+        <TenureSelector />
+      </div>
 
       {apiCalled && (
         <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">

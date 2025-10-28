@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { useMutation } from "@tanstack/react-query";
 import axios from "axios";
 import Papa from "papaparse";
+import { toast } from 'react-toastify';
 
 interface SubjectForm {
   name: string;
@@ -45,38 +46,47 @@ const CreateSubject = () => {
   }]);
   
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  const [error, setError] = useState<string | null>(null);
   const [apiCalled, setApiCalled] = useState(false);
   const [successCount, setSuccessCount] = useState(0);
   const [errorSubjects, setErrorSubjects] = useState<subject[]>([]);
 
   // React Query mutation for creating subjects
   const mutation = useMutation({
-    mutationFn: postSubjects,
-    onSuccess: (data) => {
-      setApiCalled(true);
-      setSuccessCount(0);
-      setErrorSubjects([]);
-
-      // Process response data
-      data.results.forEach((subject) => {
-        if (subject.success) {
-          setSuccessCount(prev => prev + 1);
-        } else {
-          setErrorSubjects(prev => [...prev, subject]);
-        }
-      });
-
+  mutationFn: postSubjects,
+  onSuccess: (data) => {
+    setApiCalled(true);
     
-      setSubjects([{ name: '', subject_code: '' , nptel_course_code: ''}]);
-      setIsSubmitting(false);
-    },
-    onError: () => {
-      setError("Failed to create subjects");
-      setIsSubmitting(false);
-    },
-  });
+    // Use local variables instead of immediate state updates
+    let localSuccessCount = 0;
+    const failedSubjects:subject[] = [];
+
+    // Process response data
+    data.results.forEach((subject) => {
+      if (subject.success) {
+        localSuccessCount += 1;
+      } else {
+        failedSubjects.push(subject);
+      }
+    });
+
+    // Update state with final counts
+    setSuccessCount(localSuccessCount);
+    setErrorSubjects(failedSubjects);
+
+    // Use local variable for toast (this will work correctly)
+    if (localSuccessCount > 0) {
+      toast.success(`Successfully created ${localSuccessCount} subjects`);
+    }
+    
+    setSubjects([{ name: '', subject_code: '', nptel_course_code: ''}]);
+    setIsSubmitting(false);
+  },
+  onError: () => {
+    toast.error("Failed to create subjects");
+    setIsSubmitting(false);
+  },
+});
+
 
   const handleAddSubject = () => {
     setSubjects([
@@ -109,13 +119,12 @@ const CreateSubject = () => {
     );
     
     if (!isValid) {
-      setError('Please fill in all fields for each subject.');
+      toast.error('Please fill in all fields for each subject.');
       return;
     }
 
     // Form submission
     setIsSubmitting(true);
-    setError(null);
     
     mutation.mutate(subjects);
   };
@@ -140,7 +149,6 @@ const CreateSubject = () => {
       nptel_course_code: row.nptel_course_code,
     }));
     setIsSubmitting(true);
-    setError(null);
     mutation.mutate(subjectsFromCSV);
   };
   reader.readAsText(csvFile);
@@ -150,13 +158,6 @@ const CreateSubject = () => {
     <div>
       <h2 className="text-xl font-semibold mb-4">Create Subjects</h2>
       
-      {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
-          <strong className="font-bold">Error: </strong>
-          <span className="block sm:inline">{error}</span>
-        </div>
-      )}
-
       {apiCalled && (
         <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">
           <strong className="font-bold">Successfully Created: </strong>
@@ -332,5 +333,6 @@ const CreateSubject = () => {
     </div>
   );
 };
+
 
 export default CreateSubject;

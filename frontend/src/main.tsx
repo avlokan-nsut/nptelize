@@ -7,7 +7,6 @@ import {
   RouterProvider,
 } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import App from "./App";
 import "./index.css";
 import Layout from "./Layout";
 import LoginForm from "./components/LoginForm";
@@ -20,10 +19,13 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import PublicRoute from "./components/PublicRoutes";
 import StudentStatus from "./components/faculty/StudentStatus";
 import Developers from "./components/Developers";
-import ReportSection from "./components/faculty/ReportSection";
-import RejectedVerification from "./components/faculty/RejectedVerification";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import LandingApp from "./components/new-landing/LandingApp";
+import ReportSection from "./components/faculty/ReportSection";
+import MannualVerification from "./components/faculty/MannualVerification";
+import BulkDueDateUpdate from "./components/faculty/BulkDueDateUpdate";
+import BulkSendRequest from "./components/faculty/BulkSendRequest";
 
 const queryClient = new QueryClient();
 
@@ -46,7 +48,7 @@ const routes = createBrowserRouter(
           </PublicRoute>
         }
       />
-      <Route index element={<App />} />
+      <Route index element={<LandingApp />} />
 
       {/* Protected Routes */}
 
@@ -61,15 +63,21 @@ const routes = createBrowserRouter(
           path="faculty/students/requests/:subjectCode"
           element={<StudentStatus />}
         />
+        <Route path="/faculty/bulk-due-date-update" element={<BulkDueDateUpdate />} />
+        <Route path="/faculty/bulk-send-requests" element={<BulkSendRequest />} />
         <Route path="faculty/report-section" element={<ReportSection />} />
+        <Route
+          path="faculty/verify-rejected"
+          element={<MannualVerification/>}
+        />
         {/* <Route
           path="faculty/manual-verification"
           element={<ManualVerification />}
         /> */}
-        <Route
+        {/* <Route
           path="faculty/verify-rejected"
           element={<RejectedVerification />}
-        />
+        /> */}
       </Route>
 
       {/* Admin routes */}

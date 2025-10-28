@@ -2,6 +2,11 @@ import { useQuery } from "@tanstack/react-query";
 import axios, { isAxiosError } from "axios";
 import { useState } from "react";
 import AlertDialog from "./AlertDialog";
+import { ApiResponse } from "../../types/student/apiResponse";
+import { useAuthStore } from "../../store/useAuthStore";
+import { TenureSelector } from "../ui/DropDown";
+import { toast } from "react-toastify";
+import TableSkeleton from "../ui/TableSkeleton";
 
 const headings = [
   "Subject Code",
@@ -12,31 +17,9 @@ const headings = [
   "Upload Certificate",
 ];
 
-export type Teacher = {
-  id: string;
-  name: string;
-};
-
-export type Subject = {
-  id: string;
-  code: string;
-  name: string;
-  teacher: Teacher;
-};
-
-export type Request = {
-  request_id: string;
-  subject: Subject;
-  status: string;
-  due_date: string;
-};
-
-export type ApiResponse = {
-  requests: Request[];
-};
-
 const FILE_SIZE_LIMIT = 2097152;
 const apiUrl = import.meta.env.VITE_API_URL;
+
 
 function formatDateOnly(isoString: string): string {
   if (isoString === null || isoString === undefined) {
@@ -56,23 +39,30 @@ function formatDateOnly(isoString: string): string {
   return adjustedDate.toLocaleDateString("en-US", options);
 }
 
-const fetchData = async () => {
-  const apiUrl = import.meta.env.VITE_API_URL;
-  const reqType = {
-    request_types: ["pending", "rejected", "error" ,"no_certificate" ],
-  };
 
+const fetchData = async (year: number, sem: number) => {
+  const apiUrl = import.meta.env.VITE_API_URL;
+  const reqType = { request_types: ["pending", "rejected", "error", "no_certificate"] };
   const { data } = await axios.post<ApiResponse>(
     `${apiUrl}/student/requests`,
     reqType,
     {
       withCredentials: true,
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
+      params: { year, sem }
     }
   );
-  return data;
+  const sortedRequests = data.requests.sort((a, b) => {
+    const dateA = new Date(a.due_date);
+    const dateB = new Date(b.due_date);
+    return dateA.getTime() - dateB.getTime();
+  });
+  
+  return {
+    ...data,
+    requests: sortedRequests
+  };
+
 };
 
 const RequestedTable = () => {
@@ -90,15 +80,20 @@ const RequestedTable = () => {
   const [selectedRequestId, setselectedRequestId] = useState<string | null>(
     null
   );
-  const [selectedSubject , setSelectedSubject] = useState<string | null >(
+  const [selectedSubject, setSelectedSubject] = useState<string | null>(
     null
   );
 
   const [alertLoading, setAlertLoading] = useState(false);
 
+  const { tenure } = useAuthStore();
+  const year = tenure?.year;
+  const sem = tenure?.is_odd; 
+
   const { data, error, isLoading, refetch } = useQuery({
-    queryKey: ["myData"],
-    queryFn: fetchData,
+    queryKey: ["myData", year, sem],
+    queryFn: () => fetchData(year as number, sem as number),
+    enabled: year !== undefined && sem !== undefined,
     staleTime: 1000 * 60 * 1,
   });
 
@@ -119,6 +114,11 @@ const RequestedTable = () => {
   // Handle certificate submission
   const handleSubmit = async (requestId: string) => {
     const file = fileUploads[requestId];
+
+    setUploadStatus((prev) => ({
+    ...prev,
+    [requestId]: null,
+  }));
     if (!file) {
       setUploadStatus((prev) => ({
         ...prev,
@@ -164,7 +164,7 @@ const RequestedTable = () => {
       }));
 
       // Short delay to show the uploading stage
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      await new Promise((resolve) => setTimeout(resolve, 5000));
 
       // Update loading stage
       setLoadingStage((prev) => ({
@@ -198,6 +198,8 @@ const RequestedTable = () => {
         [requestId]: null,
       }));
 
+      toast.success("Certificate uploaded successfully!")
+
       // Refresh the data to show updated status
       refetch();
     } catch (error) {
@@ -213,6 +215,14 @@ const RequestedTable = () => {
           message: `${errorMessage}`,
         },
       }));
+
+      if(errorMessage==="Student name mismatch - under review"){
+        toast.error(`${errorMessage}. Please check history tab!`)
+      }
+      else{
+        toast.error(`${errorMessage}`)
+      }
+      
     } finally {
       // Clear loading state
       setUploadLoading((prev) => ({
@@ -230,7 +240,7 @@ const RequestedTable = () => {
     }
   };
 
-  const handleCertificateRequest = (request_id: string , subject_name : string) => {
+  const handleCertificateRequest = (request_id: string, subject_name: string) => {
     setselectedRequestId(request_id);
     setSelectedSubject(subject_name);
     setAlertOpen(false);
@@ -242,8 +252,8 @@ const RequestedTable = () => {
         setAlertLoading(true);
         const response = await axios.put(
           `${apiUrl}/student/update/request-status/no-certificate?request_id=${selectedRequestId}`,
-          {}, 
-          { withCredentials: true } 
+          {},
+          { withCredentials: true }
         )
         if (response.status === 200) {
           setUploadStatus((prev) => ({
@@ -253,6 +263,7 @@ const RequestedTable = () => {
               message: "Marked as no certificate successfully!",
             },
           }));
+          toast.success("Marked as no certificate successfully!")
           refetch();
         } else {
           setUploadStatus((prev) => ({
@@ -262,9 +273,10 @@ const RequestedTable = () => {
               message: "Failed to mark as no certificate",
             },
           }));
+          toast.error("Failed to mark as no certificate")
         }
       } catch (error) {
-        
+
         let errorMessage = "Failed to mark as no certificate";
         console.error("Error marking as no certificate:", error);
         if (isAxiosError(error)) {
@@ -289,8 +301,8 @@ const RequestedTable = () => {
       case "no_certificate":
         return (
           <span className="px-2 py-1 text-xs font-semibold rounded-full bg-sky-100 text-fuchsia-800 whitespace-nowrap">
-  No Certificate
-</span>
+            No Certificate
+          </span>
 
         );
       case "rejected":
@@ -305,14 +317,14 @@ const RequestedTable = () => {
             Rejected
           </span>
         );
-        case "pending" :
-          return (  
+      case "pending":
+        return (
           <span className="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
             Pending
           </span>
         );
 
-       
+
     }
   };
 
@@ -327,28 +339,29 @@ const RequestedTable = () => {
       </div>
     );
   }
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center ">
-        <span className="loading loading-ring loading-xl"></span>
-      </div>
-    );
-  }
 
-  if (data) {
-    return (
-      <>
-        <div className="overflow-x-auto rounded-lg shadow-sm border border-gray-100 bg-white max-w-7xl mx-auto">
-          <table className="table w-full">
-            <thead className="bg-gray-200">
-              <tr className="text-gray-600 text-sm font-medium">
-                {headings.map((heading, idx) => (
-                  <th key={idx} className="px-6 py-4">
-                    {heading}
-                  </th>
-                ))}
-              </tr>
-            </thead>
+  return (<>
+      <div className="flex justify-center md:justify-end mb-6 max-w-7xl mx-auto">
+        <TenureSelector />
+      </div>
+      <div className="overflow-x-auto rounded-lg shadow-sm border border-gray-100 bg-white max-w-7xl mx-auto">
+
+        {isLoading ? (
+
+          <TableSkeleton rows={5} cols={7} className="max-w-7xl mx-auto" />
+        ): data && (
+          
+        <table className="table w-full">
+          <thead className="bg-gray-200">
+            <tr className="text-gray-600 text-sm font-medium">
+              {headings.map((heading, idx) => (
+                <th key={idx} className="px-6 py-4">
+                  {heading}
+                </th>
+              ))}
+            </tr>
+          </thead>
+
             <tbody className="divide-y divide-gray-100">
               {data.requests.map((row, idx) => (
                 <tr
@@ -362,7 +375,7 @@ const RequestedTable = () => {
                   <td className="px-6 py-4">{formatDateOnly(row.due_date)}</td>
                   <td className="px-6 py-4">
                     <div className="flex flex-col space-y-2">
-                      <div className="flex items-center space-x-2">
+                      <div className="flex flex-col mt-8 items-center space-x-2 space-y-4 md:flex-row md:space-y-0 md:mt-0">
                         <input
                           type="file"
                           accept=".pdf"
@@ -373,20 +386,18 @@ const RequestedTable = () => {
                             )
                           }
                           className="
-                            file-input file-input-sm w-[65%] max-w-xs text-sm
+                            file-input file-input-sm w-[130%] max-w-xs text-sm
                             file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0
                             file:text-sm file:bg-blue-50 file:text-blue-600
                             hover:file:bg-blue-100 cursor-pointer
                           "
                         />
                         <button
-                          className={`btn btn-sm ${
-                            uploadLoading[row.request_id] ? "loading" : ""
-                          } ${
-                            fileUploads[row.request_id]
+                          className={`btn btn-sm ${uploadLoading[row.request_id] ? "loading" : ""
+                            } ${fileUploads[row.request_id]
                               ? "btn-primary"
                               : "btn-neutral"
-                          }`}
+                            }`}
                           onClick={() => handleSubmit(row.request_id)}
                           disabled={
                             uploadLoading[row.request_id] ||
@@ -410,21 +421,18 @@ const RequestedTable = () => {
 
                       {uploadStatus[row.request_id] && (
                         <div
-                          className={`text-xs px-2 py-1 rounded ${
-                            uploadStatus[row.request_id]?.success
-                              ? "bg-green-100 text-green-700"
-                              : "bg-red-100 text-red-700"
-                          }`}
+                          className={`text-xs px-2 py-1 rounded ${uploadStatus[row.request_id]?.success
+                            ? "bg-green-100 text-green-700"
+                            : "bg-red-100 text-red-700"
+                            }`}
                         >
                           {uploadStatus[row.request_id]?.message}
                         </div>
                       )}
-                      <div className="text-[10px] text-left text-gray-500">
-                        File Size should be less than 2 MB
-                      </div>
+                     
 
                       <div
-                        className="text-[12px] text-left text-gray-500 cursor-pointer hover:text-blue-600 hover:underline"
+                        className="text-[12px] font-bold text-center text-gray-500 cursor-pointer hover:text-blue-600 hover:underline md:text-left"
                         onClick={() => handleCertificateRequest(row.request_id, row.subject.name)}
                       >
                         Didn't receive your certificate?
@@ -434,19 +442,17 @@ const RequestedTable = () => {
                 </tr>
               ))}
             </tbody>
-          </table>
-        </div>
-
-        <AlertDialog
-          isClosed={alertOpen}
-          onClick={handleAlertAction}
-          onStateChange={setAlertOpen}
-          SubjectName={selectedSubject}
-          Disabled = {alertLoading}
-        />
-      </>
-    );
-  }
+        </table>)}
+      </div>
+      <AlertDialog
+        isClosed={alertOpen}
+        onClick={handleAlertAction}
+        onStateChange={setAlertOpen}
+        SubjectName={selectedSubject}
+        Disabled={alertLoading}
+      />
+    </>
+  );
 };
 
 export default RequestedTable;

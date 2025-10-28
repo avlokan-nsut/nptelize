@@ -5,6 +5,15 @@ import { useQuery } from "@tanstack/react-query";
 import { useState, useMemo } from "react";
 import Pagination from "./Pagination";
 import SearchBar from "./SearchBar";
+import { useAuthStore } from "../../store/useAuthStore";
+import { TenureSelector } from "../ui/DropDown";
+import TableSkeleton from "../ui/TableSkeleton";
+import { toast } from "react-toastify";
+import Papa from "papaparse";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+
+
 
 const headings = ["Select", "Student Name", "NSUT Roll No.", "Email"];
 
@@ -35,7 +44,6 @@ export default function StudentTable() {
     const { subjectCode: urlSubjectCode } = useParams<{
         subjectCode: string;
     }>();
-    const [error, setError] = useState(false);
     const [submitted, setSubmitted] = useState(0);
     const [isLoadingPost, setIsLoadingPost] = useState(false);
     const [apiCalled, setApiCalled] = useState(false);
@@ -47,18 +55,24 @@ export default function StudentTable() {
     const [studentsNotSubmitted, setStudentsNotSubmitted] = useState<string[]>(
         []
     );
-    const [dueDate, setDueDate] = useState(getDefaultDueDate());
+    const [dueDate, setDueDate] = useState<Date | null>(getDefaultDueDate());
     const [searchTerm, setSearchTerm] = useState("");
 
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage] = useState(10);
+    const [isUploadingCSV, setIsUploadingCSV] = useState(false);
+    const [csvFile, setCsvFile] = useState<File | null>(null);
+    const [isUpdatingDueDate, setIsUpdatingDueDate] = useState(false);
 
-    function getDefaultDueDate() {
+    function getDefaultDueDate(): Date {
         const today = new Date();
         const futureDate = new Date(today);
         futureDate.setDate(today.getDate() + 7);
-        return futureDate.toISOString().split("T")[0];
+        return futureDate;
     }
+
+
+
 
     const handlePageChange = (page: number) => {
         setCurrentPage(page);
@@ -93,87 +107,216 @@ export default function StudentTable() {
         });
     };
 
+
+    const handleUpdateAllDueDates = async () => {
+        if (!dueDate) {
+            toast.error("Please select a due date");
+            return;
+        }
+
+        const apiUrl = import.meta.env.VITE_API_URL;
+        setIsUpdatingDueDate(true);
+
+        try {
+            const response = await axios.put(
+                `${apiUrl}/teacher/subject/update-due-date`,
+                {
+                    subject_id: subjectId,
+                    due_date: dueDate.toISOString(),
+                },
+                {
+                    withCredentials: true,
+                    params: { year, sem },
+                }
+            );
+
+            toast.success(
+                response.data.message || "Due dates updated successfully"
+            );
+        } catch (error) {
+            console.error("Error updating due dates:", error);
+
+            if (axios.isAxiosError(error) && error.response?.status === 401) {
+                toast.error("Unauthorized");
+            } else {
+                toast.error("Failed to update due dates");
+            }
+        } finally {
+            setIsUpdatingDueDate(false);
+        }
+    };
+
     // Function to handle form submission (updated to use selected due date)
     const handleSubmit = async () => {
         if (selectedStudents.length === 0) {
-            alert("Please select at least one student");
+            toast.error("Please select at least one student");
             return;
         }
 
         if (!dueDate) {
-            alert("Please select a due date");
+            toast.error("Please select a due date");
             return;
         }
-
-        const dueDateObj = new Date(dueDate);
-        dueDateObj.setMinutes(dueDateObj.getMinutes() - 330);
 
         const formattedData = {
             student_request_data_list: selectedStudents.map((studentId) => ({
                 student_id: studentId,
                 subject_id: subjectId,
-                due_date: dueDateObj.toISOString(),
+                due_date: dueDate.toISOString(),
             })),
         };
 
         const apiUrl = import.meta.env.VITE_API_URL;
         setIsLoadingPost(true);
+
         try {
-            
-            setStudentsNotSubmitted([])
+            setStudentsNotSubmitted([]);
+
             const response = await axios.post<FileUploadResponse>(
                 `${apiUrl}/teacher/students/request`,
                 formattedData,
                 {
                     withCredentials: true,
                     headers: { "Content-Type": "application/json" },
+                    params: { year, sem }
                 }
             );
 
-            console.log(response.data)
+            // Use local variables instead of immediate state updates
+            let localSuccessCount = 0;
+            const failedStudentIds: string[] = [];
 
+            // Process response data
             response.data.results.forEach((obj) => {
                 if (obj.success === false) {
-                    setStudentsNotSubmitted((prev) => [
-                        ...prev,
-                        obj.student_id,
-                    ]);
-                }
-
-                if (obj.success === true) {
-                    setSubmitted((prev) => prev + 1);
+                    failedStudentIds.push(obj.student_id);
+                } else if (obj.success === true) {
+                    localSuccessCount += 1;
                 }
             });
-            
+
+            // Update state with final counts
+            setStudentsNotSubmitted(failedStudentIds);
+            setSubmitted(prev => prev + localSuccessCount);
+
+            // Use local variables for toast (this will work correctly)
+            if (localSuccessCount > 0) {
+                toast.success(`Successfully sent requests to ${localSuccessCount} students`);
+            }
+
+            if (failedStudentIds.length > 0) {
+                toast.error(`Failed to send requests to ${failedStudentIds.length} students`);
+            }
+
             setApiCalled(true);
             setSelectedStudents([]);
+
         } catch (error) {
             console.error("Error submitting request:", error);
-            setError(true);
+
+            // Type guard for AxiosError
+            if (axios.isAxiosError(error) && error.response?.status === 401) {
+                toast.error("Unauthorized");
+            } else {
+                toast.error("Failed to submit");
+            }
+
+        } finally {
+            setIsLoadingPost(false);
         }
-        setIsLoadingPost(false);
     };
 
-    const fetchData = async () => {
+    const handleCSVUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+        setCsvFile(file);
+        setIsUploadingCSV(true);
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const text = e.target?.result as string;
+            const parsed = Papa.parse(text, {
+                header: true,
+                skipEmptyLines: true
+            });
+
+            try {
+                const emails = (parsed.data as any[])
+                    .map((row) => row.email?.trim().toLowerCase())
+                    .filter(Boolean);
+
+                if (emails.length === 0) {
+                    toast.error("No valid emails found in CSV");
+
+                    setIsUploadingCSV(false);
+                    return;
+                }
+
+                const matchedStudentIds = apiData?.enrolled_students
+                    .filter((student) =>
+                        emails.includes(student.email.toLowerCase())
+                    )
+                    .map((student) => student.id) || [];
+
+                if (matchedStudentIds.length === 0) {
+                    toast.warning("No matching students found");
+                } else {
+                    setSelectedStudents(matchedStudentIds);
+                    toast.success(
+                        `${matchedStudentIds.length} student${matchedStudentIds.length !== 1 ? 's' : ''} selected from CSV`
+                    );
+                }
+
+                const notFound = emails.length - matchedStudentIds.length;
+                if (notFound > 0) {
+                    toast.info(`${notFound} email${notFound !== 1 ? 's' : ''} not found in enrollment`);
+                }
+                setCsvFile(null);
+                setIsUploadingCSV(false);
+            } catch (error) {
+                toast.error("Error processing CSV file");
+                setCsvFile(null);
+                setIsUploadingCSV(false);
+            }
+        };
+
+        reader.onerror = () => {
+            toast.error("Failed to read CSV file");
+            setIsUploadingCSV(false);
+        };
+
+        reader.readAsText(file);
+        event.target.value = "";
+    };
+
+
+    const fetchData = async (year: number, sem: number) => {
         const apiUrl = import.meta.env.VITE_API_URL;
 
         const { data } = await axios.get<ApiResponse>(
             `${apiUrl}/teacher/students/${subjectId}`,
             {
                 withCredentials: true,
+                params: { year, sem }
             }
+
+
         );
 
         return data;
     };
+
+    const { tenure } = useAuthStore();
+    const year = tenure?.year;
+    const sem = tenure?.is_odd;
 
     const {
         data: apiData,
         error: apiError,
         isLoading,
     } = useQuery({
-        queryKey: ["teacherRequestsStudents", subjectId],
-        queryFn: fetchData,
+        queryKey: ["teacherRequestsStudents", subjectId, year, sem],
+        queryFn: () => fetchData(year as number, sem as number),
         refetchOnWindowFocus: false,
     });
 
@@ -185,7 +328,7 @@ export default function StudentTable() {
                 totalItems: 0,
             };
         }
-        
+
         const filteredStudents = apiData.enrolled_students.filter(
             (student) =>
                 student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -208,7 +351,7 @@ export default function StudentTable() {
             totalItems,
             filteredStudents
         };
-    }, [apiData?.enrolled_students, currentPage, itemsPerPage,searchTerm]);
+    }, [apiData?.enrolled_students, currentPage, itemsPerPage, searchTerm]);
 
     // Check if all students on current page are selected
     const areAllCurrentPageSelected = useMemo(() => {
@@ -225,9 +368,13 @@ export default function StudentTable() {
                     Student List
                 </h1>
 
-                
+                <div className="flex justify-center md:justify-end mb-6  max-w-7xl mx-auto">
+                    <TenureSelector />
+                </div>
 
-                                {apiCalled && submitted > 0 && (
+
+
+                {apiCalled && submitted > 0 && (
                     <div
                         className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4"
                         role="alert"
@@ -249,18 +396,9 @@ export default function StudentTable() {
                     </div>
                 )}
 
-                {error && (
-                    <div
-                        className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4"
-                        role="alert"
-                    >
-                        <strong className="font-bold">Error: </strong>
-                        <span className="block sm:inline">{error}</span>
-                    </div>
-                )}
-
                 <div className="overflow-hidden rounded-lg shadow-md border border-gray-100 bg-white max-w-7xl mx-auto">
-                    <div className="flex items-center justify-between p-4 border-b bg-gray-50">
+
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-4 border-b bg-gray-50">
                         <div className="flex items-center">
                             <Link
                                 to="/faculty/dashboard"
@@ -268,24 +406,31 @@ export default function StudentTable() {
                             >
                                 <FaArrowLeft className="text-gray-600" />
                             </Link>
-                            <h2 className="font-semibold ml-3 text-gray-800 md:text-xl">
+                            <h2 className="font-semibold ml-3 text-gray-800 text-lg md:text-xl">
                                 {subjectCode}
                             </h2>
                         </div>
 
-                        <div className="flex items-center gap-2">
-                            <span className="text-sm text-gray-600 mr-2">
-                                Due Date:
-                            </span>
-                            <input
-                                type="date"
-                                value={dueDate}
-                                min={new Date().toISOString().split("T")[0]}
-                                onChange={(e) => setDueDate(e.target.value)}
-                                className="border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                            <label className="text-sm text-gray-700 font-medium whitespace-nowrap">
+                                Due Date & Time:
+                            </label>
+                            <DatePicker
+                                selected={dueDate}
+                                onChange={(date: Date | null) => setDueDate(date)}
+                                showTimeSelect
+                                timeFormat="HH:mm"
+                                timeIntervals={15}
+                                dateFormat="MM/dd/yyyy, h:mm aa"
+                                minDate={new Date()}
+                                portalId="root"
+                                popperPlacement="bottom-end"
+                                className="w-full sm:w-auto border border-gray-300 rounded-lg px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 hover:border-gray-400"
                             />
                         </div>
                     </div>
+
+
 
                     <div className="p-4 border-b bg-gray-50">
                         <SearchBar
@@ -299,9 +444,7 @@ export default function StudentTable() {
                     </div>
 
                     {isLoading ? (
-                        <div className="flex justify-center items-center h-64">
-                            Loading
-                        </div>
+                        <TableSkeleton rows={5} cols={7} className="max-w-7xl mx-auto" />
                     ) : apiError ? (
                         <div className="p-6 text-center text-red-500">
                             Error loading student data. Please try again.
@@ -353,20 +496,19 @@ export default function StudentTable() {
                                     </thead>
                                     <tbody className="bg-white divide-y divide-gray-200">
                                         {paginationData.currentPageData.length >
-                                        0 ? (
+                                            0 ? (
                                             paginationData.currentPageData.map(
                                                 (student) => (
                                                     <tr
                                                         key={student.id}
                                                         className={`
                             hover:bg-gray-50 transition-colors duration-150 cursor-pointer
-                            ${
-                                selectedStudents.includes(student.id)
-                                    ? "bg-blue-50"
-                                    : studentsNotSubmitted.includes(student.id)
-                                    ? "bg-red-200 hover:bg-red-300 "
-                                    : ""
-                            }
+                            ${selectedStudents.includes(student.id)
+                                                                ? "bg-blue-50"
+                                                                : studentsNotSubmitted.includes(student.id)
+                                                                    ? "bg-red-200 hover:bg-red-300 "
+                                                                    : ""
+                                                            }
                           `}
                                                         onClick={() =>
                                                             handleStudentSelection(
@@ -380,7 +522,7 @@ export default function StudentTable() {
                                                                 checked={selectedStudents.includes(
                                                                     student.id
                                                                 )}
-                                                                onChange={() => {}}
+                                                                onChange={() => { }}
                                                                 className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                                                             />
                                                         </td>
@@ -425,8 +567,33 @@ export default function StudentTable() {
                             />
 
                             <div className="p-4 bg-gray-50 border-t border-gray-200">
-                                <div className="flex flex-wrap items-center justify-end gap-4">
-                                    <div className="flex items-center gap-2">
+                                <div className="flex flex-wrap items-center justify-between gap-4">
+                                    <div className="flex flex-col gap-2">
+                                        <div className="flex items-center gap-2">
+                                            <label className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer disabled:bg-gray-200 disabled:cursor-not-allowed">
+                                                <input
+                                                    type="file"
+                                                    accept=".csv"
+                                                    onChange={handleCSVUpload}
+                                                    disabled={isUploadingCSV}
+                                                    className="hidden"
+                                                    id="csv-upload"
+                                                />
+                                                {isUploadingCSV
+                                                    ? "Uploading..."
+                                                    : "Upload CSV"}
+                                            </label>
+                                            {csvFile && (
+                                                <div className="px-3 py-1.5 bg-gray-100 border border-gray-300 rounded-md text-sm text-gray-700 truncate max-w-xs">
+                                                    {csvFile.name}
+                                                </div>
+                                            )}
+                                        </div>
+                                        <span className="text-xs text-gray-500">
+                                            CSV must include header: email
+                                        </span>
+                                    </div>
+                                    <div className="flex flex-col sm:flex-row items-center gap-3">
                                         <span className="text-sm text-gray-600">
                                             {selectedStudents.length} student
                                             {selectedStudents.length !== 1
@@ -434,19 +601,36 @@ export default function StudentTable() {
                                                 : ""}{" "}
                                             selected
                                         </span>
-                                        <button
-                                            onClick={handleSubmit}
-                                            disabled={
-                                                selectedStudents.length === 0 ||
-                                                !dueDate || isLoadingPost
-                                            }
-                                            className= "inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed"
-                                                
-                                        >
-                                            {isLoadingPost
-                                                ? "Submitting Request"
-                                                : "Submit Request"}
-                                        </button>
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={
+                                                    handleUpdateAllDueDates
+                                                }
+                                                disabled={
+                                                    !dueDate ||
+                                                    isUpdatingDueDate
+                                                }
+                                                className="inline-flex justify-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-200 disabled:cursor-not-allowed"
+                                            >
+                                                {isUpdatingDueDate
+                                                    ? "Updating..."
+                                                    : "Update All Due Dates"}
+                                            </button>
+                                            <button
+                                                onClick={handleSubmit}
+                                                disabled={
+                                                    selectedStudents.length ===
+                                                    0 ||
+                                                    !dueDate ||
+                                                    isLoadingPost
+                                                }
+                                                className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                                            >
+                                                {isLoadingPost
+                                                    ? "Submitting Request"
+                                                    : "Submit Request"}
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
