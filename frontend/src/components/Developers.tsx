@@ -65,7 +65,7 @@ const developers: Developer[] = [
     {
         id: 107,
         name: "Dr. Anjanee Kumar Mishra",
-        role: "West Campus",
+        role: "ECE (West Campus)",
         category: "professor",
         websiteUrl: "https://www.nsut.ac.in/en/node/1427",
         imageUrl: "/Team/Anjanee-sir.png",
