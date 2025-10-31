@@ -180,7 +180,7 @@ const CreateSubject = () => {
               <thead className="bg-gray-50">
                 <tr>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Subject Code
+                    Course Code
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Error Message
@@ -275,7 +275,7 @@ const CreateSubject = () => {
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Subject Name</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Course Name</label>
                 <input
                   type="text"
                   value={subject.name}
@@ -286,7 +286,7 @@ const CreateSubject = () => {
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Subject Code</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Course Code</label>
                 <input
                   type="text"
                   value={subject.subject_code}

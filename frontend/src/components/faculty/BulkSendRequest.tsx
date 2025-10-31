@@ -12,7 +12,7 @@ import TableSkeleton from "../ui/TableSkeleton";
 import { toast } from "react-toastify";
 import Papa from "papaparse";
 
-const headings = ["Select", "Subject Name", "Subject Code"];
+const headings = ["Select", "Course Name", "Course Code"];
 
 export type Subject = {
     id: string;
@@ -177,7 +177,7 @@ export default function BulkSendRequest() {
                     .filter(Boolean);
 
                 if (subjectCodes.length === 0) {
-                    toast.error("No valid subject codes found in CSV");
+                    toast.error("No valid course codes found in CSV");
                     setIsUploadingCSV(false);
                     return;
                 }
@@ -199,7 +199,7 @@ export default function BulkSendRequest() {
 
                 const notFound = subjectCodes.length - matchedSubjectIds.length;
                 if (notFound > 0) {
-                    toast.info(`${notFound} subject code${notFound !== 1 ? 's' : ''} not found`);
+                    toast.info(`${notFound} course code${notFound !== 1 ? 's' : ''} not found`);
                 }
                 setCsvFile(null);
                 setIsUploadingCSV(false);
@@ -362,7 +362,7 @@ export default function BulkSendRequest() {
                             setSearchTerm(value);
                             setCurrentPage(1);
                         }}
-                        placeholder="Search by subject name or code"
+                        placeholder="Search by course name or code"
                     />
                 </div>
 

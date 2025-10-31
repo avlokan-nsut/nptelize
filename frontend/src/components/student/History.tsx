@@ -5,8 +5,8 @@ import { useAuthStore } from "../../store/useAuthStore";
 import { TenureSelector } from "../ui/DropDown";
 
 const headings = [
-  "Subject Code",
-  "Subject Name",
+  "Course Code",
+  "Course Name",
   "Coordinator",
   "Status",
   "Submitted Date",

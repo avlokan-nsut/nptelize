@@ -223,7 +223,7 @@ Papa.parse<EnrollmentData>(csvFile, {
 
             <div className="mb-4">
               <label htmlFor="subjectCode" className="block text-gray-700 font-medium mb-2">
-                Subject Code <span className="text-red-500">*</span>
+                Course Code <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"

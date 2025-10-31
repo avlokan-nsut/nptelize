@@ -13,7 +13,7 @@ import Papa from "papaparse";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
-const headings = ["Select", "Subject Name", "Subject Code"];
+const headings = ["Select", "Course Name", "Course Code"];
 
 export type Subject = {
     id: string;
@@ -85,7 +85,7 @@ export default function BulkDueDateUpdate() {
                     .filter(Boolean);
 
                 if (subjectCodes.length === 0) {
-                    toast.error("No valid subject codes found in CSV");
+                    toast.error("No valid course codes found in CSV");
                     setIsUploadingCSV(false);
                     return;
                 }
@@ -107,7 +107,7 @@ export default function BulkDueDateUpdate() {
 
                 const notFound = subjectCodes.length - matchedSubjectIds.length;
                 if (notFound > 0) {
-                    toast.info(`${notFound} subject code${notFound !== 1 ? 's' : ''} not found`);
+                    toast.info(`${notFound} course code${notFound !== 1 ? 's' : ''} not found`);
                 }
 
                 setIsUploadingCSV(false);
@@ -307,7 +307,7 @@ export default function BulkDueDateUpdate() {
                             setSearchTerm(value);
                             setCurrentPage(1);
                         }}
-                        placeholder="Search by subject name or code"
+                        placeholder="Search by course name or code"
                     />
                 </div>
 

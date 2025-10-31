@@ -9,8 +9,8 @@ import { TenureSelector } from "../ui/DropDown";
 import TableSkeleton from "../ui/TableSkeleton";
 
 const headings = [
-    "Subject Code",
-    "Subject Name",
+    "Course Code",
+    "Course Name",
     "Actions",
     "Pending",
     "Completed",
@@ -228,8 +228,8 @@ const ReportSection = function () {
             "Student Name",
             "NSUT Roll No.",
             "Marks",
-            "Subject Name",
-            "Subject Code",
+            "Course Name",
+            "Course Code",
             "Status",
         ];
 
@@ -419,7 +419,7 @@ const ReportSection = function () {
                                 setSearchTerm(value);
                                 setCurrentPage(1);
                             }}
-                            placeholder="Search by subject name or code"
+                            placeholder="Search by course name or code"
                         />
                     </div>
 

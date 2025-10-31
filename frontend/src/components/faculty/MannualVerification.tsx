@@ -60,7 +60,7 @@ const MannualVerification = () => {
         refetchOnWindowFocus: false,
     });
 
-    const headings = ["Name", "Email", "Roll No.", "Subject Name", "Subject Code", "Actions"]
+    const headings = ["Name", "Email", "Roll No.", "Course Name", "Course Code", "Actions"]
 
 
 

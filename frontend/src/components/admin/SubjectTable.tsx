@@ -154,10 +154,10 @@ const SubjectTable = () => {
                                     <thead className="bg-gray-100">
                                         <tr>
                                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Subject Name
+                                                Course Name
                                             </th>
                                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Subject Code
+                                                Course Code
                                             </th>
                                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                 Assigned Faculty

@@ -35,9 +35,6 @@ const fetchData = async (year: number, sem: number) => {
 };
 
 const Table = function () {
-  const { user } = useAuthStore();
-  const isCoordinator = user?.service_role_dict &&
-    Object.values(user.service_role_dict).flat().includes("coordinator");
   const { tenure } = useAuthStore();
   const year = tenure?.year;
   const sem = tenure?.is_odd;
@@ -98,7 +95,6 @@ const Table = function () {
       href: "/faculty/bulk-due-date-update",
       icon: <FaCalendarAlt className="w-4 h-4" />,
       color: "text-blue-600",
-      show: isCoordinator
     },
     {
       title: "Send Requests",
@@ -106,7 +102,6 @@ const Table = function () {
       href: "/faculty/bulk-send-requests",
       icon: <FaPaperPlane className="w-4 h-4" />,
       color: "text-green-600",
-      show: isCoordinator
     },
     {
       title: "Reports",
@@ -114,7 +109,6 @@ const Table = function () {
       href: "/faculty/report-section",
       icon: <FaFileAlt className="w-4 h-4" />,
       color: "text-purple-600",
-      show: true
     },
     {
       title: "Verify Rejected",
@@ -122,9 +116,8 @@ const Table = function () {
       href: "/faculty/verify-rejected",
       icon: <FaUserCheck className="w-4 h-4" />,
       color: "text-orange-600",
-      show: true
     }
-  ].filter(action => action.show);
+  ];
 
   return (
     <div className="mx-auto px-4 py-8">
@@ -197,7 +190,7 @@ const Table = function () {
               setSearchTerm(value);
               setCurrentPage(1);
             }}
-            placeholder="Search by subject name or code"
+            placeholder="Search by course name or code"
           />
         </div>
 
@@ -208,9 +201,9 @@ const Table = function () {
             <table className="w-full">
               <thead className="bg-gray-50">
                 <tr className="text-sm font-medium text-gray-700">
-                  <th className="px-6 py-4 text-left">Subject Code</th>
-                  <th className="px-6 py-4 text-left">Subject Name</th>
-                  {isCoordinator && <th className="px-6 py-4 text-left">Actions</th>}
+                  <th className="px-6 py-4 text-left">Course Code</th>
+                  <th className="px-6 py-4 text-left">Course Name</th>
+                  <th className="px-6 py-4 text-left">Actions</th>
                   <th className="px-6 py-4 text-left">Request Status</th>
                 </tr>
               </thead>
@@ -224,18 +217,16 @@ const Table = function () {
                       <td className="px-6 py-4">{subject.subject_code}</td>
                       <td className="px-6 py-4">{subject.name}</td>
 
-                      {isCoordinator && (
-                        <td className="px-6 py-4">
-                          <Link
-                            to={`/faculty/students/${subject.subject_code}`}
-                            state={{ subjectId: subject.id }}
-                            className="inline-flex items-center px-4 py-2 bg-black text-white text-sm font-medium rounded-md shadow-sm transition-colors duration-200"
-                          >
-                            View Students
-                            <FaArrowRight className="ml-2 text-sm" />
-                          </Link>
-                        </td>
-                      )}
+                      <td className="px-6 py-4">
+                        <Link
+                          to={`/faculty/students/${subject.subject_code}`}
+                          state={{ subjectId: subject.id }}
+                          className="inline-flex items-center px-4 py-2 bg-black text-white text-sm font-medium rounded-md shadow-sm transition-colors duration-200"
+                        >
+                          View Students
+                          <FaArrowRight className="ml-2 text-sm" />
+                        </Link>
+                      </td>
 
                       <td className="px-6 py-4">
                         <Link
@@ -255,7 +246,7 @@ const Table = function () {
                 ) : (
                   <tr>
                     <td
-                      colSpan={isCoordinator ? 4 : 3}
+                      colSpan={4}
                       className="px-6 py-4 text-center text-gray-500"
                     >
                       No subjects found. Please select a different tenure or try another search.
