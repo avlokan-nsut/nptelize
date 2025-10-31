@@ -26,9 +26,6 @@
   margin-right: auto;
 }
 
-/* Removed filter tabs */
-
-/* Section titles */
 .team-section {
   margin-bottom: 3rem;
 }
@@ -50,7 +47,6 @@
   text-align: center;
 }
 
-/* Developer grid */
 .developers-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -58,14 +54,20 @@
   justify-items: center;
 }
 
+/* Leadership grids: customize for top 2 and others 3/row */
 .leadership-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
   gap: 1rem;
   justify-items: center;
 }
+.top-leadership {
+  grid-template-columns: repeat(2, 1fr);
+  margin-bottom: 1.5rem;
+}
+.others-leadership {
+  grid-template-columns: repeat(3, 1fr);
+}
 
-/* Developer cards */
 .developer-card {
   background-color: white;
   border-radius: 10px;
@@ -150,7 +152,6 @@
   color: #059669;
 }
 
-/* Social links */
 .social-links {
   display: flex;
   gap: 0.5rem;
@@ -180,28 +181,32 @@
 }
 
 /* Responsive adjustments */
-@media (max-width: 768px) {
-  .developers-container {
-    padding: 1.5rem;
-  }
-
-  .developers-title {
-    font-size: 2.5rem;
-  }
-  
+@media (max-width: 1024px) {
   .team-sections-wrapper {
     grid-template-columns: 1fr;
     gap: 2rem;
   }
-  
+}
+
+@media (max-width: 768px) {
+  .developers-container {
+    padding: 1.5rem;
+  }
+  .developers-title {
+    font-size: 2.5rem;
+  }
+  .team-sections-wrapper {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
   .developers-grid {
     grid-template-columns: repeat(2, 1fr);
-    gap: 0.875rem;
   }
-  
-  .leadership-grid {
+  .top-leadership {
     grid-template-columns: repeat(2, 1fr);
-    gap: 0.875rem;
+  }
+  .others-leadership {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
@@ -209,37 +214,31 @@
   .developers-title {
     font-size: 2rem;
   }
-  
   .team-sections-wrapper {
     grid-template-columns: 1fr;
     gap: 1.5rem;
   }
-  
-  .developers-grid {
-    grid-template-columns: repeat(2, 1fr);
+  .developers-grid,
+  .others-leadership {
+    grid-template-columns: repeat(1, 1fr);
     gap: 0.75rem;
   }
-  
-  .leadership-grid {
-    grid-template-columns: repeat(2, 1fr);
+  .top-leadership {
+    grid-template-columns: 1fr;
     gap: 0.75rem;
   }
-  
   .developer-card {
     padding: 0.75rem;
     max-width: 100%;
   }
-
   .developer-image-container {
     width: 70px;
     height: 70px;
     margin-bottom: 0.5rem;
   }
-  
   .developer-name {
     font-size: 0.85rem;
   }
-  
   .developer-role {
     font-size: 0.65rem;
     padding: 0.15rem 0.5rem;
