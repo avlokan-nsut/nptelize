@@ -495,7 +495,7 @@ const FacultySubjects: React.FC = () => {
                                     </div>
 
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Subject Code</label>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Course Code</label>
                                         <input
                                             type="text"
                                             value={pair.course_code}
