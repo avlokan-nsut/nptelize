@@ -7,6 +7,8 @@ import { RefreshCw } from "lucide-react";
 import { useAuthStore } from "../../store/useAuthStore";
 import { TenureSelector } from "../ui/DropDown";
 import TableSkeleton from "../ui/TableSkeleton";
+import { FaArrowLeft } from 'react-icons/fa';
+import { Link } from 'react-router-dom';
 
 const headings = [
     "Course Code",
@@ -412,75 +414,87 @@ const ReportSection = function () {
                         </h1>
                     )}
 
-                    <div className="mb-4">
-                        <SearchBar
-                            value={searchTerm}
-                            onChange={(value) => {
-                                setSearchTerm(value);
-                                setCurrentPage(1);
-                            }}
-                            placeholder="Search by course name or code"
-                        />
-                    </div>
+<div className="overflow-hidden rounded-lg shadow-md border border-gray-100 bg-white">
+                        <div className="flex items-center gap-4 p-4 border-b bg-gray-50">
+                            <Link
+                                to="/faculty/dashboard"
+                                className="hover:bg-gray-200 p-2 rounded-full transition-colors"
+                            >
+                                <FaArrowLeft className="text-gray-600" />
+                            </Link>
+                            <h3 className="font-semibold text-gray-800 md:text-xl">
+                                Report Section
+                            </h3>
+                        </div>
 
-                    <div className="p-4 bg-blue-50 border-b">
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            <div className="text-center">
-                                <div className="text-2xl font-bold text-blue-600">
-                                    {apiData?.totals?.completed || "0"}
+                        <div className="p-4 border-b bg-gray-50">
+                            <SearchBar
+                                value={searchTerm}
+                                onChange={(value) => {
+                                    setSearchTerm(value);
+                                    setCurrentPage(1);
+                                }}
+                                placeholder="Search by course name or code"
+                            />
+                        </div>
+
+                        <div className="p-4 bg-blue-50 border-b">
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <div className="text-center">
+                                    <div className="text-2xl font-bold text-blue-600">
+                                        {apiData?.totals?.completed || "0"}
+                                    </div>
+                                    <div className="text-sm text-gray-600">Completed</div>
                                 </div>
-                                <div className="text-sm text-gray-600">Completed</div>
-                            </div>
-                            <div className="text-center">
-                                <div className="text-2xl font-bold text-yellow-600">
-                                    {apiData?.totals?.pending || "0"}
+                                <div className="text-center">
+                                    <div className="text-2xl font-bold text-yellow-600">
+                                        {apiData?.totals?.pending || "0"}
+                                    </div>
+                                    <div className="text-sm text-gray-600">Pending</div>
                                 </div>
-                                <div className="text-sm text-gray-600">Pending</div>
-                            </div>
-                            <div className="text-center">
-                                <div className="text-2xl font-bold text-red-600">
-                                    {apiData?.totals?.rejected || "0"}
+                                <div className="text-center">
+                                    <div className="text-2xl font-bold text-red-600">
+                                        {apiData?.totals?.rejected || "0"}
+                                    </div>
+                                    <div className="text-sm text-gray-600">Rejected</div>
                                 </div>
-                                <div className="text-sm text-gray-600">Rejected</div>
-                            </div>
-                            <div className="text-center">
-                                <div className="text-2xl font-bold text-fuchsia-600">
-                                    {apiData?.totals?.no_certificate || "0"}
-                                </div>
-                                <div className="text-sm text-gray-600">
-                                    No Certificate
+                                <div className="text-center">
+                                    <div className="text-2xl font-bold text-fuchsia-600">
+                                        {apiData?.totals?.no_certificate || "0"}
+                                    </div>
+                                    <div className="text-sm text-gray-600">
+                                        No Certificate
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
 
-                    <div className="overflow-x-scroll rounded-lg shadow-sm border border-gray-100 bg-white">
-                        <table className="w-full">
-                            <thead className="bg-gray-50">
-                                <tr className="text-sm font-medium text-gray-700">
-                                    {headings.map((heading, idx) => (
-                                        <th
-                                            key={idx}
-                                            className="px-6 py-4 text-center "
+                        <div className="overflow-x-auto">
+                            <table className="min-w-full divide-y divide-gray-200">
+                                <thead className="bg-gray-50">
+                                    <tr>
+                                        {headings.map((heading, idx) => (
+                                            <th
+                                                key={idx}
+                                                className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                            >
+                                                {heading}
+                                            </th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody className="bg-white divide-y divide-gray-200">
+                                    {paginatedSubjects.map((subject) => (
+                                        <tr
+                                            key={subject.id}
+                                            className="hover:bg-gray-50 transition-colors duration-150 text-center"
                                         >
-                                            {heading}
-                                        </th>
-                                    ))}
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-100">
-                                {paginatedSubjects.map((subject) => (
-                                    <tr
-                                        key={subject.id}
-                                        className="hover:bg-gray-50 transition-colors duration-200 text-center"
-                                    >
-                                        <td className="px-6 py-4 ">
-                                            {subject.subject_code}
-                                        </td>
-                                        <td className="px-6 py-4">{subject.name}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-gray-700">
+                                                {subject.subject_code}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-gray-700">{subject.name}</td>
 
-                                        <td className="px-6 py-4 text-center whitespace-nowrap text-gray-700">
-                                            <div>
+                                            <td className="px-6 py-4 whitespace-nowrap">
                                                 <button
                                                     className={`py-2 px-4 rounded-md shadow-md transition-all duration-300 transform ${
                                                         disabled
@@ -507,50 +521,50 @@ const ReportSection = function () {
                                                         />
                                                     </svg>
                                                 </button>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            {stats[subject.id]?.pending || "0"}
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            {stats[subject.id]?.completed || "0"}
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            {stats[subject.id]?.rejected || "0"}
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            {stats[subject.id]?.no_certificate || "0"}
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <button
-                                                disabled={disabled}
-                                                onClick={() =>
-                                                    handleRefresh(subject.id)
-                                                }
-                                                className={`inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 transition-all duration-200 group ${
-                                                    disabled
-                                                        ? "text-gray-400 bg-gray-100 cursor-not-allowed"
-                                                        : "cursor-pointer"
-                                                }`}
-                                            >
-                                                <RefreshCw className="w-4 h-4 group-hover:rotate-180 transition-transform duration-300" />
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-gray-700">
+                                                {stats[subject.id]?.pending || "0"}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-gray-700">
+                                                {stats[subject.id]?.completed || "0"}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-gray-700">
+                                                {stats[subject.id]?.rejected || "0"}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-gray-700">
+                                                {stats[subject.id]?.no_certificate || "0"}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <button
+                                                    disabled={disabled}
+                                                    onClick={() =>
+                                                        handleRefresh(subject.id)
+                                                    }
+                                                    className={`inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 transition-all duration-200 group ${
+                                                        disabled
+                                                            ? "text-gray-400 bg-gray-100 cursor-not-allowed"
+                                                            : "cursor-pointer"
+                                                    }`}
+                                                >
+                                                    <RefreshCw className="w-4 h-4 group-hover:rotate-180 transition-transform duration-300" />
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {totalPages > 1 && (
+                            <Pagination
+                                currentPage={currentPage}
+                                totalPages={totalPages}
+                                onPageChange={(page) => setCurrentPage(page)}
+                                itemsPerPage={itemsPerPage}
+                                totalItems={totalItems}
+                            />
+                        )}
                     </div>
-                    
-                    {totalPages > 1 && (
-                        <Pagination
-                            currentPage={currentPage}
-                            totalPages={totalPages}
-                            onPageChange={(page) => setCurrentPage(page)}
-                            itemsPerPage={itemsPerPage}
-                            totalItems={totalItems}
-                        />
-                    )}
                 </>
             )}
         </div>

@@ -7,6 +7,8 @@ import { useState } from 'react';
 import { FaChevronRight } from 'react-icons/fa';
 import RequestDetailsDropdown from './RequestDetailsDropdown';
 import { TenureSelector } from '../ui/DropDown';
+import { FaArrowLeft } from 'react-icons/fa';
+import { Link } from 'react-router-dom';
 
 
 type Response = {
@@ -85,74 +87,88 @@ const MannualVerification = () => {
                     {isLoading || isFetching ? (
                         <TableSkeleton rows={5} cols={7} className="max-w-7xl mx-auto" />
                     ) : (
-                        <div className="overflow-x-scroll rounded-lg shadow-sm border border-gray-100 bg-white">
-                            <table className="w-full">
-                                <thead className="bg-gray-50">
-                                    <tr className="text-sm font-medium text-gray-700">
-                                        {headings.map((heading, idx) => (
-                                            <th key={idx} className="px-6 py-4 text-left">
-                                                {heading}
-                                            </th>
-                                        ))}
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-100">
-                                    {apiData?.requests && apiData.requests.length > 0 ? (
-                                        apiData.requests.map((request) => (
-                                            <>
-                                            <tr key={request.id} className="text-sm text-gray-700 hover:bg-gray-50">
-                                                <td className="px-6 py-4">{request.student.name}</td>
-                                                <td className="px-6 py-4">{request.student.email}</td>
-                                                <td className="px-6 py-4">{request.student.roll_number}</td>
-                                                <td className="px-6 py-4">{request.subject.name}</td>
-                                                <td className="px-6 py-4">{request.subject.subject_code}</td>
-                                                <td className="px-6 py-4">
+                        <div className="overflow-hidden rounded-lg shadow-md border border-gray-100 bg-white">
+                            <div className="flex items-center gap-4 p-4 border-b bg-gray-50">
+                                <Link
+                                    to="/faculty/dashboard"
+                                    className="hover:bg-gray-200 p-2 rounded-full transition-colors"
+                                >
+                                    <FaArrowLeft className="text-gray-600" />
+                                </Link>
+                                <h3 className="font-semibold text-gray-800 md:text-xl">
+                                    Verify Rejected Requests
+                                </h3>
+                            </div>
 
-                                                    <button
-                                                        onClick={() => setOpenDropdownId(openDropdownId === request.id ? null : request.id)}
-                                                        className="shadow-md px-5 py-2 rounded-lg transition-all duration-300 transform hover:scale-105 hover:bg-black hover:text-white hover:cursor-pointer"
-                                                    >
-                                                        <FaChevronRight
-                                                            className={`w-4 h-4 transition-transform mx-auto ${openDropdownId === request.id ? 'rotate-90' : ''}`}
-                                                        />
-                                                    </button>
+                            <div className="overflow-x-auto">
+                                <table className="min-w-full divide-y divide-gray-200">
+                                    <thead className="bg-gray-50">
+                                        <tr>
+                                            {headings.map((heading, idx) => (
+                                                <th key={idx} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    {heading}
+                                                </th>
+                                            ))}
+                                        </tr>
+                                    </thead>
+                                    <tbody className="bg-white divide-y divide-gray-200">
+                                        {apiData?.requests && apiData.requests.length > 0 ? (
+                                            apiData.requests.map((request) => (
+                                                <>
+                                                <tr key={request.id} className="hover:bg-gray-50 transition-colors duration-150">
+                                                    <td className="px-6 py-4 whitespace-nowrap text-gray-700">{request.student.name}</td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-gray-700">{request.student.email}</td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-gray-700">{request.student.roll_number}</td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-gray-700">{request.subject.name}</td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-gray-700">{request.subject.subject_code}</td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
 
+                                                        <button
+                                                            onClick={() => setOpenDropdownId(openDropdownId === request.id ? null : request.id)}
+                                                            className="shadow-md px-5 py-2 rounded-lg transition-all duration-300 transform hover:scale-105 hover:bg-black hover:text-white hover:cursor-pointer"
+                                                        >
+                                                            <FaChevronRight
+                                                                className={`w-4 h-4 transition-transform mx-auto ${openDropdownId === request.id ? 'rotate-90' : ''}`}
+                                                            />
+                                                        </button>
+
+                                                    </td>
+                                                </tr>
+                                                {openDropdownId === request.id && (
+                                    <RequestDetailsDropdown
+                                      request={
+                                        {
+                                            id:request.id,
+                                            student:request.student,
+                                            subject:request.subject,
+                                            status : "rejected",
+                                            verified_total_marks:request.verified_total_marks,
+                                            created_at: request.created_at,
+                                            due_date: request.due_date,
+                                            
+                                            
+                                        }
+                                      }
+                                      colSpan={headings.length}
+                                      subjectId={request.subject.id}
+                                      onClose={() => setOpenDropdownId(null)}
+                                      showReject={false}
+                                    />
+                                  )}
+                                                </>
+                                                
+                                                
+                                            ))
+                                        ) : (
+                                            <tr>
+                                                <td colSpan={6} className="px-6 py-4 text-center text-gray-500">
+                                                    No rejected requests to verify
                                                 </td>
                                             </tr>
-                                            {openDropdownId === request.id && (
-                                <RequestDetailsDropdown
-                                  request={
-                                    {
-                                        id:request.id,
-                                        student:request.student,
-                                        subject:request.subject,
-                                        status : "rejected",
-                                        verified_total_marks:request.verified_total_marks,
-                                        created_at: request.created_at,
-                                        due_date: request.due_date,
-                                        
-                                        
-                                    }
-                                  }
-                                  colSpan={headings.length}
-                                  subjectId={request.subject.id}
-                                  onClose={() => setOpenDropdownId(null)}
-                                  showReject={false}
-                                />
-                              )}
-                                            </>
-                                            
-                                            
-                                        ))
-                                    ) : (
-                                        <tr>
-                                            <td colSpan={6} className="px-6 py-4 text-center text-gray-500">
-                                                No rejected requests to verify
-                                            </td>
-                                        </tr>
-                                    )}
-                                </tbody>
-                            </table>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     )}
                 </div>
