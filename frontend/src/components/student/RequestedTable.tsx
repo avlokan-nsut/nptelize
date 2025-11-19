@@ -9,8 +9,8 @@ import { toast } from "react-toastify";
 import TableSkeleton from "../ui/TableSkeleton";
 
 const headings = [
-  "Subject Code",
-  "Subject Name",
+  "Course Code",
+  "Course Name",
   "Coordinator",
   "Status",
   "Due Date",
