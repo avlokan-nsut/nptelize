@@ -253,8 +253,8 @@ const StudentStatus = function () {
       "Student Name",
       "NSUT Roll No.",
       "Marks",
-      "Subject Name",
-      "Subject Code",
+      "Course Name",
+      "Course Code",
       'Status'
     ];
 

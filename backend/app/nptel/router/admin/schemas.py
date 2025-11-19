@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr
-from typing import List
+from typing import List, Optional, Literal
 
 
 # -----------------------------------------------------------------------
@@ -79,3 +79,47 @@ class SubjectCreateResponseFields(BaseModel):
 
 class CreateSubjectResponse(BaseModel):
     results: List[SubjectCreateResponseFields]
+
+
+class ModifyUserRoleResponse(BaseModel):
+    email: EmailStr
+    old_role: Optional[str]
+    new_role: str
+    success: bool
+    message: str
+
+class RoleEntry(BaseModel):
+    id: str
+    module_name: str
+    name: str
+
+
+class RoleQueryResponse(BaseModel):
+    email: EmailStr
+    role: Optional[str]
+    custom_roles: Optional[List[RoleEntry]]
+
+
+class RolesResponse(BaseModel):
+    builtin_roles: List[str]
+    custom_roles: List[RoleEntry]
+    
+class ModifyUserRoleRequest(BaseModel):
+    email: EmailStr
+    new_role: str
+    
+
+class ModifyCoordinatorRequest(BaseModel):
+    email: EmailStr
+    module_name: str
+    role_name: str
+    action: Literal["add", "remove"]
+    
+    
+class ModifyCoordinatorResponse(BaseModel):
+    email: EmailStr
+    module_name: str
+    role_name: str
+    action: Literal["add", "remove"]
+    success: bool
+    message: str

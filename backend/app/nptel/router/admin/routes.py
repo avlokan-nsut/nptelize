@@ -1,9 +1,15 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Body
 
 from app.database.core import get_db
-from app.database.models import UserRole, User, Subject, StudentSubjectEnrollment, TeacherSubjectAllotment
+from app.database.models import Role, UserRole, User, Subject, StudentSubjectEnrollment, TeacherSubjectAllotment, UserRoleMapping
 from app.oauth2 import get_current_admin
 from .schemas import (
+    ModifyCoordinatorRequest,
+    ModifyCoordinatorResponse,
+    ModifyUserRoleRequest,
+    ModifyUserRoleResponse,
+    RoleQueryResponse,
+    RolesResponse,
     StudentCreate, 
     TeacherCreate, 
     AdminCreate, 
@@ -652,3 +658,186 @@ def delete_student_from_subject(
     except Exception as e:
         db.rollback()
         raise e
+    
+    
+@router.get('/get/roles', response_model=RolesResponse)
+def get_roles(
+    db: Session = Depends(get_db),
+    current_admin: TokenData = Depends(get_current_admin)
+):
+    builtin = [r.value for r in UserRole]
+    custom_roles = db.query(Role).all()
+    return {
+        "builtin_roles": builtin,
+        "custom_roles": [
+            {
+                "id": r.id,
+                "module_name": r.module_name,
+                "name": r.name
+            } for r in custom_roles
+        ]
+    }
+
+
+@router.get('/get/user-role', response_model=RoleQueryResponse)
+def get_user_role(
+    email: str = Query(..., description="Email of the user to lookup"),
+    db: Session = Depends(get_db),
+    current_admin: TokenData = Depends(get_current_admin)
+):
+    user = db.query(User).filter(User.email == email).first()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    builtin_role = user.role.value if user.role else None
+
+    custom_roles = []
+    if user.user_role_mappings:
+        for mapping in user.user_role_mappings:
+            role_obj = mapping.role_assigned
+            if role_obj:
+                custom_roles.append({
+                    "id": role_obj.id,
+                    "module_name": role_obj.module_name,
+                    "name": role_obj.name,
+                })
+
+    return {
+        "email": user.email,
+        "role": builtin_role,
+        "custom_roles": custom_roles,
+    }
+
+@router.put('/modify/user-role', response_model=ModifyUserRoleResponse)
+def modify_user_role(
+    payload: ModifyUserRoleRequest,
+    db: Session = Depends(get_db),
+    current_admin: TokenData = Depends(get_current_admin)
+):
+    requested_role_value = payload.new_role
+    valid_roles = {r.value for r in UserRole}
+    print(valid_roles)
+    if requested_role_value not in valid_roles:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid role. Valid roles: {', '.join(sorted(valid_roles))}")
+
+    user = db.query(User).filter(User.email == payload.email).first()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    old_role = user.role.value if user.role else None
+    if old_role == requested_role_value:
+        return {
+            "email": user.email,
+            "old_role": old_role,
+            "new_role": requested_role_value,
+            "success": True,
+            "message": "User already has the requested role"
+        }
+
+    try:
+        user.role = UserRole(requested_role_value)
+        db.add(user)
+        db.commit()
+        return {
+            "email": user.email,
+            "old_role": old_role,
+            "new_role": requested_role_value,
+            "success": True,
+            "message": "User role updated successfully"
+        }
+    except Exception as e:
+        logger.error(f"Error updating user role for {payload.email}: {e}")
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to update role")
+    
+    
+@router.post('/modify/custom-role', response_model=ModifyCoordinatorResponse)
+def modify_coordinator(
+    payload: ModifyCoordinatorRequest = Body(...),
+    db: Session = Depends(get_db),
+    current_admin: TokenData = Depends(get_current_admin),
+):
+    """
+    Assign or remove a module-scoped role (e.g. 'coordinator') for a user.
+
+    Body JSON:
+    {
+      "email": "user@example.com",
+      "module_name": "some_module",
+      "role_name": "coordinator",
+      "action": "add" | "remove"
+    }
+    """
+    action = payload.action.lower()
+    if action not in {"add", "remove"}:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid action. Must be 'add' or 'remove'."
+        )
+
+    user = db.query(User).filter(User.email == payload.email).first()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    role = db.query(Role).filter(
+        Role.module_name == payload.module_name,
+        Role.name == payload.role_name
+    ).first()
+    if not role:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Role not found")
+
+    existing_mapping = db.query(UserRoleMapping).filter(
+        UserRoleMapping.user_id == user.id,
+        UserRoleMapping.role_id == role.id
+    ).first()
+
+    try:
+        if action == "add":
+            if existing_mapping:
+                return {
+                    "email": user.email,
+                    "module_name": role.module_name,
+                    "role_name": role.name,
+                    "action": "add",
+                    "success": True,
+                    "message": "User already has this role assigned"
+                }
+
+            mapping = UserRoleMapping(user_id=user.id, role_id=role.id)
+            db.add(mapping)
+            db.commit()
+            return {
+                "email": user.email,
+                "module_name": role.module_name,
+                "role_name": role.name,
+                "action": "add",
+                "success": True,
+                "message": "Role assigned to user successfully"
+            }
+
+        # action == "remove"
+        if not existing_mapping:
+            return {
+                "email": user.email,
+                "module_name": role.module_name,
+                "role_name": role.name,
+                "action": "remove",
+                "success": True,
+                "message": "User did not have this role assigned"
+            }
+
+        db.delete(existing_mapping)
+        db.commit()
+        return {
+            "email": user.email,
+            "module_name": role.module_name,
+            "role_name": role.name,
+            "action": "remove",
+            "success": True,
+            "message": "Role removed from user successfully"
+        }
+
+    except Exception as e:
+        logger.error(f"Error modifying coordinator role for {payload.email}: {e}")
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to modify coordinator role")
