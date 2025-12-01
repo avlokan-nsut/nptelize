@@ -43,7 +43,8 @@ export default function BulkSendRequest() {
         const today = new Date();
         const futureDate = new Date(today);
         futureDate.setDate(today.getDate() + 7);
-        return futureDate.toISOString().split("T")[0];
+        // Format as datetime-local compatible string (YYYY-MM-DDTHH:mm)
+        return futureDate.toISOString().slice(0, 16);
     }
 
     const handlePageChange = (page: number) => {
@@ -86,8 +87,8 @@ export default function BulkSendRequest() {
         setTotalNewRequests(0);
         setTotalExistingRequests(0);
 
+        // Convert to ISO string (UTC)
         const dueDateObj = new Date(newDueDate);
-        dueDateObj.setMinutes(dueDateObj.getMinutes() - 330);
 
         const apiUrl = import.meta.env.VITE_API_URL;
         setIsSending(true);
@@ -343,12 +344,12 @@ export default function BulkSendRequest() {
 
                     <div className="flex flex-col items-center gap-2 md:flex-row">
                         <span className="text-sm text-gray-600 mr-2">
-                            Due Date: {/* Changed from "New Due Date" */}
+                            Due Date & Time:
                         </span>
                         <input
-                            type="date"
+                            type="datetime-local"
                             value={newDueDate}
-                            min={new Date().toISOString().split("T")[0]}
+                            min={new Date().toISOString().slice(0, 16)}
                             onChange={(e) => setNewDueDate(e.target.value)}
                             className="border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         />
@@ -525,3 +526,5 @@ export default function BulkSendRequest() {
         </div>
     );
 }
+
+
