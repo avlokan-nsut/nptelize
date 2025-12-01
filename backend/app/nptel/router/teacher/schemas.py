@@ -94,3 +94,23 @@ class CertificateResponse(BaseModel):
 class BulkSendRequestsRequest(BaseModel):
     subject_id: str
     due_date: datetime
+
+class OptionalCertificateDetails(BaseModel):
+    student_name: Optional[str] = None
+    roll_no: Optional[str] = None
+    marks: Optional[float] = None
+    course_name: Optional[str] = None
+    course_period: Optional[str] = None
+    file_url: Optional[str] = None
+
+
+class OptionalCertificateResponseData(BaseModel):
+    uploaded_certificate: Optional[OptionalCertificateDetails] = None
+    verification_certificate: Optional[OptionalCertificateDetails] = None
+    subject_name: Optional[str] = None
+    remark: Optional[str] = None
+
+
+class OptionalCertificateResponse(BaseModel):
+    message: Optional[str] = None
+    data: Optional[OptionalCertificateResponseData] = None

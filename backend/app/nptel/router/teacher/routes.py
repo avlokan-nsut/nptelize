@@ -12,6 +12,7 @@ from app.oauth2 import get_current_teacher
 from app.schemas import TokenData, GenericResponse
 from .schemas import (
     BulkSendRequestsRequest,
+    OptionalCertificateResponse,
     SubjectResponse, 
     EnrolledStudentResponse, 
     CreateCertificateRequestFields, 
@@ -231,7 +232,7 @@ def get_request_info_by_id(
     }
 
 
-@router.get('/certificate/details/{request_id}', response_model=CertificateResponse)
+@router.get('/certificate/details/{request_id}', response_model=OptionalCertificateResponse)
 async def get_verified_certificate_details(
     request_id: str,
     current_teacher = Depends(get_current_teacher),
