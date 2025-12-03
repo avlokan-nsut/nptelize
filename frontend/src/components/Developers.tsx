@@ -40,7 +40,7 @@ const developers: Developer[] = [
     },
     {
         id: 105,
-        name: "Dr. Tarun Rawat",
+        name: "Prof. Tarun Rawat",
         role: "ECE",
         category: "professor",
         websiteUrl: "https://www.nsut.ac.in/en/node/271",
