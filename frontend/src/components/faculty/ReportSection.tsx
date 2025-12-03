@@ -15,6 +15,7 @@ const headings = [
     "Course Name",
     "Actions",
     "Pending",
+    "Under Review",
     "Completed",
     "Rejected",
     "No Certificate",
@@ -43,7 +44,7 @@ export type Request = {
     id: string;
     student: Student;
     subject: Subject;
-    status: "pending" | "completed" | "rejected" | "no_certificate";
+    status: "pending" | "completed" | "rejected" | "no_certificate" | "under_review";
     verified_total_marks: string;
     created_at: string;
     due_date: string;
@@ -58,6 +59,7 @@ interface StatusCounts {
     pending: number;
     rejected: number;
     no_certificate: number;
+    under_review: number;
 }
 
 interface Stats {
@@ -101,6 +103,7 @@ const fetchData = async (year:number ,sem:number) => {
             pending: number;
             rejected: number;
             no_certificate: number;
+            under_review: number;
         }
     > = {};
 
@@ -109,6 +112,7 @@ const fetchData = async (year:number ,sem:number) => {
         pending: 0,
         rejected: 0,
         no_certificate: 0,
+        under_review: 0,
     };
 
     // Process each subject's requests in a single pass
@@ -125,6 +129,7 @@ const fetchData = async (year:number ,sem:number) => {
                 pending: 0,
                 rejected: 0,
                 no_certificate: 0,
+                under_review: 0,
             }
         );
 
@@ -133,12 +138,14 @@ const fetchData = async (year:number ,sem:number) => {
             pending: statusCounts.pending,
             rejected: statusCounts.rejected,
             no_certificate: statusCounts.no_certificate,
+            under_review: statusCounts.under_review,
         };
 
         totals.completed += statusCounts.completed;
         totals.pending += statusCounts.pending;
         totals.rejected += statusCounts.rejected;
         totals.no_certificate += statusCounts.no_certificate;
+        totals.under_review += statusCounts.under_review;
     });
 
     return {
@@ -312,6 +319,7 @@ const ReportSection = function () {
                 pending: 0,
                 rejected: 0,
                 no_certificate: 0,
+                under_review: 0,
             }
         );
 
@@ -322,6 +330,7 @@ const ReportSection = function () {
                 pending: statusCounts.pending,
                 rejected: statusCounts.rejected,
                 no_certificate: statusCounts.no_certificate,
+                under_review: statusCounts.under_review,
             },
         }));
         setDisabled(false);
@@ -355,7 +364,7 @@ const ReportSection = function () {
             </div>
 
             {isLoading ? (
-                <TableSkeleton rows={5} cols={7} className="max-w-7xl mx-auto" />
+                <TableSkeleton rows={5} cols={9} className="max-w-7xl mx-auto" />
             ) : error ? (
                 <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg shadow-sm">
                     <p>Error loading subjects: {(error as Error).message}</p>
@@ -388,6 +397,7 @@ const ReportSection = function () {
                                 <option value="rejected">Rejected</option>
                                 <option value="no_certificate">No Certificate</option>
                                 <option value="pending">Pending</option>
+                                <option value="under_review">Under Review</option>
                             </select>
                         </div>
 
@@ -439,7 +449,7 @@ const ReportSection = function () {
                         </div>
 
                         <div className="p-4 bg-blue-50 border-b">
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                                 <div className="text-center">
                                     <div className="text-2xl font-bold text-blue-600">
                                         {apiData?.totals?.completed || "0"}
@@ -451,6 +461,12 @@ const ReportSection = function () {
                                         {apiData?.totals?.pending || "0"}
                                     </div>
                                     <div className="text-sm text-gray-600">Pending</div>
+                                </div>
+                                <div className="text-center">
+                                    <div className="text-2xl font-bold text-orange-600">
+                                        {apiData?.totals?.under_review || "0"}
+                                    </div>
+                                    <div className="text-sm text-gray-600">Under Review</div>
                                 </div>
                                 <div className="text-center">
                                     <div className="text-2xl font-bold text-red-600">
@@ -524,6 +540,9 @@ const ReportSection = function () {
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-gray-700">
                                                 {stats[subject.id]?.pending || "0"}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-gray-700">
+                                                {stats[subject.id]?.under_review || "0"}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-gray-700">
                                                 {stats[subject.id]?.completed || "0"}

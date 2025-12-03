@@ -17,7 +17,8 @@ type Response = {
     subject: Subject,
     verified_total_marks: string,
     created_at: string,
-    due_date: string
+    due_date: string,
+     status: "pending" | "completed" | "rejected" | "no_certificate" | "under_review";
 }
 
 type ApiResponse = {
@@ -28,7 +29,7 @@ type ApiResponse = {
 const fetchData = async (year: number, sem: number) => {
     const apiUrl = import.meta.env.VITE_API_URL;
     const reqType = {
-        request_types: ["rejected"],
+        request_types: ["rejected" ,"under_review"],
     };
 
     const { data } = await axios.post<ApiResponse>(
@@ -64,7 +65,7 @@ const MannualVerification = () => {
         refetchOnWindowFocus: false,
     });
 
-    const headings = ["Name", "Email", "Roll No.", "Course Name", "Course Code", "File Url", "Actions"]
+    const headings = ["Name", "Email", "Roll No.", "Course Name", "Course Code", "Status", "File Url", "Actions"]
 
 
     if (error) return <div>Error loading data</div>;
@@ -73,7 +74,7 @@ const MannualVerification = () => {
         <>
             <div className='px-4 py-8'>
                 <h1 className="text-center text-2xl font-semibold text-gray-800 mb-10 tracking-wider">
-                    Verify Rejected Manually
+                    Manual Verification
                 </h1>
                 <div className="flex justify-center md:justify-end mb-6 max-w-7xl mx-auto">
                     <TenureSelector />
@@ -81,12 +82,12 @@ const MannualVerification = () => {
 
                 {apiData && (
                     <h1 className="text-center text-lg font-semibold text-gray-800 mb-8 tracking-wider max-w-7xl mx-auto md:text-left">
-                        Total Rejected Requests :  {apiData?.requests.length > 0 ? apiData?.requests.length : 0}
+                        Total Requests :  {apiData?.requests.length > 0 ? apiData?.requests.length : 0}
                     </h1>)}
 
                 <div className='max-w-7xl mx-auto'>
                     {isLoading || isFetching ? (
-                        <TableSkeleton rows={5} cols={7} className="max-w-7xl mx-auto" />
+                        <TableSkeleton rows={5} cols={8} className="max-w-7xl mx-auto" />
                     ) : (
                         <div className="overflow-hidden rounded-lg shadow-md border border-gray-100 bg-white">
                             <div className="flex items-center gap-4 p-4 border-b bg-gray-50">
@@ -97,7 +98,7 @@ const MannualVerification = () => {
                                     <FaArrowLeft className="text-gray-600" />
                                 </Link>
                                 <h3 className="font-semibold text-gray-800 md:text-xl">
-                                    Verify Rejected Requests
+                                    Verify Requests
                                 </h3>
                             </div>
 
@@ -122,6 +123,14 @@ const MannualVerification = () => {
                                                         <td className="px-6 py-4 whitespace-nowrap text-gray-700">{request.student.roll_number}</td>
                                                         <td className="px-6 py-4 whitespace-nowrap text-gray-700">{request.subject.name}</td>
                                                         <td className="px-6 py-4 whitespace-nowrap text-gray-700">{request.subject.subject_code}</td>
+                                                        <td className="px-6 py-4 whitespace-nowrap">
+                                                            <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${request.status === 'rejected'
+                                                                    ? 'bg-red-100 text-red-800 border border-red-200'
+                                                                    : 'bg-yellow-100 text-yellow-800 border border-yellow-200'
+                                                                }`}>
+                                                                {request.status === 'rejected' ? 'Rejected' : 'Under Review'}
+                                                            </span>
+                                                        </td>
                                                         <td className="px-6 py-4 text-center whitespace-nowrap text-gray-700">
 
                                                             <div>
@@ -172,7 +181,7 @@ const MannualVerification = () => {
                                                                     id: request.id,
                                                                     student: request.student,
                                                                     subject: request.subject,
-                                                                    status: "rejected",
+                                                                    status: request.status,
                                                                     verified_total_marks: request.verified_total_marks,
                                                                     created_at: request.created_at,
                                                                     due_date: request.due_date,
@@ -192,8 +201,8 @@ const MannualVerification = () => {
                                             ))
                                         ) : (
                                             <tr>
-                                                <td colSpan={6} className="px-6 py-4 text-center text-gray-500">
-                                                    No rejected requests to verify
+                                                <td colSpan={headings.length} className="px-6 py-4 text-center text-gray-500">
+                                                    No requests to verify
                                                 </td>
                                             </tr>
                                         )}
