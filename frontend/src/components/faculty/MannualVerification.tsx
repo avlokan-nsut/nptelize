@@ -16,8 +16,8 @@ type Response = {
     student: Student,
     subject: Subject,
     verified_total_marks: string,
-    created_at : string,
-    due_date : string
+    created_at: string,
+    due_date: string
 }
 
 type ApiResponse = {
@@ -45,6 +45,8 @@ const fetchData = async (year: number, sem: number) => {
     return data;
 };
 
+const apiUrl = import.meta.env.VITE_API_URL;
+
 const MannualVerification = () => {
     const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
     const { tenure } = useAuthStore();
@@ -62,8 +64,7 @@ const MannualVerification = () => {
         refetchOnWindowFocus: false,
     });
 
-    const headings = ["Name", "Email", "Roll No.", "Course Name", "Course Code", "Actions"]
-
+    const headings = ["Name", "Email", "Roll No.", "Course Name", "Course Code", "File Url", "Actions"]
 
 
     if (error) return <div>Error loading data</div>;
@@ -75,13 +76,13 @@ const MannualVerification = () => {
                     Verify Rejected Manually
                 </h1>
                 <div className="flex justify-center md:justify-end mb-6 max-w-7xl mx-auto">
-                              <TenureSelector />
+                    <TenureSelector />
                 </div>
 
                 {apiData && (
-                <h1 className="text-center text-lg font-semibold text-gray-800 mb-8 tracking-wider max-w-7xl mx-auto md:text-left">
-                    Total Rejected Requests :  {apiData?.requests.length >0 ? apiData?.requests.length : 0}
-                </h1>)}
+                    <h1 className="text-center text-lg font-semibold text-gray-800 mb-8 tracking-wider max-w-7xl mx-auto md:text-left">
+                        Total Rejected Requests :  {apiData?.requests.length > 0 ? apiData?.requests.length : 0}
+                    </h1>)}
 
                 <div className='max-w-7xl mx-auto'>
                     {isLoading || isFetching ? (
@@ -115,49 +116,79 @@ const MannualVerification = () => {
                                         {apiData?.requests && apiData.requests.length > 0 ? (
                                             apiData.requests.map((request) => (
                                                 <>
-                                                <tr key={request.id} className="hover:bg-gray-50 transition-colors duration-150">
-                                                    <td className="px-6 py-4 whitespace-nowrap text-gray-700">{request.student.name}</td>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-gray-700">{request.student.email}</td>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-gray-700">{request.student.roll_number}</td>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-gray-700">{request.subject.name}</td>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-gray-700">{request.subject.subject_code}</td>
-                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                    <tr key={request.id} className="hover:bg-gray-50 transition-colors duration-150">
+                                                        <td className="px-6 py-4 whitespace-nowrap text-gray-700">{request.student.name}</td>
+                                                        <td className="px-6 py-4 whitespace-nowrap text-gray-700">{request.student.email}</td>
+                                                        <td className="px-6 py-4 whitespace-nowrap text-gray-700">{request.student.roll_number}</td>
+                                                        <td className="px-6 py-4 whitespace-nowrap text-gray-700">{request.subject.name}</td>
+                                                        <td className="px-6 py-4 whitespace-nowrap text-gray-700">{request.subject.subject_code}</td>
+                                                        <td className="px-6 py-4 text-center whitespace-nowrap text-gray-700">
 
-                                                        <button
-                                                            onClick={() => setOpenDropdownId(openDropdownId === request.id ? null : request.id)}
-                                                            className="shadow-md px-5 py-2 rounded-lg transition-all duration-300 transform hover:scale-105 hover:bg-black hover:text-white hover:cursor-pointer"
-                                                        >
-                                                            <FaChevronRight
-                                                                className={`w-4 h-4 transition-transform mx-auto ${openDropdownId === request.id ? 'rotate-90' : ''}`}
-                                                            />
-                                                        </button>
+                                                            <div>
+                                                                <div className=" text-black py-2 rounded-md shadow-md transition-all duration-300 transform hover:scale-105 hover:bg-black hover:text-white">
+                                                                    <a
+                                                                        href={`${apiUrl}/user/certificate/file/${request.id}.pdf?download=false`}
+                                                                        target="_blank"
+                                                                        className="flex items-center justify-center font-medium"
+                                                                    >
+                                                                        <svg
+                                                                            xmlns="http://www.w3.org/2000/svg"
+                                                                            className="h-5 w-5"
+                                                                            fill="none"
+                                                                            viewBox="0 0 24 24"
+                                                                            stroke="currentColor"
+                                                                        >
+                                                                            <path
+                                                                                strokeLinecap="round"
+                                                                                strokeLinejoin="round"
+                                                                                strokeWidth={2}
+                                                                                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                                                                            />
+                                                                        </svg>
+                                                                    </a>
+                                                                </div>
+                                                            </div>
 
-                                                    </td>
-                                                </tr>
-                                                {openDropdownId === request.id && (
-                                    <RequestDetailsDropdown
-                                      request={
-                                        {
-                                            id:request.id,
-                                            student:request.student,
-                                            subject:request.subject,
-                                            status : "rejected",
-                                            verified_total_marks:request.verified_total_marks,
-                                            created_at: request.created_at,
-                                            due_date: request.due_date,
-                                            
-                                            
-                                        }
-                                      }
-                                      colSpan={headings.length}
-                                      subjectId={request.subject.id}
-                                      onClose={() => setOpenDropdownId(null)}
-                                      showReject={false}
-                                    />
-                                  )}
+
+                                                        </td>
+
+                                                        <td className="px-6 py-4 whitespace-nowrap">
+
+                                                            <button
+                                                                onClick={() => setOpenDropdownId(openDropdownId === request.id ? null : request.id)}
+                                                                className="shadow-md px-5 py-2 rounded-lg transition-all duration-300 transform hover:scale-105 hover:bg-black hover:text-white hover:cursor-pointer"
+                                                            >
+                                                                <FaChevronRight
+                                                                    className={`w-4 h-4 transition-transform mx-auto ${openDropdownId === request.id ? 'rotate-90' : ''}`}
+                                                                />
+                                                            </button>
+
+                                                        </td>
+                                                    </tr>
+                                                    {openDropdownId === request.id && (
+                                                        <RequestDetailsDropdown
+                                                            request={
+                                                                {
+                                                                    id: request.id,
+                                                                    student: request.student,
+                                                                    subject: request.subject,
+                                                                    status: "rejected",
+                                                                    verified_total_marks: request.verified_total_marks,
+                                                                    created_at: request.created_at,
+                                                                    due_date: request.due_date,
+
+
+                                                                }
+                                                            }
+                                                            colSpan={headings.length}
+                                                            subjectId={request.subject.id}
+                                                            onClose={() => setOpenDropdownId(null)}
+                                                            showReject={false}
+                                                        />
+                                                    )}
                                                 </>
-                                                
-                                                
+
+
                                             ))
                                         ) : (
                                             <tr>
