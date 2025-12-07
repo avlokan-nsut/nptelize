@@ -338,7 +338,9 @@ const RequestDetailsDropdown = ({ request, colSpan, onClose,showReject }: Reques
                 </button>
               }
 
-              {!certData?.data?.uploaded_certificate && !certData?.data?.verification_certificate &&
+              {((!certData?.data?.uploaded_certificate && !certData?.data?.verification_certificate) ||
+                certData?.data?.uploaded_certificate?.marks === "N/A" ||
+                certData?.data?.verification_certificate?.marks === "N/A") &&
                 <div>
                   <button 
                     onClick={() => { setIsVisable(request.id) }} 
