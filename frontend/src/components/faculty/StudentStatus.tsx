@@ -232,15 +232,15 @@ const StudentStatus = function () {
     }
 
     const date = new Date(dateString);
-    const istOffset = 5.5 * 60 * 60 * 1000;
-    const istDate = new Date(date.getTime() + istOffset);
 
-    return istDate.toLocaleDateString("en-US", {
+    return date.toLocaleDateString("en-US", {
       year: "numeric",
       month: "short",
       day: "numeric",
     });
   };
+
+  
 
   //CSV funtionality
   const downloadCSV = () => {
