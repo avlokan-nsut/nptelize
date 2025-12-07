@@ -21,23 +21,20 @@ const FILE_SIZE_LIMIT = 2097152;
 const apiUrl = import.meta.env.VITE_API_URL;
 
 
-function formatDateOnly(isoString: string): string {
-  if (isoString === null || isoString === undefined) {
-    return "";
-  }
 
-  const date = new Date(isoString);
+const formatDateOnly = (dateString: string) => {
+    if (dateString == null || dateString == undefined) {
+      return "";
+    }
 
-  const adjustedDate = new Date(date.getTime() + 330 * 60 * 1000);
+    const date = new Date(dateString);
 
-  const options: Intl.DateTimeFormatOptions = {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
   };
-
-  return adjustedDate.toLocaleDateString("en-US", options);
-}
 
 
 const fetchData = async (year: number, sem: number) => {
