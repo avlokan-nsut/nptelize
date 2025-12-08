@@ -325,7 +325,9 @@ const RequestDetailsDropdown = ({ request, colSpan, onClose,showReject }: Reques
 
               {certData?.data?.uploaded_certificate && 
                 certData?.data?.verification_certificate &&
+                certData?.data?.uploaded_certificate?.marks &&
                 certData?.data?.uploaded_certificate?.marks !== "N/A" &&
+                certData?.data?.verification_certificate?.marks &&
                 certData?.data?.verification_certificate?.marks !== "N/A" &&
                 <button 
                   onClick={handleAccept} 
@@ -342,6 +344,8 @@ const RequestDetailsDropdown = ({ request, colSpan, onClose,showReject }: Reques
               }
 
               {((!certData?.data?.uploaded_certificate || !certData?.data?.verification_certificate) ||
+                !certData?.data?.uploaded_certificate?.marks ||
+                !certData?.data?.verification_certificate?.marks ||
                 certData?.data?.uploaded_certificate?.marks === "N/A" ||
                 certData?.data?.verification_certificate?.marks === "N/A") &&
                 <div>
