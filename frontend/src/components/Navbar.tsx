@@ -29,7 +29,7 @@ const Navbar = () => {
             className="text-2xl font-bold tracking-tight text-gray-800 hover:text-gray-600 transition-colors duration-200"
           >
             <div className="flex flex-row justify-evenly items-center space-x-4">
-              <div>AVLOKAN</div>
+              <img src='/avlokan_logo.jpg' alt='logo' width={50} className="rounded-2xl" />
               <div className="hidden md:block">X</div>
               <img src='/uni_logo.png' alt='logo' width={50} className="hidden md:block" />
             </div>
